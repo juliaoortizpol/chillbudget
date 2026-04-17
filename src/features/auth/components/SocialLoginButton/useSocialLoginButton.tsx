@@ -1,15 +1,7 @@
 import { type ReactNode } from "react"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { type SocialLoginButtonProps } from "./type"
 
-interface SocialLoginButtonProps {
-  provider: "google" | "apple"
-  onClick?: () => void
-  disabled?: boolean
-  children?: ReactNode
-}
-
-const providerConfig = {
+const providerConfig: Record<SocialLoginButtonProps["provider"], { label: string; icon: ReactNode }> = {
   google: {
     label: "Google",
     icon: (
@@ -43,33 +35,11 @@ const providerConfig = {
   },
 }
 
-function SocialLoginButton({ provider, onClick, disabled }: SocialLoginButtonProps) {
-  const { label, icon } = providerConfig[provider]
-
-  const styles = {
-    button: cn(
-      "h-11 flex-1 rounded-sm border border-ds-border bg-ds-surface text-sm font-medium text-ds-text-primary",
-      "hover:bg-ds-background hover:border-ds-border transition-all",
-      "focus-visible:ring-2 focus-visible:ring-ds-primary/20",
-    ),
-    content: "flex items-center gap-2"
+export function useSocialLoginButton(provider: SocialLoginButtonProps["provider"]) {
+  const config = providerConfig[provider]
+  
+  return {
+    label: config.label,
+    icon: config.icon,
   }
-
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      onClick={onClick}
-      disabled={disabled}
-      className={styles.button}
-      aria-label={`Continue with ${label}`}
-    >
-      <div className={styles.content}>
-        {icon}
-        <span>{label}</span>
-      </div>
-    </Button>
-  )
 }
-
-export { SocialLoginButton }

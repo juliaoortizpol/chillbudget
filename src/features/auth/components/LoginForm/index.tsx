@@ -1,88 +1,9 @@
-import { type FormEvent, useState } from "react"
 import { Mail, Lock, AlertCircle, ShieldCheck, Landmark } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { FormField } from "./FormField"
-import { SocialLoginButton } from "./SocialLoginButton"
-
-interface FormValues {
-  email: string
-  password: string
-}
-
-interface FormErrors {
-  email?: string
-  password?: string
-  form?: string
-}
-
-function validate(values: FormValues): FormErrors {
-  const errors: FormErrors = {}
-
-  if (!values.email.trim()) {
-    errors.email = "Email is required."
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
-    errors.email = "Please enter a valid email address."
-  }
-
-  if (!values.password) {
-    errors.password = "Password is required."
-  } else if (values.password.length < 8) {
-    errors.password = "Password must be at least 8 characters."
-  }
-
-  return errors
-}
-
-function useLoginForm() {
-  const [values, setValues] = useState<FormValues>({ email: "", password: "" })
-  const [errors, setErrors] = useState<FormErrors>({})
-  const [isLoading, setIsLoading] = useState(false)
-
-  const handleChange = (field: keyof FormValues) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValues((prev) => ({ ...prev, [field]: e.target.value }))
-    // Clear field error on change
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }))
-  }
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    const validationErrors = validate(values)
-
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors)
-      return
-    }
-
-    setErrors({})
-    setIsLoading(true)
-
-    try {
-      // Simulate API call — replace with real auth logic
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      // On success: redirect or update auth state
-      console.log("Login successful", values.email)
-    } catch {
-      setErrors({ form: "Invalid credentials. Please check your email and password." })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleSocialLogin = (provider: "google" | "apple") => {
-    // Placeholder — wire up OAuth flow here
-    console.log(`Social login: ${provider}`)
-  }
-
-  return {
-    values,
-    errors,
-    isLoading,
-    handleChange,
-    handleSubmit,
-    handleSocialLogin,
-  }
-}
+import { FormField } from "../FormField"
+import { SocialLoginButton } from "../SocialLoginButton"
+import { useLoginForm } from "./useLoginForm"
 
 function LoginForm() {
   const { values, errors, isLoading, handleChange, handleSubmit, handleSocialLogin } = useLoginForm()
@@ -94,7 +15,7 @@ function LoginForm() {
     errorTitle: "text-sm font-semibold text-ds-danger",
     errorText: "text-xs text-ds-danger mt-0.5",
     forgotPassword: "text-xs font-medium text-ds-primary hover:text-ds-primary-hover transition-colors",
-    submitBtn: "btn-primary w-full h-11", // Using our custom design system class
+    submitBtn: "btn-primary w-full h-11",
     loadingContent: "flex items-center gap-2",
     spinner: "animate-spin size-4",
     dividerContainer: "flex items-center gap-3",
@@ -110,7 +31,6 @@ function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} noValidate className={styles.form}>
-      {/* Form-level error banner */}
       {errors.form && (
         <div className={styles.errorBanner}>
           <AlertCircle size={16} className={styles.errorIcon} />
@@ -121,7 +41,6 @@ function LoginForm() {
         </div>
       )}
 
-      {/* Fields */}
       <FormField
         id="email"
         label="Email address"
@@ -154,7 +73,6 @@ function LoginForm() {
         }
       />
 
-      {/* Primary CTA */}
       <Button
         type="submit"
         disabled={isLoading}
@@ -173,20 +91,17 @@ function LoginForm() {
         )}
       </Button>
 
-      {/* Divider */}
       <div className={styles.dividerContainer}>
         <Separator className="flex-1" />
         <span className={styles.dividerText}>or continue with</span>
         <Separator className="flex-1" />
       </div>
 
-      {/* Social buttons */}
       <div className={styles.socialContainer}>
         <SocialLoginButton provider="google" onClick={() => handleSocialLogin("google")} disabled={isLoading} />
         <SocialLoginButton provider="apple" onClick={() => handleSocialLogin("apple")} disabled={isLoading} />
       </div>
 
-      {/* Sign up link */}
       <p className={styles.signupContainer}>
         Don't have an account?{" "}
         <a href="#" className={styles.signupLink}>
@@ -194,7 +109,6 @@ function LoginForm() {
         </a>
       </p>
 
-      {/* Trust badges */}
       <div className={styles.trustContainer}>
         <span className={styles.trustItem}>
           <ShieldCheck size={13} />

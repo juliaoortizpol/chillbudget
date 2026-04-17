@@ -1,30 +1,10 @@
-import { forwardRef, useState, type InputHTMLAttributes, type ReactNode } from "react"
+import { forwardRef } from "react"
 import { Eye, EyeOff } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
-
-interface FormFieldProps extends InputHTMLAttributes<HTMLInputElement> {
-  label: string
-  error?: string
-  icon?: ReactNode
-  rightSlot?: ReactNode
-}
-
-function useFormField(type?: string) {
-  const [showPassword, setShowPassword] = useState(false)
-  const isPassword = type === "password"
-  const resolvedType = isPassword ? (showPassword ? "text" : "password") : type
-
-  const togglePassword = () => setShowPassword((v) => !v)
-
-  return {
-    isPassword,
-    showPassword,
-    resolvedType,
-    togglePassword,
-  }
-}
+import { useFormField } from "./useFormField"
+import { type FormFieldProps } from "./type"
 
 const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
   ({ label, error, icon, rightSlot, type, className, id, ...props }, ref) => {
