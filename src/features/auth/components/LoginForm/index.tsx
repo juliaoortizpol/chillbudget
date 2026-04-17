@@ -1,4 +1,4 @@
-import { Mail, Lock, AlertCircle, ShieldCheck, Landmark } from "lucide-react"
+import { Mail, Lock, AlertCircle, ShieldCheck, Landmark } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { FormField } from "../FormField"

@@ -1,4 +1,5 @@
 import { LoginForm } from "./components/LoginForm"
+import { LogoIcon } from "@/components/icons"
 
 function LoginPage() {
   const styles = {
@@ -23,9 +24,7 @@ function LoginPage() {
           {/* Logo */}
           <div className={styles.logoContainer}>
             <div className={styles.logoBox}>
-              <svg viewBox="0 0 24 24" className={styles.logoIcon} aria-hidden="true">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" />
-              </svg>
+              <LogoIcon className={styles.logoIcon} />
             </div>
             <span className={styles.logoText}>FlowBudget</span>
           </div>
