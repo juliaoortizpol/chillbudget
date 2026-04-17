@@ -141,7 +141,7 @@ function LoginForm() {
       />
 
       {/* Primary CTA */}
-      <button
+      <Button
         type="submit"
         disabled={isLoading}
         className={styles.submitBtn}
@@ -157,7 +157,7 @@ function LoginForm() {
         ) : (
           "Log in"
         )}
-      </button>
+      </Button>
 
       {/* Divider */}
       <div className={styles.dividerContainer}>
