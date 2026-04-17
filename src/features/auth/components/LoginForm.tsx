@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react"
 import { Mail, Lock, AlertCircle, ShieldCheck, Landmark } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 import { FormField } from "./FormField"
 import { SocialLoginButton } from "./SocialLoginButton"
 
@@ -161,9 +162,9 @@ function LoginForm() {
 
       {/* Divider */}
       <div className={styles.dividerContainer}>
-        <div className={styles.dividerLine} />
+        <Separator className="flex-1" />
         <span className={styles.dividerText}>or continue with</span>
-        <div className={styles.dividerLine} />
+        <Separator className="flex-1" />
       </div>
 
       {/* Social buttons */}
