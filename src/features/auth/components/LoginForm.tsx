@@ -73,15 +73,36 @@ function LoginForm() {
     console.log(`Social login: ${provider}`)
   }
 
+  const styles = {
+    form: "flex flex-col gap-5",
+    errorBanner: "flex items-start gap-3 rounded-sm bg-ds-danger/10 border border-ds-danger/20 px-4 py-3",
+    errorIcon: "text-ds-danger mt-0.5 shrink-0",
+    errorTitle: "text-sm font-semibold text-ds-danger",
+    errorText: "text-xs text-ds-danger mt-0.5",
+    forgotPassword: "text-xs font-medium text-ds-primary hover:text-ds-primary-hover transition-colors",
+    submitBtn: "btn-primary w-full h-11", // Using our custom design system class
+    loadingContent: "flex items-center gap-2",
+    spinner: "animate-spin size-4",
+    dividerContainer: "flex items-center gap-3",
+    dividerLine: "flex-1 h-px bg-ds-border",
+    dividerText: "text-xs text-ds-text-secondary font-medium uppercase tracking-wide",
+    socialContainer: "flex gap-3",
+    signupContainer: "text-center text-sm text-ds-text-secondary",
+    signupLink: "font-semibold text-ds-primary hover:text-ds-primary-hover transition-colors",
+    trustContainer: "flex items-center justify-center gap-4 pt-2",
+    trustItem: "flex items-center gap-1.5 text-xs text-ds-text-secondary",
+    trustDot: "text-ds-border",
+  }
+
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+    <form onSubmit={handleSubmit} noValidate className={styles.form}>
       {/* Form-level error banner */}
       {errors.form && (
-        <div className="flex items-start gap-3 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
-          <AlertCircle size={16} className="text-red-500 mt-0.5 shrink-0" />
+        <div className={styles.errorBanner}>
+          <AlertCircle size={16} className={styles.errorIcon} />
           <div>
-            <p className="text-sm font-semibold text-red-600">Invalid credentials</p>
-            <p className="text-xs text-red-500 mt-0.5">{errors.form}</p>
+            <p className={styles.errorTitle}>Invalid credentials</p>
+            <p className={styles.errorText}>{errors.form}</p>
           </div>
         </div>
       )}
@@ -112,7 +133,7 @@ function LoginForm() {
         rightSlot={
           <a
             href="#"
-            className="text-xs font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+            className={styles.forgotPassword}
           >
             Forgot password?
           </a>
@@ -120,15 +141,14 @@ function LoginForm() {
       />
 
       {/* Primary CTA */}
-      <Button
+      <button
         type="submit"
-        size="lg"
         disabled={isLoading}
-        className="h-11 w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition-all"
+        className={styles.submitBtn}
       >
         {isLoading ? (
-          <span className="flex items-center gap-2">
-            <svg className="animate-spin size-4" viewBox="0 0 24 24" fill="none">
+          <span className={styles.loadingContent}>
+            <svg className={styles.spinner} viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
             </svg>
@@ -137,37 +157,37 @@ function LoginForm() {
         ) : (
           "Log in"
         )}
-      </Button>
+      </button>
 
       {/* Divider */}
-      <div className="flex items-center gap-3">
-        <div className="flex-1 h-px bg-gray-200" />
-        <span className="text-xs text-gray-400 font-medium uppercase tracking-wide">or continue with</span>
-        <div className="flex-1 h-px bg-gray-200" />
+      <div className={styles.dividerContainer}>
+        <div className={styles.dividerLine} />
+        <span className={styles.dividerText}>or continue with</span>
+        <div className={styles.dividerLine} />
       </div>
 
       {/* Social buttons */}
-      <div className="flex gap-3">
+      <div className={styles.socialContainer}>
         <SocialLoginButton provider="google" onClick={() => handleSocialLogin("google")} disabled={isLoading} />
         <SocialLoginButton provider="apple" onClick={() => handleSocialLogin("apple")} disabled={isLoading} />
       </div>
 
       {/* Sign up link */}
-      <p className="text-center text-sm text-gray-500">
+      <p className={styles.signupContainer}>
         Don't have an account?{" "}
-        <a href="#" className="font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">
+        <a href="#" className={styles.signupLink}>
           Sign up
         </a>
       </p>
 
       {/* Trust badges */}
-      <div className="flex items-center justify-center gap-4 pt-2">
-        <span className="flex items-center gap-1.5 text-xs text-gray-400">
+      <div className={styles.trustContainer}>
+        <span className={styles.trustItem}>
           <ShieldCheck size={13} />
           256-bit encryption
         </span>
-        <span className="text-gray-200">·</span>
-        <span className="flex items-center gap-1.5 text-xs text-gray-400">
+        <span className={styles.trustDot}>·</span>
+        <span className={styles.trustItem}>
           <Landmark size={13} />
           FDIC insured
         </span>

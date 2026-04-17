@@ -46,21 +46,28 @@ const providerConfig = {
 function SocialLoginButton({ provider, onClick, disabled }: SocialLoginButtonProps) {
   const { label, icon } = providerConfig[provider]
 
+  const styles = {
+    button: cn(
+      "h-11 flex-1 rounded-sm border border-ds-border bg-ds-surface text-sm font-medium text-ds-text-primary",
+      "hover:bg-ds-background hover:border-ds-border transition-all",
+      "focus-visible:ring-2 focus-visible:ring-ds-primary/20",
+    ),
+    content: "flex items-center gap-2"
+  }
+
   return (
     <Button
       type="button"
       variant="outline"
       onClick={onClick}
       disabled={disabled}
-      className={cn(
-        "h-11 flex-1 rounded-xl border-gray-200 bg-white text-sm font-medium text-gray-700",
-        "hover:bg-gray-50 hover:border-gray-300 transition-all",
-        "focus-visible:ring-2 focus-visible:ring-indigo-500/20",
-      )}
+      className={styles.button}
       aria-label={`Continue with ${label}`}
     >
-      {icon}
-      <span>{label}</span>
+      <div className={styles.content}>
+        {icon}
+        <span>{label}</span>
+      </div>
     </Button>
   )
 }

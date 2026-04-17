@@ -17,18 +17,36 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
     const isPassword = type === "password"
     const resolvedType = isPassword ? (showPassword ? "text" : "password") : type
 
+    const styles = {
+      container: "flex flex-col gap-1.5",
+      header: "flex items-center justify-between",
+      label: "text-sm font-medium text-ds-text-primary",
+      inputWrapper: "relative",
+      icon: "absolute left-3 top-1/2 -translate-y-1/2 text-ds-text-secondary pointer-events-none",
+      input: cn(
+        "h-11 bg-ds-surface transition-colors",
+        "focus-visible:border-ds-primary focus-visible:ring-2 focus-visible:ring-ds-primary/20",
+        icon && "pl-10",
+        isPassword && "pr-10",
+        error && "border-ds-danger focus-visible:border-ds-danger focus-visible:ring-ds-danger/20",
+        className,
+      ),
+      toggleBtn: "absolute right-3 top-1/2 -translate-y-1/2 text-ds-text-secondary hover:text-ds-text-primary transition-colors",
+      errorMsg: "text-xs text-ds-danger font-medium",
+    }
+
     return (
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-center justify-between">
-          <Label htmlFor={id} className="text-sm font-medium text-gray-700">
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <Label htmlFor={id} className={styles.label}>
             {label}
           </Label>
           {rightSlot}
         </div>
 
-        <div className="relative">
+        <div className={styles.inputWrapper}>
           {icon && (
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+            <span className={styles.icon}>
               {icon}
             </span>
           )}
@@ -38,15 +56,7 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
             id={id}
             type={resolvedType}
             aria-invalid={!!error}
-            className={cn(
-              "h-11 rounded-xl border-gray-200 bg-white text-sm transition-colors",
-              "placeholder:text-gray-400",
-              "focus-visible:border-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-500/20",
-              icon && "pl-10",
-              isPassword && "pr-10",
-              error && "border-red-400 focus-visible:border-red-400 focus-visible:ring-red-400/20",
-              className,
-            )}
+            className={styles.input}
             {...props}
           />
 
@@ -54,7 +64,7 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              className={styles.toggleBtn}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -63,7 +73,7 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
         </div>
 
         {error && (
-          <p className="text-xs text-red-500 font-medium" role="alert">
+          <p className={styles.errorMsg} role="alert">
             {error}
           </p>
         )}
