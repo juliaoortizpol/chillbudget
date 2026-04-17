@@ -34,7 +34,7 @@ function validate(values: FormValues): FormErrors {
   return errors
 }
 
-function LoginForm() {
+function useLoginForm() {
   const [values, setValues] = useState<FormValues>({ email: "", password: "" })
   const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -73,6 +73,19 @@ function LoginForm() {
     // Placeholder — wire up OAuth flow here
     console.log(`Social login: ${provider}`)
   }
+
+  return {
+    values,
+    errors,
+    isLoading,
+    handleChange,
+    handleSubmit,
+    handleSocialLogin,
+  }
+}
+
+function LoginForm() {
+  const { values, errors, isLoading, handleChange, handleSubmit, handleSocialLogin } = useLoginForm()
 
   const styles = {
     form: "flex flex-col gap-5",

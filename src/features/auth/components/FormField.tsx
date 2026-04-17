@@ -11,11 +11,24 @@ interface FormFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   rightSlot?: ReactNode
 }
 
+function useFormField(type?: string) {
+  const [showPassword, setShowPassword] = useState(false)
+  const isPassword = type === "password"
+  const resolvedType = isPassword ? (showPassword ? "text" : "password") : type
+
+  const togglePassword = () => setShowPassword((v) => !v)
+
+  return {
+    isPassword,
+    showPassword,
+    resolvedType,
+    togglePassword,
+  }
+}
+
 const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
   ({ label, error, icon, rightSlot, type, className, id, ...props }, ref) => {
-    const [showPassword, setShowPassword] = useState(false)
-    const isPassword = type === "password"
-    const resolvedType = isPassword ? (showPassword ? "text" : "password") : type
+    const { isPassword, showPassword, resolvedType, togglePassword } = useFormField(type)
 
     const styles = {
       container: "flex flex-col gap-1.5",
@@ -63,7 +76,7 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
           {isPassword && (
             <button
               type="button"
-              onClick={() => setShowPassword((v) => !v)}
+              onClick={togglePassword}
               className={styles.toggleBtn}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
