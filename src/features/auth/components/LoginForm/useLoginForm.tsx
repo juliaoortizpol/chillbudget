@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from "react"
 import { type FormValues, type FormErrors } from "./type"
+import { useNavigate } from "react-router-dom"
 
 function validate(values: FormValues): FormErrors {
   const errors: FormErrors = {}
@@ -23,6 +24,7 @@ export function useLoginForm() {
   const [values, setValues] = useState<FormValues>({ email: "", password: "" })
   const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate()
 
   const handleChange = (field: keyof FormValues) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setValues((prev) => ({ ...prev, [field]: e.target.value }))
@@ -45,6 +47,7 @@ export function useLoginForm() {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1500))
       console.log("Login successful", values.email)
+      navigate("/dashboard")
     } catch {
       setErrors({ form: "Invalid credentials. Please check your email and password." })
     } finally {
