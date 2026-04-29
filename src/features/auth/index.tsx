@@ -1,5 +1,4 @@
 import { LoginForm } from "./components/LoginForm"
-import { LogoIcon } from "@/components/icons"
 
 function LoginPage() {
   const styles = {
@@ -22,11 +21,8 @@ function LoginPage() {
         {/* Card */}
         <div className={styles.card}>
           {/* Logo */}
-          <div className={styles.logoContainer}>
-            <div className={styles.logoBox}>
-              <LogoIcon className={styles.logoIcon} />
-            </div>
-            <span className={styles.logoText}>FlowBudget</span>
+          <div className="flex justify-center mb-8">
+            <img src="/logo.png" alt="Sanctuary Logo" className="h-20 object-contain" />
           </div>
 
           {/* Heading */}
