@@ -1,6 +1,9 @@
 import { type FormEvent, useState } from "react"
 import { type FormValues, type FormErrors } from "./type"
 import { useNavigate } from "react-router-dom"
+import { useLogin } from "../../hooks/useLogin"
+import { useSignup } from "../../hooks/useSignup"
+import { useGoogleLogin } from "../../hooks/useGoogleLogin"
 
 function validate(values: FormValues): FormErrors {
   const errors: FormErrors = {}
@@ -21,10 +24,21 @@ function validate(values: FormValues): FormErrors {
 }
 
 export function useLoginForm() {
+  const [mode, setMode] = useState<"login" | "signup">("login")
   const [values, setValues] = useState<FormValues>({ email: "", password: "" })
   const [errors, setErrors] = useState<FormErrors>({})
-  const [isLoading, setIsLoading] = useState(false)
+  
+  const { login, isLoading: isLoginLoading } = useLogin()
+  const { signup, isLoading: isSignupLoading } = useSignup()
+  const { loginWithGoogle } = useGoogleLogin()
+  
+  const isLoading = isLoginLoading || isSignupLoading
   const navigate = useNavigate()
+
+  const toggleMode = () => {
+    setMode((prev) => (prev === "login" ? "signup" : "login"))
+    setErrors({})
+  }
 
   const handleChange = (field: keyof FormValues) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setValues((prev) => ({ ...prev, [field]: e.target.value }))
@@ -41,25 +55,32 @@ export function useLoginForm() {
     }
 
     setErrors({})
-    setIsLoading(true)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      console.log("Login successful", values.email)
-      navigate("/dashboard")
-    } catch {
-      setErrors({ form: "Invalid credentials. Please check your email and password." })
-    } finally {
-      setIsLoading(false)
+      if (mode === "login") {
+        await login(values)
+        navigate("/dashboard")
+      } else {
+        await signup(values)
+        await login(values)
+        navigate("/dashboard")
+      }
+    } catch (err: any) {
+      setErrors({ form: err.message || (mode === "login" ? "Invalid credentials. Please check your email and password." : "Signup failed.") })
     }
   }
 
   const handleSocialLogin = (provider: "google" | "apple") => {
-    console.log(`Social login: ${provider}`)
+    if (provider === "google") {
+      loginWithGoogle()
+    } else {
+      console.log(`Social login not implemented for: ${provider}`)
+    }
   }
 
   return {
+    mode,
+    toggleMode,
     values,
     errors,
     isLoading,

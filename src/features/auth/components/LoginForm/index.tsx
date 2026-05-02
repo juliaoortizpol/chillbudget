@@ -6,7 +6,7 @@ import { SocialLoginButton } from "../SocialLoginButton"
 import { useLoginForm } from "./useLoginForm"
 
 function LoginForm() {
-  const { values, errors, isLoading, handleChange, handleSubmit, handleSocialLogin } = useLoginForm()
+  const { mode, toggleMode, values, errors, isLoading, handleChange, handleSubmit, handleSocialLogin } = useLoginForm()
 
   const styles = {
     form: "flex flex-col gap-5",
@@ -35,7 +35,7 @@ function LoginForm() {
         <div className={styles.errorBanner}>
           <AlertCircle size={16} className={styles.errorIcon} />
           <div>
-            <p className={styles.errorTitle}>Invalid credentials</p>
+            <p className={styles.errorTitle}>{mode === "login" ? "Invalid credentials" : "Error"}</p>
             <p className={styles.errorText}>{errors.form}</p>
           </div>
         </div>
@@ -64,12 +64,11 @@ function LoginForm() {
         error={errors.password}
         icon={<Lock size={16} />}
         rightSlot={
-          <a
-            href="#"
-            className={styles.forgotPassword}
-          >
-            Forgot password?
-          </a>
+          mode === "login" ? (
+            <a href="#" className={styles.forgotPassword}>
+              Forgot password?
+            </a>
+          ) : null
         }
       />
 
@@ -84,10 +83,10 @@ function LoginForm() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
             </svg>
-            Signing in…
+            {mode === "login" ? "Signing in…" : "Signing up…"}
           </span>
         ) : (
-          "Log in"
+          mode === "login" ? "Log in" : "Sign up"
         )}
       </Button>
 
@@ -103,9 +102,9 @@ function LoginForm() {
       </div>
 
       <p className={styles.signupContainer}>
-        Don't have an account?{" "}
-        <a href="#" className={styles.signupLink}>
-          Sign up
+        {mode === "login" ? "Don't have an account? " : "Already have an account? "}
+        <a href="#" className={styles.signupLink} onClick={(e) => { e.preventDefault(); toggleMode(); }}>
+          {mode === "login" ? "Sign up" : "Log in"}
         </a>
       </p>
 
