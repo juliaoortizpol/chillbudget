@@ -45,3 +45,4 @@ function LoginPage() {
 }
 
 export { LoginPage }
+export { OAuthCallback } from "./components/OAuthCallback"
