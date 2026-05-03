@@ -1,4 +1,4 @@
-import { Sidebar } from "@/features/dashboard/components/Sidebar"
+import { Sidebar } from "@/components/Sidebar"
 import { BudgetSummaryCard } from "./components/BudgetSummaryCard"
 import { CategoryTable } from "./components/CategoryTable"
 import { Button } from "@/components/ui/button"

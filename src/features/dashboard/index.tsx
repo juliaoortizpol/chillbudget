@@ -1,4 +1,4 @@
-import { Sidebar } from "./components/Sidebar"
+import { Sidebar } from "@/components/Sidebar"
 import { BalanceCard } from "./components/BalanceCard"
 import { MetricCard } from "./components/MetricCard"
 import { ListWidget, type ListItem } from "./components/ListWidget"
