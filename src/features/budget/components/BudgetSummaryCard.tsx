@@ -1,7 +1,16 @@
 import { DashboardCard } from "@/features/dashboard/components/DashboardCard"
 import { Building2, WalletCards, ArrowUpRight } from "lucide-react"
 
-export function BudgetSummaryCard() {
+interface BudgetSummaryCardProps {
+  totalAllocated: number;
+  totalSpent: number;
+}
+
+export function BudgetSummaryCard({ totalAllocated, totalSpent }: BudgetSummaryCardProps) {
+  const amountLeft = Math.max(0, totalAllocated - totalSpent);
+  const utilizedPercent = totalAllocated > 0 ? Math.min((totalSpent / totalAllocated) * 100, 100) : 0;
+  const remainingPercent = 100 - utilizedPercent;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <DashboardCard className="col-span-1 border border-border shadow-sm">
@@ -15,7 +24,9 @@ export function BudgetSummaryCard() {
           <div>
             <div className="flex items-baseline gap-1">
               <span className="text-sm font-bold text-muted-foreground">$</span>
-              <h2 className="text-[32px] font-extrabold tracking-tight">12,500.00</h2>
+              <h2 className="text-[32px] font-extrabold tracking-tight">
+                {totalAllocated.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h2>
             </div>
             <div className="flex items-center gap-1 mt-1 text-emerald-600">
               <ArrowUpRight className="w-3 h-3" strokeWidth={3} />
@@ -37,14 +48,18 @@ export function BudgetSummaryCard() {
               </div>
               <div className="flex items-baseline gap-1 mt-1">
                 <span className="text-sm font-bold text-muted-foreground">$</span>
-                <h2 className="text-[32px] font-extrabold tracking-tight">8,432.50</h2>
+                <h2 className="text-[32px] font-extrabold tracking-tight">
+                  {totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </h2>
               </div>
             </div>
             <div className="flex flex-col items-end gap-1">
               <span className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase mt-1 mb-2">Amount Left</span>
               <div className="flex items-baseline gap-1 mt-1 text-emerald-600">
                 <span className="text-sm font-bold">$</span>
-                <h2 className="text-[32px] font-extrabold tracking-tight">4,067.50</h2>
+                <h2 className="text-[32px] font-extrabold tracking-tight">
+                  {amountLeft.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </h2>
               </div>
             </div>
           </div>
@@ -52,11 +67,11 @@ export function BudgetSummaryCard() {
           <div className="mt-auto flex flex-col gap-3">
             {/* Custom Progress Bar */}
             <div className="h-3 w-full bg-muted/60 rounded-full overflow-hidden flex">
-              <div className="h-full bg-[#05603A]" style={{ width: "67%" }} />
+              <div className="h-full bg-[#05603A]" style={{ width: `${utilizedPercent}%` }} />
             </div>
             <div className="flex justify-between text-[10px] font-bold tracking-wider uppercase text-muted-foreground">
-              <span>67% Utilized</span>
-              <span>33% Remaining</span>
+              <span>{Math.round(utilizedPercent)}% Utilized</span>
+              <span>{Math.round(remainingPercent)}% Remaining</span>
             </div>
           </div>
         </div>
