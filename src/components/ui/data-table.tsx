@@ -20,12 +20,14 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   appendRowComponent?: React.ReactNode
+  containerClassName?: string
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
   appendRowComponent,
+  containerClassName = "max-h-[280px]",
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -35,7 +37,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="w-full relative flex flex-col">
-      <div className="max-h-[280px] overflow-y-auto custom-scrollbar">
+      <div className={`overflow-y-auto custom-scrollbar ${containerClassName}`}>
         <Table className="relative">
           <TableHeader className="sticky top-0 bg-ds-background/95 backdrop-blur supports-[backdrop-filter]:bg-ds-background/60 z-10 shadow-[0_1px_0_0_rgba(0,0,0,0.1)]">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -78,17 +80,13 @@ export function DataTable<TData, TValue>({
               </TableRow>
             )}
           </TableBody>
-        </Table>
-      </div>
-      {appendRowComponent && (
-        <div className="border-t border-muted/40 bg-ds-background/50 rounded-b-xl overflow-hidden mt-auto">
-          <Table>
-            <TableFooter className="hover:bg-transparent border-t-0">
+          {appendRowComponent && (
+            <TableFooter className="hover:bg-transparent border-t border-muted/40 bg-ds-background/80 sticky bottom-0 z-10 backdrop-blur">
               {appendRowComponent}
             </TableFooter>
-          </Table>
-        </div>
-      )}
+          )}
+        </Table>
+      </div>
     </div>
   )
 }
