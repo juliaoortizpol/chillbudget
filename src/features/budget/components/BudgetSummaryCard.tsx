@@ -1,20 +1,25 @@
 import { DashboardCard } from "@/features/dashboard/components/DashboardCard"
-import { Building2, WalletCards, ArrowUpRight } from "lucide-react"
+import { Building2, WalletCards, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react"
 
 interface BudgetSummaryCardProps {
   totalAllocated: number;
   totalSpent: number;
+  comparison?: {
+    percent: string;
+    isIncrease: boolean;
+    prevMonth: string;
+  } | null;
 }
 
-export function BudgetSummaryCard({ totalAllocated, totalSpent }: BudgetSummaryCardProps) {
+export function BudgetSummaryCard({ totalAllocated, totalSpent, comparison }: BudgetSummaryCardProps) {
   const amountLeft = Math.max(0, totalAllocated - totalSpent);
   const utilizedPercent = totalAllocated > 0 ? Math.min((totalSpent / totalAllocated) * 100, 100) : 0;
   const remainingPercent = 100 - utilizedPercent;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <DashboardCard className="col-span-1 border border-border shadow-sm">
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
               <Building2 className="w-5 h-5 text-emerald-600" />
@@ -28,16 +33,29 @@ export function BudgetSummaryCard({ totalAllocated, totalSpent }: BudgetSummaryC
                 {totalAllocated.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </h2>
             </div>
-            <div className="flex items-center gap-1 mt-1 text-emerald-600">
-              <ArrowUpRight className="w-3 h-3" strokeWidth={3} />
-              <span className="text-xs font-bold">4.2% increase from July</span>
-            </div>
+            {comparison ? (
+              <div className={`flex items-center gap-1 mt-1 ${comparison.isIncrease ? "text-emerald-600" : "text-amber-600"}`}>
+                {comparison.isIncrease ? (
+                  <ArrowUpRight className="w-3 h-3" strokeWidth={3} />
+                ) : (
+                  <ArrowDownRight className="w-3 h-3" strokeWidth={3} />
+                )}
+                <span className="text-xs font-bold">
+                  {comparison.percent}% {comparison.isIncrease ? "increase" : "decrease"} from {comparison.prevMonth}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 mt-1 text-muted-foreground">
+                <Minus className="w-3 h-3" strokeWidth={3} />
+                <span className="text-xs font-bold">No previous data</span>
+              </div>
+            )}
           </div>
         </div>
       </DashboardCard>
 
       <DashboardCard className="col-span-2 border border-border shadow-sm">
-        <div className="flex flex-col h-full justify-between gap-6">
+        <div className="flex flex-col h-full justify-between gap-3">
           <div className="flex justify-between items-start">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2 mb-2">
@@ -64,7 +82,7 @@ export function BudgetSummaryCard({ totalAllocated, totalSpent }: BudgetSummaryC
             </div>
           </div>
 
-          <div className="mt-auto flex flex-col gap-3">
+          <div className="mt-auto flex flex-col gap-2">
             {/* Custom Progress Bar */}
             <div className="h-3 w-full bg-muted/60 rounded-full overflow-hidden flex">
               <div className="h-full bg-[#05603A]" style={{ width: `${utilizedPercent}%` }} />

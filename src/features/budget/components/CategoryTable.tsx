@@ -1,9 +1,9 @@
 import * as React from "react"
+import { cn } from "@/lib/utils"
 import { type ColumnDef } from "@tanstack/react-table"
 import { DataTable } from "@/components/ui/data-table"
 import { useTableEditor } from "@/hooks/useTableEditor"
 import { Input } from "@/components/ui/input"
-import { DashboardCard } from "@/features/dashboard/components/DashboardCard"
 import { CheckCircle2, AlertTriangle, Filter, MoreVertical, Plus, ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { TableRow, TableCell } from "@/components/ui/table"
@@ -55,8 +55,38 @@ function EditableCurrencyCell({ initialValue, onSave }: { initialValue: number, 
   )
 }
 
+// Editable Text Cell Component
+function EditableTextCell({ initialValue, onSave, className }: { initialValue: string, onSave: (val: string) => void, className?: string }) {
+  const { isEditing, value, setValue, startEditing, saveEditing, handleKeyDown } = useTableEditor<string>(
+    initialValue,
+    onSave
+  )
+
+  if (isEditing) {
+    return (
+      <Input
+        autoFocus
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onBlur={saveEditing}
+        className={cn("h-7 px-2 py-0", className)}
+      />
+    )
+  }
+
+  return (
+    <div 
+      className={cn("cursor-pointer hover:bg-muted/30 px-1 rounded transition-colors truncate", className)}
+      onClick={startEditing}
+    >
+      {initialValue || <span className="italic opacity-30 italic">No description</span>}
+    </div>
+  )
+}
+
 function getColumns(
-  onUpdateAllocated: (id: string, amount: number) => void,
+  onUpdateItem: (id: string, updates: any) => void,
   onDeleteItem: (id: string) => void
 ): ColumnDef<BudgetCategory>[] {
   return [
@@ -69,16 +99,22 @@ function getColumns(
         return (
           <div className={`flex items-center gap-4 py-1 pl-2 ${isZero ? 'opacity-50 grayscale transition-opacity hover:opacity-80' : ''}`}>
             <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
               style={{ backgroundColor: category.iconBgClass, color: category.iconColor }}
             >
               {category.icon}
             </div>
-            <div className="flex flex-col">
-              <span className="text-[15px] font-bold text-foreground">{category.name}</span>
-              <span className="text-[11px] font-medium text-muted-foreground mt-0.5">
-                {isZero ? "Disabled (No Budget)" : category.description}
-              </span>
+            <div className="flex flex-col min-w-0 max-w-[240px]">
+              <EditableTextCell 
+                initialValue={category.name} 
+                onSave={(val) => onUpdateItem(category.id, { name: val })}
+                className="text-[15px] font-bold text-foreground"
+              />
+              <EditableTextCell 
+                initialValue={category.description} 
+                onSave={(val) => onUpdateItem(category.id, { description: val })}
+                className="text-[11px] font-medium text-muted-foreground mt-0.5"
+              />
             </div>
           </div>
         )
@@ -93,7 +129,7 @@ function getColumns(
           <div className={isZero ? 'opacity-60' : ''}>
             <EditableCurrencyCell 
               initialValue={row.original.allocated} 
-              onSave={(val) => onUpdateAllocated(row.original.id, val)} 
+              onSave={(val) => onUpdateItem(row.original.id, { plannedAmount: val })} 
             />
           </div>
         )
@@ -195,7 +231,7 @@ function AppendCategoryRow({ onCreate }: { onCreate: (name: string, description:
 
   return (
     <TableRow className="border-b-0 hover:bg-transparent opacity-60 focus-within:opacity-100 transition-opacity group">
-      <TableCell className="py-4">
+      <TableCell className="py-2">
         <div className="flex items-center gap-4 pl-2">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted/80">
             <ImageIcon className="w-5 h-5 text-muted-foreground" />
@@ -218,7 +254,7 @@ function AppendCategoryRow({ onCreate }: { onCreate: (name: string, description:
           </div>
         </div>
       </TableCell>
-      <TableCell className="text-center py-4">
+      <TableCell className="text-center py-2">
         <div className="relative w-24 mx-auto">
           <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-bold">$</span>
           <Input 
@@ -230,15 +266,15 @@ function AppendCategoryRow({ onCreate }: { onCreate: (name: string, description:
           />
         </div>
       </TableCell>
-      <TableCell className="text-center py-4 font-bold text-muted-foreground opacity-50">
+      <TableCell className="text-center py-2 font-bold text-muted-foreground opacity-50">
         $0.00
       </TableCell>
-      <TableCell className="py-4">
+      <TableCell className="py-2">
         <div className="flex justify-center w-full">
           <div className="w-full max-w-[140px] h-2 bg-muted/40 rounded-full"></div>
         </div>
       </TableCell>
-      <TableCell className="text-right py-4 pr-6">
+      <TableCell className="text-right py-2 pr-6">
         <div className="flex justify-end pr-2">
           <div className="w-5 h-5" />
         </div>
@@ -249,7 +285,7 @@ function AppendCategoryRow({ onCreate }: { onCreate: (name: string, description:
 
 interface CategoryTableProps {
   categories: BudgetCategory[]
-  onUpdateAllocated: (categoryId: string, amount: number) => void
+  onUpdateItem: (categoryId: string, updates: any) => void
   onCreateItem: (name: string, description: string, allocated: number) => void
   onDeleteItem: (categoryId: string) => void
   isLoading?: boolean
@@ -257,23 +293,23 @@ interface CategoryTableProps {
 
 export function CategoryTable({ 
   categories, 
-  onUpdateAllocated, 
+  onUpdateItem, 
   onCreateItem, 
   onDeleteItem,
   isLoading 
 }: CategoryTableProps) {
-  const columns = React.useMemo(() => getColumns(onUpdateAllocated, onDeleteItem), [onUpdateAllocated, onDeleteItem]);
+  const columns = React.useMemo(() => getColumns(onUpdateItem, onDeleteItem), [onUpdateItem, onDeleteItem]);
 
   return (
-    <DashboardCard className="border border-border shadow-sm p-1 relative" contentClassName="px-0 pt-0">
+    <div className="border border-border shadow-sm rounded-xl bg-card p-1 relative overflow-hidden">
       {isLoading && (
         <div className="absolute inset-0 bg-background/50 z-10 flex items-center justify-center rounded-xl">
           <div className="animate-pulse font-bold text-muted-foreground">Updating...</div>
         </div>
       )}
-      <div className="flex justify-between items-center mb-6 px-6 pt-6">
+      <div className="flex justify-between items-center mb-4 px-4 pt-4">
         <h2 className="text-xl font-extrabold tracking-tight">Budget Items</h2>
-        <div className="flex gap-4">
+        <div className="flex gap-2">
           <Button className="bg-[#05603A] hover:bg-[#05603A]/90 text-white rounded-lg gap-2 h-9 px-4 font-bold tracking-wide">
             <Plus className="w-4 h-4" strokeWidth={3} /> Add Item
           </Button>
@@ -291,12 +327,6 @@ export function CategoryTable({
         data={categories} 
         appendRowComponent={<AppendCategoryRow onCreate={onCreateItem} />}
       />
-
-      <div className="mt-4 pt-4 border-t border-muted/40 flex justify-center pb-3">
-        <Button variant="ghost" className="text-[#05603A] font-bold text-[11px] uppercase tracking-widest hover:text-[#05603A] hover:bg-emerald-50">
-          View All {categories.length} Items
-        </Button>
-      </div>
-    </DashboardCard>
+    </div>
   )
 }

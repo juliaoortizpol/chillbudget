@@ -56,10 +56,10 @@ export function useBudgetOverview() {
   const tableData: BudgetCategory[] = useMemo(() => {
     if (!activeBudget || !activeBudget.items) return [];
 
-    return activeBudget.items.map(item => {
+    const mapped = activeBudget.items.map(item => {
       const allocated = item.plannedAmount || 0;
 
-      // Mock spent value for demo purposes (Option B)
+      // Mock spent value for demo purposes
       const seed = item._id?.charCodeAt(0) || 1;
       const spent = allocated > 0 ? (allocated * 0.8 * (seed % 10) / 10) : 0;
 
@@ -69,13 +69,20 @@ export function useBudgetOverview() {
       return {
         id: item._id || '',
         name: item.name,
-        description: item.description || item.type, // Using description or fallback to type
+        description: item.description || item.type,
         allocated,
         spent,
         icon: getIcon(item.icon),
         iconBgClass: `${baseColor}1A`, // 10% opacity for background
         iconColor: baseColor,
       };
+    });
+
+    // Sort: items with allocated > 0 first, then by name
+    return [...mapped].sort((a, b) => {
+      if (a.allocated > 0 && b.allocated === 0) return -1;
+      if (a.allocated === 0 && b.allocated > 0) return 1;
+      return a.name.localeCompare(b.name);
     });
   }, [activeBudget]);
 
@@ -87,12 +94,38 @@ export function useBudgetOverview() {
     return tableData.reduce((sum, item) => sum + item.spent, 0);
   }, [tableData]);
 
-  const handleUpdateAllocated = async (itemId: string, amount: number) => {
+  const handleUpdateItem = async (itemId: string, updates: any) => {
     if (!activeBudget) return;
 
-    await updateBudgetItem(activeBudget._id, itemId, { plannedAmount: amount });
+    await updateBudgetItem(activeBudget._id, itemId, updates);
     await fetchBudgets(); // Refresh to get updated data
   };
+
+  const comparison = useMemo(() => {
+    if (!budgets || budgets.length < 2 || !activeBudget) return null;
+    
+    // Sort budgets by start date descending to find the one immediately before active
+    const sortedBudgets = [...budgets].sort((a, b) => 
+      new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+    );
+    
+    const activeIdx = sortedBudgets.findIndex(b => b._id === activeBudget._id);
+    const prevBudget = sortedBudgets[activeIdx + 1];
+    
+    if (!prevBudget) return null;
+    
+    const prevAllocated = prevBudget.items?.reduce((sum, item) => sum + (item.plannedAmount || 0), 0) || 0;
+    if (prevAllocated === 0) return null;
+    
+    const percentChange = ((totalAllocated - prevAllocated) / prevAllocated) * 100;
+    const monthName = new Date(prevBudget.startDate).toLocaleString('default', { month: 'long' });
+    
+    return {
+      percent: Math.abs(percentChange).toFixed(1),
+      isIncrease: percentChange >= 0,
+      prevMonth: monthName
+    };
+  }, [budgets, activeBudget, totalAllocated]);
 
   const handleAddBudgetItem = async (name: string, description: string, allocated: number) => {
     if (!activeBudget) return;
@@ -120,8 +153,9 @@ export function useBudgetOverview() {
     tableData,
     totalAllocated,
     totalSpent,
+    comparison,
     isLoading: isFetchingBudgets,
-    handleUpdateAllocated,
+    handleUpdateItem,
     handleAddBudgetItem,
     handleCreateBudget,
     handleRemoveFromBudget,
