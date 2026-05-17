@@ -1,5 +1,3 @@
-import * as React from "react"
-import { type ColumnDef } from "@tanstack/react-table"
 import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,7 +7,7 @@ import { cn, formatMoneyInput } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
-import { type Transaction, categories, type TransactionCategory } from "../../data/mock-transactions"
+import { type Transaction, type TransactionCategory } from "../../data/mock-transactions"
 import {
   useEditableDateCell,
   useEditableCategoryCell,
@@ -103,10 +101,10 @@ export function EditableCurrencyCell({ initialValue, onSave, className }: { init
   )
 }
 
-export function EditableCategoryCell({ initialValue, onSave }: { initialValue: TransactionCategory, onSave: (val: TransactionCategory) => void }) {
+export function EditableCategoryCell({ initialValue, onSave, categories }: { initialValue: TransactionCategory, onSave: (val: TransactionCategory) => void, categories: Record<string, TransactionCategory> }) {
   const { 
     isEditing, setIsEditing, value, startEditing, handleChange, bgClass, textClass 
-  } = useEditableCategoryCell(initialValue, onSave)
+  } = useEditableCategoryCell(initialValue, onSave, categories)
 
   if (isEditing) {
     return (
@@ -149,12 +147,14 @@ export function EditableCategoryCell({ initialValue, onSave }: { initialValue: T
 
 
 
-function AppendTransactionRow() {
+function AppendTransactionRow({ categories }: { categories: Record<string, TransactionCategory> }) {
   const {
     date, setDate,
     isCalendarOpen, setIsCalendarOpen,
-    amount, handleInteraction, handleAmountChange
+    amount, handleInteraction, handleAmountChange, categoryKey, setCategoryKey
   } = useAppendTransactionRow()
+
+  const hasCategories = Object.keys(categories).length > 0;
 
   return (
     <tr className="border-t-0 bg-[#f4f7f4]/40">
@@ -195,11 +195,17 @@ function AppendTransactionRow() {
         <div className="relative">
           <select 
             className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
-            onChange={handleInteraction}
+            onChange={(e) => {
+              handleInteraction();
+              setCategoryKey(e.target.value);
+            }}
+            value={categoryKey}
+            disabled={!hasCategories}
           >
-            <option value="" disabled selected hidden>Select Category</option>
-            <option value="tech">Technology</option>
-            <option value="food">Dining</option>
+            <option value="" disabled hidden>{hasCategories ? "Select Category" : "No categories"}</option>
+            {Object.entries(categories).map(([key, cat]) => (
+              <option key={key} value={key}>{cat.name}</option>
+            ))}
           </select>
           <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">v</span>
         </div>
@@ -224,8 +230,8 @@ function AppendTransactionRow() {
   )
 }
 
-export function TransactionsTable({ data, onUpdateItem }: { data: Transaction[], onUpdateItem?: (id: string, updates: any) => void }) {
-  const { columns } = useTransactionsTable(onUpdateItem)
+export function TransactionsTable({ data, onUpdateItem, categories = {} }: { data: Transaction[], onUpdateItem?: (id: string, updates: any) => void, categories?: Record<string, TransactionCategory> }) {
+  const { columns } = useTransactionsTable(onUpdateItem, categories)
 
   return (
     <div className="border border-border shadow-sm rounded-xl bg-card relative overflow-hidden flex flex-col">
@@ -233,7 +239,7 @@ export function TransactionsTable({ data, onUpdateItem }: { data: Transaction[],
         columns={columns} 
         data={data} 
         containerClassName="max-h-none h-auto"
-        appendRowComponent={<AppendTransactionRow />}
+        appendRowComponent={<AppendTransactionRow categories={categories} />}
       />
     </div>
   )
