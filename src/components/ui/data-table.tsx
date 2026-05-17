@@ -80,17 +80,13 @@ export function DataTable<TData, TValue>({
               </TableRow>
             )}
           </TableBody>
-        </Table>
-      </div>
-      {appendRowComponent && (
-        <div className="border-t border-muted/40 bg-ds-background/50 rounded-b-xl overflow-hidden mt-auto">
-          <Table>
-            <TableFooter className="hover:bg-transparent border-t-0">
+          {appendRowComponent && (
+            <TableFooter className="hover:bg-transparent border-t border-muted/40 bg-ds-background/80 sticky bottom-0 z-10 backdrop-blur">
               {appendRowComponent}
             </TableFooter>
-          </Table>
-        </div>
-      )}
+          )}
+        </Table>
+      </div>
     </div>
   )
 }

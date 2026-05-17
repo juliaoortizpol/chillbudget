@@ -12,6 +12,17 @@ import { Calendar } from "@/components/ui/calendar"
 import { format, parse } from "date-fns"
 import { type Transaction, categories, type TransactionCategory } from "../data/mock-transactions"
 
+function formatMoneyInput(value: string) {
+  let val = value.replace(/[^\d.-]/g, '');
+  const isNegative = val.startsWith('-');
+  val = val.replace(/-/g, '');
+  const parts = val.split('.');
+  let integerPart = parts[0];
+  const decimalPart = parts.length > 1 ? '.' + parts[1] : '';
+  integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return (isNegative ? '-' : '') + integerPart + decimalPart;
+}
+
 function EditableTextCell({ initialValue, onSave, className }: { initialValue: string, onSave: (val: string) => void, className?: string }) {
   const { isEditing, value, setValue, startEditing, saveEditing, handleKeyDown } = useTableEditor<string>(
     initialValue,
@@ -82,8 +93,8 @@ function EditableDateCell({ initialValue, onSave, className }: { initialValue: s
 
 function EditableCurrencyCell({ initialValue, onSave, className }: { initialValue: number, onSave: (val: number) => void, className?: string }) {
   const { isEditing, value, setValue, startEditing, saveEditing, handleKeyDown } = useTableEditor<string>(
-    initialValue.toString(),
-    (val) => onSave(Number(val) || 0)
+    formatMoneyInput(initialValue.toString()),
+    (val) => onSave(Number(val.replace(/,/g, '')) || 0)
   )
 
   if (isEditing) {
@@ -91,7 +102,7 @@ function EditableCurrencyCell({ initialValue, onSave, className }: { initialValu
       <Input
         autoFocus
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => setValue(formatMoneyInput(e.target.value))}
         onKeyDown={handleKeyDown}
         onBlur={saveEditing}
         className={cn("h-7 px-2 py-0 text-sm w-24", className)}
@@ -245,6 +256,13 @@ function getColumns(onUpdateItem: (id: string, updates: any) => void): ColumnDef
 function AppendTransactionRow() {
   const [date, setDate] = React.useState<Date | undefined>()
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false)
+  const [amount, setAmount] = React.useState("")
+
+  const handleInteraction = () => {
+    if (!date) {
+      setDate(new Date())
+    }
+  }
 
   return (
     <tr className="border-t-0 bg-[#f4f7f4]/40">
@@ -275,11 +293,18 @@ function AppendTransactionRow() {
         </Popover>
       </td>
       <td className="p-2">
-        <Input placeholder="Enter description..." className="h-9 bg-background" />
+        <Input 
+          placeholder="Enter description..." 
+          className="h-9 bg-background" 
+          onChange={handleInteraction}
+        />
       </td>
       <td className="p-2">
         <div className="relative">
-          <select className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none">
+          <select 
+            className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
+            onChange={handleInteraction}
+          >
             <option value="" disabled selected hidden>Select Category</option>
             <option value="tech">Technology</option>
             <option value="food">Dining</option>
@@ -290,7 +315,15 @@ function AppendTransactionRow() {
       <td className="p-2">
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
-          <Input placeholder="0.00" className="h-9 w-24 bg-background pl-7 font-medium" />
+          <Input 
+            placeholder="0.00" 
+            className="h-9 w-24 bg-background pl-7 font-medium" 
+            value={amount}
+            onChange={(e) => {
+              handleInteraction()
+              setAmount(formatMoneyInput(e.target.value))
+            }}
+          />
         </div>
       </td>
       <td className="p-2 pr-4 text-right">
