@@ -1,29 +1,23 @@
 import * as React from "react"
 import { type ColumnDef } from "@tanstack/react-table"
 import { DataTable } from "@/components/ui/data-table"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Calendar as CalendarIcon, Plus } from "lucide-react"
 import { useTableEditor } from "@/hooks/useTableEditor"
-import { cn } from "@/lib/utils"
+import { cn, formatMoneyInput } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { format, parse } from "date-fns"
-import { type Transaction, categories, type TransactionCategory } from "../data/mock-transactions"
+import { format } from "date-fns"
+import { type Transaction, categories, type TransactionCategory } from "../../data/mock-transactions"
+import {
+  useEditableDateCell,
+  useEditableCategoryCell,
+  useAppendTransactionRow,
+  useTransactionsTable
+} from "./useTransactionsTable"
 
-function formatMoneyInput(value: string) {
-  let val = value.replace(/[^\d.-]/g, '');
-  const isNegative = val.startsWith('-');
-  val = val.replace(/-/g, '');
-  const parts = val.split('.');
-  let integerPart = parts[0];
-  const decimalPart = parts.length > 1 ? '.' + parts[1] : '';
-  integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  return (isNegative ? '-' : '') + integerPart + decimalPart;
-}
-
-function EditableTextCell({ initialValue, onSave, className }: { initialValue: string, onSave: (val: string) => void, className?: string }) {
+export function EditableTextCell({ initialValue, onSave, className }: { initialValue: string, onSave: (val: string) => void, className?: string }) {
   const { isEditing, value, setValue, startEditing, saveEditing, handleKeyDown } = useTableEditor<string>(
     initialValue,
     onSave
@@ -52,26 +46,8 @@ function EditableTextCell({ initialValue, onSave, className }: { initialValue: s
   )
 }
 
-function EditableDateCell({ initialValue, onSave, className }: { initialValue: string, onSave: (val: string) => void, className?: string }) {
-  const [date, setDate] = React.useState<Date | undefined>(() => {
-    try {
-      const parsed = parse(initialValue, "MMM d, yyyy", new Date())
-      if (!isNaN(parsed.getTime())) return parsed
-    } catch(e) {}
-    return undefined
-  })
-  const [isOpen, setIsOpen] = React.useState(false)
-
-  const handleSelect = (newDate: Date | undefined) => {
-    if (newDate) {
-      setDate(newDate)
-      setIsOpen(false)
-      const formattedStr = format(newDate, "MMM d, yyyy")
-      if (formattedStr !== initialValue) {
-        onSave(formattedStr)
-      }
-    }
-  }
+export function EditableDateCell({ initialValue, onSave, className }: { initialValue: string, onSave: (val: string) => void, className?: string }) {
+  const { date, isOpen, setIsOpen, handleSelect } = useEditableDateCell(initialValue, onSave)
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -91,7 +67,7 @@ function EditableDateCell({ initialValue, onSave, className }: { initialValue: s
   )
 }
 
-function EditableCurrencyCell({ initialValue, onSave, className }: { initialValue: number, onSave: (val: number) => void, className?: string }) {
+export function EditableCurrencyCell({ initialValue, onSave, className }: { initialValue: number, onSave: (val: number) => void, className?: string }) {
   const { isEditing, value, setValue, startEditing, saveEditing, handleKeyDown } = useTableEditor<string>(
     formatMoneyInput(initialValue.toString()),
     (val) => onSave(Number(val.replace(/,/g, '')) || 0)
@@ -127,25 +103,10 @@ function EditableCurrencyCell({ initialValue, onSave, className }: { initialValu
   )
 }
 
-function EditableCategoryCell({ initialValue, onSave }: { initialValue: TransactionCategory, onSave: (val: TransactionCategory) => void }) {
-  const [isEditing, setIsEditing] = React.useState(false)
-  const [value, setValue] = React.useState(initialValue)
-
-  React.useEffect(() => {
-    setValue(initialValue)
-  }, [initialValue])
-
-  const startEditing = () => setIsEditing(true)
-
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedKey = e.target.value
-    const selectedCategory = categories[selectedKey]
-    if (selectedCategory) {
-      setValue(selectedCategory)
-      setIsEditing(false)
-      onSave(selectedCategory)
-    }
-  }
+export function EditableCategoryCell({ initialValue, onSave }: { initialValue: TransactionCategory, onSave: (val: TransactionCategory) => void }) {
+  const { 
+    isEditing, setIsEditing, value, startEditing, handleChange, bgClass, textClass 
+  } = useEditableCategoryCell(initialValue, onSave)
 
   if (isEditing) {
     return (
@@ -162,20 +123,6 @@ function EditableCategoryCell({ initialValue, onSave }: { initialValue: Transact
         ))}
       </select>
     )
-  }
-
-  const isOverBudget = value.budgetUsedPercentage !== undefined && value.budgetUsedPercentage >= 100
-  const isUnderBudget = value.budgetUsedPercentage !== undefined && value.budgetUsedPercentage < 100
-
-  let bgClass = value.iconBgClass
-  let textClass = value.iconColor
-
-  if (isOverBudget) {
-    bgClass = "bg-red-500/10"
-    textClass = "text-red-700"
-  } else if (isUnderBudget) {
-    bgClass = "bg-emerald-500/10"
-    textClass = "text-emerald-700"
   }
 
   return (
@@ -200,69 +147,14 @@ function EditableCategoryCell({ initialValue, onSave }: { initialValue: Transact
   )
 }
 
-function getColumns(onUpdateItem: (id: string, updates: any) => void): ColumnDef<Transaction>[] {
-  return [
-    {
-      accessorKey: "date",
-      header: () => <div className="px-1">DATE</div>,
-      cell: ({ row }) => (
-        <EditableDateCell 
-          initialValue={row.original.date}
-          onSave={(val) => onUpdateItem(row.original.id, { date: val })}
-          className="font-medium text-muted-foreground"
-        />
-      ),
-    },
-    {
-      accessorKey: "description",
-      header: "DESCRIPTION",
-      cell: ({ row }) => (
-        <EditableTextCell 
-          initialValue={row.original.description}
-          onSave={(val) => onUpdateItem(row.original.id, { description: val })}
-          className="font-bold text-foreground"
-        />
-      ),
-    },
-    {
-      accessorKey: "category",
-      header: "CATEGORY",
-      cell: ({ row }) => (
-        <EditableCategoryCell 
-          initialValue={row.original.category}
-          onSave={(val) => onUpdateItem(row.original.id, { category: val })}
-        />
-      ),
-    },
-    {
-      accessorKey: "amount",
-      header: "AMOUNT",
-      cell: ({ row }) => (
-        <EditableCurrencyCell 
-          initialValue={row.original.amount}
-          onSave={(val) => onUpdateItem(row.original.id, { amount: val })}
-          className="font-bold"
-        />
-      ),
-    },
-    {
-      id: "actions",
-      header: () => null,
-      cell: () => null,
-    },
-  ]
-}
+
 
 function AppendTransactionRow() {
-  const [date, setDate] = React.useState<Date | undefined>()
-  const [isCalendarOpen, setIsCalendarOpen] = React.useState(false)
-  const [amount, setAmount] = React.useState("")
-
-  const handleInteraction = () => {
-    if (!date) {
-      setDate(new Date())
-    }
-  }
+  const {
+    date, setDate,
+    isCalendarOpen, setIsCalendarOpen,
+    amount, handleInteraction, handleAmountChange
+  } = useAppendTransactionRow()
 
   return (
     <tr className="border-t-0 bg-[#f4f7f4]/40">
@@ -319,10 +211,7 @@ function AppendTransactionRow() {
             placeholder="0.00" 
             className="h-9 w-24 bg-background pl-7 font-medium" 
             value={amount}
-            onChange={(e) => {
-              handleInteraction()
-              setAmount(formatMoneyInput(e.target.value))
-            }}
+            onChange={handleAmountChange}
           />
         </div>
       </td>
@@ -336,7 +225,7 @@ function AppendTransactionRow() {
 }
 
 export function TransactionsTable({ data, onUpdateItem }: { data: Transaction[], onUpdateItem?: (id: string, updates: any) => void }) {
-  const columns = React.useMemo(() => getColumns(onUpdateItem || (() => {})), [onUpdateItem])
+  const { columns } = useTransactionsTable(onUpdateItem)
 
   return (
     <div className="border border-border shadow-sm rounded-xl bg-card relative overflow-hidden flex flex-col">
