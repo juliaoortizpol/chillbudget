@@ -1,6 +1,6 @@
 import * as React from "react"
 import { format, parse } from "date-fns"
-import { categories, type TransactionCategory, type Transaction } from "../../data/mock-transactions"
+import { type TransactionCategory, type Transaction } from "../../data/mock-transactions"
 import { type ColumnDef } from "@tanstack/react-table"
 import {
   EditableDateCell,
@@ -34,11 +34,13 @@ export function useEditableDateCell(initialValue: string, onSave: (val: string) 
   return { date, isOpen, setIsOpen, handleSelect }
 }
 
-export function useEditableCategoryCell(initialValue: TransactionCategory, onSave: (val: TransactionCategory) => void) {
+export function useEditableCategoryCell(initialValue: TransactionCategory, onSave: (val: TransactionCategory) => void, categories: Record<string, TransactionCategory>) {
   const [isEditing, setIsEditing] = React.useState(false)
   const [value, setValue] = React.useState(initialValue)
 
   React.useEffect(() => {
+    // If the active budget changes, initialValue might not be valid anymore
+    // but for now we just sync it
     setValue(initialValue)
   }, [initialValue])
 
@@ -83,6 +85,7 @@ export function useAppendTransactionRow() {
   const [date, setDate] = React.useState<Date | undefined>()
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false)
   const [amount, setAmount] = React.useState("")
+  const [categoryKey, setCategoryKey] = React.useState("")
 
   const handleInteraction = () => {
     if (!date) {
@@ -102,11 +105,13 @@ export function useAppendTransactionRow() {
     setIsCalendarOpen,
     amount,
     handleInteraction,
-    handleAmountChange
+    handleAmountChange,
+    categoryKey,
+    setCategoryKey
   }
 }
 
-export function useTransactionsTable(onUpdateItem?: (id: string, updates: any) => void) {
+export function useTransactionsTable(onUpdateItem?: (id: string, updates: any) => void, categories: Record<string, TransactionCategory> = {}) {
   const safeOnUpdateItem = onUpdateItem || (() => {})
 
   const columns = React.useMemo<ColumnDef<Transaction>[]>(() => [
@@ -139,6 +144,7 @@ export function useTransactionsTable(onUpdateItem?: (id: string, updates: any) =
         <EditableCategoryCell 
           initialValue={row.original.category}
           onSave={(val) => safeOnUpdateItem(row.original.id, { category: val })}
+          categories={categories}
         />
       ),
     },

@@ -3,10 +3,12 @@ import { LoginPage, OAuthCallback } from "@/features/auth"
 import { DashboardLayout } from "@/features/dashboard"
 import { BudgetOverview } from "@/features/budget"
 import { TransactionsPage } from "@/features/transactions"
+import { BudgetProvider } from "@/features/budget/context/BudgetContext"
 
 function App() {
   return (
     <BrowserRouter>
+      <BudgetProvider>
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/dashboard" element={<DashboardLayout />} />
@@ -15,6 +17,7 @@ function App() {
         <Route path="/transactions" element={<TransactionsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </BudgetProvider>
     </BrowserRouter>
   )
 }
