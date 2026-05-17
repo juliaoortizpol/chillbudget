@@ -6,6 +6,7 @@ export type TransactionCategory = {
   icon: React.ReactNode
   iconBgClass: string
   iconColor: string
+  budgetUsedPercentage: number
 }
 
 export type Transaction = {
@@ -21,37 +22,43 @@ export const categories: Record<string, TransactionCategory> = {
     name: "Technology",
     icon: <Laptop className="w-4 h-4" />,
     iconBgClass: "bg-blue-500/10",
-    iconColor: "text-blue-700"
+    iconColor: "text-blue-700",
+    budgetUsedPercentage: 85
   },
   investment: {
     name: "Investment",
     icon: <TrendingUp className="w-4 h-4" />,
     iconBgClass: "bg-green-500/10",
-    iconColor: "text-green-700"
+    iconColor: "text-green-700",
+    budgetUsedPercentage: 40
   },
   dining: {
     name: "Dining",
     icon: <Utensils className="w-4 h-4" />,
     iconBgClass: "bg-red-500/10",
-    iconColor: "text-red-700"
+    iconColor: "text-red-700",
+    budgetUsedPercentage: 100
   },
   income: {
     name: "Income",
     icon: <Wallet className="w-4 h-4" />,
     iconBgClass: "bg-emerald-500/10",
-    iconColor: "text-emerald-700"
+    iconColor: "text-emerald-700",
+    budgetUsedPercentage: 10
   },
   transport: {
     name: "Transport",
     icon: <Zap className="w-4 h-4" />,
     iconBgClass: "bg-indigo-500/10",
-    iconColor: "text-indigo-700"
+    iconColor: "text-indigo-700",
+    budgetUsedPercentage: 60
   },
   housing: {
     name: "Housing",
     icon: <Home className="w-4 h-4" />,
     iconBgClass: "bg-stone-500/10",
-    iconColor: "text-stone-700"
+    iconColor: "text-stone-700",
+    budgetUsedPercentage: 100
   }
 }
 

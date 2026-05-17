@@ -153,15 +153,38 @@ function EditableCategoryCell({ initialValue, onSave }: { initialValue: Transact
     )
   }
 
+  const isOverBudget = value.budgetUsedPercentage !== undefined && value.budgetUsedPercentage >= 100
+  const isUnderBudget = value.budgetUsedPercentage !== undefined && value.budgetUsedPercentage < 100
+
+  let bgClass = value.iconBgClass
+  let textClass = value.iconColor
+
+  if (isOverBudget) {
+    bgClass = "bg-red-500/10"
+    textClass = "text-red-700"
+  } else if (isUnderBudget) {
+    bgClass = "bg-emerald-500/10"
+    textClass = "text-emerald-700"
+  }
+
   return (
     <div 
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold w-fit cursor-pointer hover:opacity-80 transition-opacity"
-      style={{ backgroundColor: value.iconBgClass.replace("/10", ""), color: "inherit" }}
+      className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold w-fit cursor-pointer hover:opacity-80 transition-opacity", bgClass)}
       onClick={startEditing}
     >
-      <span className={value.iconColor}>{value.icon}</span>
-      <span className={value.iconColor}>{value.name}</span>
-      <div className={`w-2.5 h-2.5 rounded-full border-2 ml-1 ${value.iconColor.replace("text-", "border-")}`} />
+      <span className={textClass}>{value.icon}</span>
+      <span className={textClass}>{value.name}</span>
+      {value.budgetUsedPercentage !== undefined && (
+        <svg className={cn("ml-1 w-3.5 h-3.5 transform -rotate-90", textClass)} viewBox="0 0 20 20">
+          <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="3" className="opacity-20" />
+          <circle 
+            cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="3" 
+            strokeDasharray={`${2 * Math.PI * 8}`} 
+            strokeDashoffset={`${2 * Math.PI * 8 * (1 - Math.min(value.budgetUsedPercentage, 100) / 100)}`} 
+            strokeLinecap="round" 
+          />
+        </svg>
+      )}
     </div>
   )
 }
@@ -170,7 +193,7 @@ function getColumns(onUpdateItem: (id: string, updates: any) => void): ColumnDef
   return [
     {
       accessorKey: "date",
-      header: "DATE",
+      header: () => <div className="px-1">DATE</div>,
       cell: ({ row }) => (
         <EditableDateCell 
           initialValue={row.original.date}
