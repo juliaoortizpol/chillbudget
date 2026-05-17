@@ -6,7 +6,7 @@ import { Pagination } from "./components/Pagination"
 import { mockTransactions } from "./data/mock-transactions"
 import { useGlobalBudget } from "../budget/context/BudgetContext"
 import { getIcon } from "../budget/utils/icons"
-import { AlertCircle } from "lucide-react"
+import { Disclaimer } from "@/components/ui/disclaimer"
 
 export function TransactionsPage() {
   const [transactions, setTransactions] = useState(mockTransactions)
@@ -64,13 +64,11 @@ export function TransactionsPage() {
             {/* Content Area */}
             <div className="flex flex-col gap-6">
               {!hasCategories && !isLoading && (
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h3 className="text-amber-800 font-semibold text-sm">No Categories Found</h3>
-                    <p className="text-amber-700/80 text-sm mt-1">You need to create budget categories before adding or categorizing transactions.</p>
-                  </div>
-                </div>
+                <Disclaimer 
+                  type="warning"
+                  title="No Categories Found"
+                  text="You need to create budget categories before adding or categorizing transactions."
+                />
               )}
               
               <TransactionsFilterBar />
