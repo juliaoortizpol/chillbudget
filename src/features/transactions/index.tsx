@@ -11,8 +11,7 @@ import { AlertCircle } from "lucide-react"
 export function TransactionsPage() {
   const [transactions, setTransactions] = useState(mockTransactions)
 
-  const { budgets, isFetchingBudgets } = useGlobalBudget();
-  const activeBudget = budgets?.find(b => b.status === 'active') || budgets?.[0];
+  const { activeBudget, isFetchingBudgets } = useGlobalBudget();
   const isLoading = isFetchingBudgets;
   
   const dynamicCategories = React.useMemo(() => {

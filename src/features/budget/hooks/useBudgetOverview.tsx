@@ -15,6 +15,7 @@ export function useBudgetOverview() {
     deleteBudgetItem,
     addBudgetItem,
     isFetchingBudgets,
+    activeBudget,
   } = useGlobalBudget();
 
   const handleCreateBudget = async () => {
@@ -32,9 +33,7 @@ export function useBudgetOverview() {
     await fetchBudgets();
   };
 
-  // Use the first active budget or fallback to the first budget
-  const activeBudget = budgets?.find(b => b.status === 'active') || budgets?.[0];
-
+  // Active budget is now provided by useGlobalBudget
   const tableData: BudgetCategory[] = useMemo(() => {
     if (!activeBudget || !activeBudget.items) return [];
 

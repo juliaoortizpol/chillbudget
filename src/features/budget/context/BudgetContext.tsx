@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useEffect, useRef } from 'react';
-import { useBudget } from '../hooks/useBudget';
+import React, { createContext, useContext, useEffect, useRef, useMemo } from 'react';
+import { useBudget, type Budget } from '../hooks/useBudget';
 
-type BudgetContextType = ReturnType<typeof useBudget>;
+type BudgetContextType = Omit<ReturnType<typeof useBudget>, 'activeBudget'> & {
+  activeBudget: Budget | undefined;
+};
 
 const BudgetContext = createContext<BudgetContextType | null>(null);
 
@@ -20,8 +22,12 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
     }
   }, [budget.fetchBudgets]);
 
+  const activeBudget = useMemo(() => {
+    return budget.budgets?.find(b => b.status === 'active') || budget.budgets?.[0];
+  }, [budget.budgets]);
+
   return (
-    <BudgetContext.Provider value={budget}>
+    <BudgetContext.Provider value={{ ...budget, activeBudget }}>
       {children}
     </BudgetContext.Provider>
   );

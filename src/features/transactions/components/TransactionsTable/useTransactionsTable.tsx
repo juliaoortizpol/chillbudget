@@ -164,7 +164,7 @@ export function useTransactionsTable(onUpdateItem?: (id: string, updates: any) =
       header: () => null,
       cell: () => null,
     },
-  ], [safeOnUpdateItem])
+  ], [safeOnUpdateItem, categories])
 
   return {
     columns
