@@ -79,7 +79,7 @@ export function EditableCurrencyCell({ initialValue, onSave, className }: { init
         onChange={(e) => setValue(formatMoneyInput(e.target.value))}
         onKeyDown={handleKeyDown}
         onBlur={saveEditing}
-        className={cn("h-7 px-2 py-0 text-sm w-24", className)}
+        className={cn("h-7 px-2 py-0 text-sm w-36", className)}
       />
     )
   }
@@ -147,11 +147,12 @@ export function EditableCategoryCell({ initialValue, onSave, categories }: { ini
 
 
 
-function AppendTransactionRow({ categories }: { categories: Record<string, TransactionCategory> }) {
+function AppendTransactionRow({ categories, onAppend }: { categories: Record<string, TransactionCategory>, onAppend?: (data: any) => void }) {
   const {
     date, setDate,
     isCalendarOpen, setIsCalendarOpen,
-    amount, handleInteraction, handleAmountChange, categoryKey, setCategoryKey
+    amount, setAmount, handleInteraction, handleAmountChange, categoryKey, setCategoryKey,
+    description, setDescription
   } = useAppendTransactionRow()
 
   const hasCategories = Object.keys(categories).length > 0;
@@ -188,7 +189,11 @@ function AppendTransactionRow({ categories }: { categories: Record<string, Trans
         <Input 
           placeholder="Enter description..." 
           className="h-9 bg-background" 
-          onChange={handleInteraction}
+          value={description}
+          onChange={(e) => {
+            handleInteraction();
+            setDescription(e.target.value);
+          }}
         />
       </td>
       <td className="p-2">
@@ -215,14 +220,27 @@ function AppendTransactionRow({ categories }: { categories: Record<string, Trans
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
           <Input 
             placeholder="0.00" 
-            className="h-9 w-24 bg-background pl-7 font-medium" 
+            className="h-9 w-36 bg-background pl-7 font-medium" 
             value={amount}
             onChange={handleAmountChange}
           />
         </div>
       </td>
       <td className="p-2 pr-4 text-right">
-        <Button size="icon" className="h-9 w-9 bg-[#05603A] hover:bg-[#05603A]/90 text-white rounded-lg shrink-0">
+        <Button 
+          size="icon" 
+          className="h-9 w-9 bg-[#05603A] hover:bg-[#05603A]/90 text-white rounded-lg shrink-0"
+          onClick={() => {
+            if (onAppend && description && amount && categoryKey) {
+              onAppend({ date, description, categoryKey, amount });
+              // Reset
+              setDescription("");
+              setAmount("");
+              setCategoryKey("");
+            }
+          }}
+          disabled={!description || !amount || !categoryKey}
+        >
           <Plus className="w-5 h-5" />
         </Button>
       </td>
@@ -230,8 +248,8 @@ function AppendTransactionRow({ categories }: { categories: Record<string, Trans
   )
 }
 
-export function TransactionsTable({ data, onUpdateItem, categories = {} }: { data: Transaction[], onUpdateItem?: (id: string, updates: any) => void, categories?: Record<string, TransactionCategory> }) {
-  const { columns } = useTransactionsTable(onUpdateItem, categories)
+export function TransactionsTable({ data, onUpdateItem, onDeleteItem, onAppendItem, categories = {} }: { data: Transaction[], onUpdateItem?: (id: string, updates: any) => void, onDeleteItem?: (id: string) => void, onAppendItem?: (data: any) => void, categories?: Record<string, TransactionCategory> }) {
+  const { columns } = useTransactionsTable(onUpdateItem, onDeleteItem, categories)
 
   return (
     <div className="border border-border shadow-sm rounded-xl bg-card relative overflow-hidden flex flex-col">
@@ -239,7 +257,7 @@ export function TransactionsTable({ data, onUpdateItem, categories = {} }: { dat
         columns={columns} 
         data={data} 
         containerClassName="max-h-none h-auto"
-        appendRowComponent={<AppendTransactionRow categories={categories} />}
+        appendRowComponent={<AppendTransactionRow categories={categories} onAppend={onAppendItem} />}
       />
     </div>
   )

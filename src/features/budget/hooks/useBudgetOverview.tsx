@@ -109,9 +109,41 @@ export function useBudgetOverview() {
   }, [budgets, activeBudget, totalAllocated]);
 
   const handleAddBudgetItem = async (name: string, description: string, allocated: number) => {
-    if (!activeBudget) return;
+    let budgetId = activeBudget?._id;
 
-    await addBudgetItem(activeBudget._id, {
+    if (!budgetId) {
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+      try {
+        const newBudget = await createBudget({
+          name: `Budget ${now.toLocaleString('default', { month: 'long', year: 'numeric' })}`,
+          periodType: 'monthly',
+          startDate: start.toISOString(),
+          endDate: end.toISOString(),
+          status: 'active'
+        });
+
+        if (newBudget && newBudget._id) {
+          budgetId = newBudget._id;
+        } else {
+          const freshBudgets = await fetchBudgets();
+          const activeOrFirst = freshBudgets?.find((b: any) => b.status === 'active') || freshBudgets?.[0];
+          if (activeOrFirst?._id) {
+            budgetId = activeOrFirst._id;
+          } else {
+            console.error("Failed to automatically initialize a budget.");
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Error auto-creating budget:", err);
+        return;
+      }
+    }
+
+    await addBudgetItem(budgetId, {
       name,
       description,
       type: "expense",

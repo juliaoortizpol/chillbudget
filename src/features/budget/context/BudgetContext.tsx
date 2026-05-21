@@ -15,12 +15,29 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
     // We can rely on the JWT token existence or let useFetch handle the error
     // We only want to fetch once when the provider mounts
     if (!hasFetched.current) {
-      budget.fetchBudgets().catch(() => {
+      budget.fetchBudgets().then((list) => {
+        if (!list || list.length === 0) {
+          const now = new Date();
+          const start = new Date(now.getFullYear(), now.getMonth(), 1);
+          const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+          budget.createBudget({
+            name: `Budget ${now.toLocaleString('default', { month: 'long', year: 'numeric' })}`,
+            periodType: 'monthly',
+            startDate: start.toISOString(),
+            endDate: end.toISOString(),
+            status: 'active'
+          }).then(() => {
+            budget.fetchBudgets();
+          }).catch((err) => {
+            console.error("Failed to auto-create budget on mount:", err);
+          });
+        }
+      }).catch(() => {
         // Ignored, might not be logged in yet
       });
       hasFetched.current = true;
     }
-  }, [budget.fetchBudgets]);
+  }, [budget.fetchBudgets, budget.createBudget]);
 
   const activeBudget = useMemo(() => {
     return budget.budgets?.find(b => b.status === 'active') || budget.budgets?.[0];
