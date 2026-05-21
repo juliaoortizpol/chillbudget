@@ -1,18 +1,27 @@
-import React, { useState } from "react"
+import React, { useEffect, useMemo } from "react"
 import { Sidebar } from "@/components/Sidebar"
 import { TransactionsFilterBar } from "./components/TransactionsFilterBar"
 import { TransactionsTable } from "./components/TransactionsTable"
 import { Pagination } from "./components/Pagination"
-import { mockTransactions } from "./data/mock-transactions"
 import { useGlobalBudget } from "../budget/context/BudgetContext"
 import { getIcon } from "../budget/utils/icons"
 import { Disclaimer } from "@/components/ui/disclaimer"
+import { useTransactions } from "./hooks/useTransactions"
+import { format } from "date-fns"
+import { type TransactionCategory } from "./data/mock-transactions"
 
 export function TransactionsPage() {
-  const [transactions, setTransactions] = useState(mockTransactions)
-
   const { activeBudget, isFetchingBudgets } = useGlobalBudget();
-  const isLoading = isFetchingBudgets;
+  const { 
+    transactionsData, fetchTransactions, isFetchingTransactions, 
+    updateTransaction, createTransaction, deleteTransaction 
+  } = useTransactions();
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
+
+  const isLoading = isFetchingBudgets || isFetchingTransactions;
   
   const dynamicCategories = React.useMemo(() => {
     if (!activeBudget || !activeBudget.items) return {};
@@ -39,8 +48,62 @@ export function TransactionsPage() {
 
   const hasCategories = Object.keys(dynamicCategories).length > 0;
 
-  const handleUpdateItem = (id: string, updates: any) => {
-    setTransactions(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t))
+  const uiTransactions = useMemo(() => {
+    if (!transactionsData?.data) return [];
+    return transactionsData.data.map(t => {
+      let cat = dynamicCategories[t.budgetItemId || ''];
+      if (!cat) {
+        cat = {
+          id: t.budgetItemId || '',
+          name: 'Uncategorized',
+          icon: <span />,
+          iconBgClass: 'bg-gray-500/10',
+          iconColor: 'text-gray-500'
+        } as unknown as TransactionCategory;
+      }
+
+      return {
+        id: t._id,
+        date: format(new Date(t.date), "MMM d, yyyy"),
+        description: t.name,
+        category: cat,
+        amount: t.type === 'expense' ? -t.amount : t.amount
+      }
+    });
+  }, [transactionsData, dynamicCategories]);
+
+  const handleUpdateItem = async (id: string, updates: any) => {
+    const dto: any = {};
+    if (updates.description !== undefined) dto.name = updates.description;
+    if (updates.amount !== undefined) {
+      dto.amount = Math.abs(updates.amount);
+      dto.type = updates.amount < 0 ? 'expense' : 'income';
+    }
+    if (updates.date !== undefined) dto.date = new Date(updates.date).toISOString();
+    if (updates.category !== undefined) dto.budgetItemId = updates.category.id;
+    
+    await updateTransaction(id, dto);
+    await fetchTransactions();
+  }
+
+  const handleDeleteItem = async (id: string) => {
+    await deleteTransaction(id);
+    await fetchTransactions();
+  }
+
+  const handleAppendItem = async (data: any) => {
+    const cleanAmount = (data.amount || "").replace(/,/g, "");
+    const parsedAmount = parseFloat(cleanAmount) || 0;
+    
+    const dto = {
+      name: data.description,
+      amount: Math.abs(parsedAmount),
+      type: parsedAmount < 0 ? 'expense' : 'income' as 'expense' | 'income',
+      date: new Date(data.date).toISOString(),
+      budgetItemId: data.categoryKey
+    };
+    await createTransaction(dto);
+    await fetchTransactions();
   }
   return (
     <div className="min-h-screen flex w-full bg-ds-background">
@@ -74,8 +137,20 @@ export function TransactionsPage() {
               <TransactionsFilterBar />
               
               <div className="flex flex-col gap-2">
-                <TransactionsTable data={transactions} onUpdateItem={handleUpdateItem} categories={dynamicCategories} />
-                <Pagination />
+                {isLoading && !uiTransactions.length ? (
+                  <div className="p-8 text-center text-muted-foreground">Loading transactions...</div>
+                ) : (
+                  <>
+                    <TransactionsTable 
+                      data={uiTransactions as any} 
+                      onUpdateItem={handleUpdateItem} 
+                      onDeleteItem={handleDeleteItem}
+                      onAppendItem={handleAppendItem}
+                      categories={dynamicCategories} 
+                    />
+                    <Pagination />
+                  </>
+                )}
               </div>
             </div>
 

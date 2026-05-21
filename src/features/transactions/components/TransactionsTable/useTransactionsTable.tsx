@@ -86,6 +86,7 @@ export function useAppendTransactionRow() {
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false)
   const [amount, setAmount] = React.useState("")
   const [categoryKey, setCategoryKey] = React.useState("")
+  const [description, setDescription] = React.useState("")
 
   const handleInteraction = () => {
     if (!date) {
@@ -104,15 +105,19 @@ export function useAppendTransactionRow() {
     isCalendarOpen,
     setIsCalendarOpen,
     amount,
+    setAmount,
     handleInteraction,
     handleAmountChange,
     categoryKey,
-    setCategoryKey
+    setCategoryKey,
+    description,
+    setDescription,
   }
 }
 
-export function useTransactionsTable(onUpdateItem?: (id: string, updates: any) => void, categories: Record<string, TransactionCategory> = {}) {
+export function useTransactionsTable(onUpdateItem?: (id: string, updates: any) => void, onDeleteItem?: (id: string) => void, categories: Record<string, TransactionCategory> = {}) {
   const safeOnUpdateItem = onUpdateItem || (() => {})
+  const safeOnDeleteItem = onDeleteItem || (() => {})
 
   const columns = React.useMemo<ColumnDef<Transaction>[]>(() => [
     {
@@ -162,9 +167,19 @@ export function useTransactionsTable(onUpdateItem?: (id: string, updates: any) =
     {
       id: "actions",
       header: () => null,
-      cell: () => null,
+      cell: ({ row }) => (
+        <div className="flex justify-end px-2">
+          <button 
+            onClick={() => safeOnDeleteItem(row.original.id)}
+            className="text-red-500 hover:text-red-700 p-1 rounded transition-colors"
+            title="Delete transaction"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          </button>
+        </div>
+      ),
     },
-  ], [safeOnUpdateItem, categories])
+  ], [safeOnUpdateItem, safeOnDeleteItem, categories])
 
   return {
     columns

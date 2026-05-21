@@ -29,7 +29,7 @@ export type BudgetCategory = {
 function EditableCurrencyCell({ initialValue, onSave }: { initialValue: number, onSave: (val: number) => void }) {
   const { isEditing, value, setValue, startEditing, saveEditing, handleKeyDown } = useTableEditor<string>(
     initialValue.toString(),
-    (val) => onSave(Number(val) || 0)
+    (val) => onSave(Number(val.replace(/,/g, '')) || 0)
   )
 
   if (isEditing) {
@@ -40,14 +40,14 @@ function EditableCurrencyCell({ initialValue, onSave }: { initialValue: number, 
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
         onBlur={saveEditing}
-        className="w-24 h-8 text-sm font-bold mx-auto text-center"
+        className="w-36 h-8 text-sm font-bold mx-auto text-center"
       />
     )
   }
 
   return (
     <div 
-      className="cursor-pointer hover:bg-muted/50 p-1.5 rounded-md border border-transparent hover:border-border transition-colors w-24 text-center font-bold mx-auto"
+      className="cursor-pointer hover:bg-muted/50 p-1.5 rounded-md border border-transparent hover:border-border transition-colors w-36 text-center font-bold mx-auto"
       onClick={startEditing}
     >
       ${initialValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -215,14 +215,20 @@ function getColumns(
   ]
 }
 
-function AppendCategoryRow({ onCreate }: { onCreate: (name: string, description: string, allocated: number) => void }) {
+function AppendCategoryRow({ 
+  onCreate, 
+  nameInputRef 
+}: { 
+  onCreate: (name: string, description: string, allocated: number) => void,
+  nameInputRef?: React.RefObject<HTMLInputElement | null>
+}) {
   const [name, setName] = React.useState("")
   const [description, setDescription] = React.useState("")
   const [allocated, setAllocated] = React.useState("")
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && name.trim()) {
-      onCreate(name, description, Number(allocated) || 0)
+      onCreate(name, description, Number(allocated.replace(/,/g, '')) || 0)
       setName("")
       setDescription("")
       setAllocated("")
@@ -238,6 +244,7 @@ function AppendCategoryRow({ onCreate }: { onCreate: (name: string, description:
           </div>
           <div className="flex flex-col gap-1 w-full max-w-[200px]">
             <Input 
+              ref={nameInputRef}
               placeholder="New Item Name" 
               value={name}
               onChange={e => setName(e.target.value)}
@@ -255,7 +262,7 @@ function AppendCategoryRow({ onCreate }: { onCreate: (name: string, description:
         </div>
       </TableCell>
       <TableCell className="text-center py-2">
-        <div className="relative w-24 mx-auto">
+        <div className="relative w-36 mx-auto">
           <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-bold">$</span>
           <Input 
             placeholder="0.00" 
@@ -276,7 +283,21 @@ function AppendCategoryRow({ onCreate }: { onCreate: (name: string, description:
       </TableCell>
       <TableCell className="text-right py-2 pr-6">
         <div className="flex justify-end pr-2">
-          <div className="w-5 h-5" />
+          <Button 
+            size="icon" 
+            className="h-8 w-8 bg-[#05603A] hover:bg-[#05603A]/90 text-white rounded-lg shrink-0"
+            onClick={() => {
+              if (name.trim()) {
+                onCreate(name, description, Number(allocated.replace(/,/g, '')) || 0)
+                setName("")
+                setDescription("")
+                setAllocated("")
+              }
+            }}
+            disabled={!name.trim()}
+          >
+            <Plus className="w-4 h-4" strokeWidth={3} />
+          </Button>
         </div>
       </TableCell>
     </TableRow>
@@ -299,6 +320,7 @@ export function CategoryTable({
   isLoading 
 }: CategoryTableProps) {
   const columns = React.useMemo(() => getColumns(onUpdateItem, onDeleteItem), [onUpdateItem, onDeleteItem]);
+  const nameInputRef = React.useRef<HTMLInputElement>(null);
 
   return (
     <div className="border border-border shadow-sm rounded-xl bg-card p-1 relative overflow-hidden">
@@ -310,7 +332,10 @@ export function CategoryTable({
       <div className="flex justify-between items-center mb-4 px-4 pt-4">
         <h2 className="text-xl font-extrabold tracking-tight">Budget Items</h2>
         <div className="flex gap-2">
-          <Button className="bg-[#05603A] hover:bg-[#05603A]/90 text-white rounded-lg gap-2 h-9 px-4 font-bold tracking-wide">
+          <Button 
+            onClick={() => nameInputRef.current?.focus()}
+            className="bg-[#05603A] hover:bg-[#05603A]/90 text-white rounded-lg gap-2 h-9 px-4 font-bold tracking-wide"
+          >
             <Plus className="w-4 h-4" strokeWidth={3} /> Add Item
           </Button>
           <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground">
@@ -325,7 +350,7 @@ export function CategoryTable({
       <DataTable 
         columns={columns} 
         data={categories} 
-        appendRowComponent={<AppendCategoryRow onCreate={onCreateItem} />}
+        appendRowComponent={<AppendCategoryRow onCreate={onCreateItem} nameInputRef={nameInputRef} />}
       />
     </div>
   )
