@@ -11,6 +11,7 @@ export interface BudgetItem {
   color?: string;
   plannedAmount: number;
   alertEnabled?: boolean;
+  spent?: number;
 }
 
 export interface Budget {

@@ -12,8 +12,9 @@ interface BudgetSummaryCardProps {
 }
 
 export function BudgetSummaryCard({ totalAllocated, totalSpent, comparison }: BudgetSummaryCardProps) {
-  const amountLeft = Math.max(0, totalAllocated - totalSpent);
-  const utilizedPercent = totalAllocated > 0 ? Math.min((totalSpent / totalAllocated) * 100, 100) : 0;
+  const isOverspent = totalSpent > totalAllocated;
+  const amountLeft = totalAllocated - totalSpent;
+  const utilizedPercent = totalAllocated > 0 ? (totalSpent / totalAllocated) * 100 : 0;
   const remainingPercent = 100 - utilizedPercent;
 
   return (
@@ -72,11 +73,13 @@ export function BudgetSummaryCard({ totalAllocated, totalSpent, comparison }: Bu
               </div>
             </div>
             <div className="flex flex-col items-end gap-1">
-              <span className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase mt-1 mb-2">Amount Left</span>
-              <div className="flex items-baseline gap-1 mt-1 text-emerald-600">
-                <span className="text-sm font-bold">$</span>
+              <span className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase mt-1 mb-2">
+                {isOverspent ? "Overspent By" : "Amount Left"}
+              </span>
+              <div className={`flex items-baseline gap-1 mt-1 ${isOverspent ? "text-red-500" : "text-emerald-600"}`}>
+                <span className="text-sm font-bold">{isOverspent ? "-$" : "$"}</span>
                 <h2 className="text-[32px] font-extrabold tracking-tight">
-                  {amountLeft.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {Math.abs(amountLeft).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </h2>
               </div>
             </div>
@@ -85,11 +88,14 @@ export function BudgetSummaryCard({ totalAllocated, totalSpent, comparison }: Bu
           <div className="mt-auto flex flex-col gap-2">
             {/* Custom Progress Bar */}
             <div className="h-3 w-full bg-muted/60 rounded-full overflow-hidden flex">
-              <div className="h-full bg-[#05603A]" style={{ width: `${utilizedPercent}%` }} />
+              <div 
+                className={`h-full ${isOverspent ? "bg-red-500" : "bg-[#05603A]"}`} 
+                style={{ width: `${Math.min(utilizedPercent, 100)}%` }} 
+              />
             </div>
-            <div className="flex justify-between text-[10px] font-bold tracking-wider uppercase text-muted-foreground">
-              <span>{Math.round(utilizedPercent)}% Utilized</span>
-              <span>{Math.round(remainingPercent)}% Remaining</span>
+            <div className="flex justify-between text-[10px] font-bold tracking-wider uppercase text-muted-foreground mt-1">
+              <span className={isOverspent ? "text-red-500" : ""}>{Math.round(utilizedPercent)}% Utilized</span>
+              <span className={isOverspent ? "text-red-500" : ""}>{Math.round(remainingPercent)}% Remaining</span>
             </div>
           </div>
         </div>

@@ -11,15 +11,20 @@ import { format } from "date-fns"
 import { type TransactionCategory } from "./data/mock-transactions"
 
 export function TransactionsPage() {
-  const { activeBudget, isFetchingBudgets } = useGlobalBudget();
+  const { activeBudget, isFetchingBudgets, fetchBudgets } = useGlobalBudget();
   const { 
     transactionsData, fetchTransactions, isFetchingTransactions, 
     updateTransaction, createTransaction, deleteTransaction 
   } = useTransactions();
+  const [currentPage, setCurrentPage] = React.useState(1);
 
   useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
+    fetchTransactions({ page: currentPage, limit: 10 }).then((res) => {
+      if (res && res.meta && res.meta.totalPages > 0 && currentPage > res.meta.totalPages) {
+        setCurrentPage(res.meta.totalPages);
+      }
+    });
+  }, [fetchTransactions, currentPage]);
 
   const isLoading = isFetchingBudgets || isFetchingTransactions;
   
@@ -30,8 +35,7 @@ export function TransactionsPage() {
       if (!item._id) return acc;
       
       const allocated = item.plannedAmount || 0;
-      const seed = item._id.charCodeAt(0) || 1;
-      const spent = allocated > 0 ? (allocated * 0.8 * (seed % 10) / 10) : 0;
+      const spent = item.spent || 0;
       const baseColor = item.color || "#6b7280";
 
       acc[item._id] = {
@@ -83,12 +87,18 @@ export function TransactionsPage() {
     if (updates.category !== undefined) dto.budgetItemId = updates.category.id;
     
     await updateTransaction(id, dto);
-    await fetchTransactions();
+    await fetchTransactions({ page: currentPage, limit: 10 });
+    await fetchBudgets();
   }
 
   const handleDeleteItem = async (id: string) => {
     await deleteTransaction(id);
-    await fetchTransactions();
+    await fetchTransactions({ page: currentPage, limit: 10 }).then((res) => {
+      if (res && res.meta && res.meta.totalPages > 0 && currentPage > res.meta.totalPages) {
+        setCurrentPage(res.meta.totalPages);
+      }
+    });
+    await fetchBudgets();
   }
 
   const handleAppendItem = async (data: any) => {
@@ -103,7 +113,13 @@ export function TransactionsPage() {
       budgetItemId: data.categoryKey
     };
     await createTransaction(dto);
-    await fetchTransactions();
+    
+    if (currentPage === 1) {
+      await fetchTransactions({ page: 1, limit: 10 });
+    } else {
+      setCurrentPage(1);
+    }
+    await fetchBudgets();
   }
   return (
     <div className="min-h-screen flex w-full bg-ds-background">
@@ -148,7 +164,15 @@ export function TransactionsPage() {
                       onAppendItem={handleAppendItem}
                       categories={dynamicCategories} 
                     />
-                    <Pagination />
+                    {transactionsData?.meta && (
+                      <Pagination 
+                        currentPage={currentPage}
+                        totalPages={transactionsData.meta.totalPages}
+                        totalItems={transactionsData.meta.total}
+                        limit={transactionsData.meta.limit}
+                        onPageChange={setCurrentPage}
+                      />
+                    )}
                   </>
                 )}
               </div>

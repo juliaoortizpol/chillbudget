@@ -40,9 +40,8 @@ export function useBudgetOverview() {
     const mapped = activeBudget.items.map(item => {
       const allocated = item.plannedAmount || 0;
 
-      // Mock spent value for demo purposes
-      const seed = item._id?.charCodeAt(0) || 1;
-      const spent = allocated > 0 ? (allocated * 0.8 * (seed % 10) / 10) : 0;
+      // Use actual spent from backend
+      const spent = item.spent || 0;
 
       // Extract base color if it's a hex, otherwise fallback to gray
       const baseColor = item.color || "#6b7280";

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { cn } from "@/lib/utils"
+import { cn, formatMoneyInput } from "@/lib/utils"
 import { type ColumnDef } from "@tanstack/react-table"
 import { DataTable } from "@/components/ui/data-table"
 import { useTableEditor } from "@/hooks/useTableEditor"
@@ -28,7 +28,7 @@ export type BudgetCategory = {
 // Editable Cell Component
 function EditableCurrencyCell({ initialValue, onSave }: { initialValue: number, onSave: (val: number) => void }) {
   const { isEditing, value, setValue, startEditing, saveEditing, handleKeyDown } = useTableEditor<string>(
-    initialValue.toString(),
+    formatMoneyInput(initialValue.toString()),
     (val) => onSave(Number(val.replace(/,/g, '')) || 0)
   )
 
@@ -37,7 +37,7 @@ function EditableCurrencyCell({ initialValue, onSave }: { initialValue: number, 
       <Input
         autoFocus
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => setValue(formatMoneyInput(e.target.value))}
         onKeyDown={handleKeyDown}
         onBlur={saveEditing}
         className="w-36 h-8 text-sm font-bold mx-auto text-center"
@@ -267,7 +267,7 @@ function AppendCategoryRow({
           <Input 
             placeholder="0.00" 
             value={allocated}
-            onChange={e => setAllocated(e.target.value)}
+            onChange={e => setAllocated(formatMoneyInput(e.target.value))}
             onKeyDown={handleKeyDown}
             className="h-8 pl-6 text-sm font-bold border-transparent bg-muted/40 focus-visible:bg-muted/80 rounded-md shadow-none"
           />
