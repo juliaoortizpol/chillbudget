@@ -107,7 +107,7 @@ export function useBudgetOverview() {
     };
   }, [budgets, activeBudget, totalAllocated]);
 
-  const handleAddBudgetItem = async (name: string, description: string, allocated: number) => {
+  const handleAddBudgetItem = async (name: string, description: string, allocated: number, iconName?: string) => {
     let budgetId = activeBudget?._id;
 
     if (!budgetId) {
@@ -146,7 +146,7 @@ export function useBudgetOverview() {
       name,
       description,
       type: "expense",
-      icon: "default",
+      icon: iconName || "default",
       color: "#10b981",
       plannedAmount: allocated || 0,
     });

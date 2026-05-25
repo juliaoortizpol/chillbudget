@@ -1,27 +1,71 @@
+import { useEffect, useMemo } from "react"
+import { useNavigate } from "react-router-dom"
 import { Sidebar } from "@/components/Sidebar"
-import { BalanceCard } from "./components/BalanceCard"
-import { MetricCard } from "./components/MetricCard"
+
 import { ListWidget, type ListItem } from "./components/ListWidget"
 import { ExpensesChart } from "./components/ExpensesChart"
-import { FrequencyCard } from "./components/FrequencyCard"
-import { Home, Utensils, Gamepad2, Car, ShoppingBag, Music, Coffee } from "lucide-react"
-
-const popularCategories: ListItem[] = [
-  { id: "1", icon: <Home className="w-5 h-5 text-blue-500" />, iconBgClass: "bg-blue-500/10", title: "Housing", amount: "$1,200.00", showChevron: true },
-  { id: "2", icon: <Utensils className="w-5 h-5 text-green-500" />, iconBgClass: "bg-green-500/10", title: "Food", amount: "$460.00", showChevron: true },
-  { id: "3", icon: <Gamepad2 className="w-5 h-5 text-purple-500" />, iconBgClass: "bg-purple-500/10", title: "Entertainment", amount: "$320.50", showChevron: true },
-  { id: "4", icon: <Car className="w-5 h-5 text-orange-500" />, iconBgClass: "bg-orange-500/10", title: "Transportation", amount: "$249.50", showChevron: true },
-]
-
-const historyTransactions: ListItem[] = [
-  { id: "1", icon: <ShoppingBag className="w-5 h-5 text-slate-600" />, iconBgClass: "bg-slate-100", title: "Nike", subtitle: "January 23, 2024", amount: "$119.99" },
-  { id: "2", icon: <Music className="w-5 h-5 text-slate-600" />, iconBgClass: "bg-slate-100", title: "Apple Music", subtitle: "January 19, 2024", amount: "$24.99" },
-  { id: "3", icon: <Gamepad2 className="w-5 h-5 text-slate-600" />, iconBgClass: "bg-slate-100", title: "PlayStation Plus", subtitle: "January 14, 2024", amount: "$24.99" },
-  { id: "4", icon: <Coffee className="w-5 h-5 text-slate-600" />, iconBgClass: "bg-slate-100", title: "Starbucks Coffee", subtitle: "January 10, 2024", amount: "$14.99" },
-  { id: "5", icon: <Utensils className="w-5 h-5 text-slate-600" />, iconBgClass: "bg-slate-100", title: "Burger King", subtitle: "January 10, 2024", amount: "$9.99" },
-]
+import { ShoppingBag } from "lucide-react"
+import { useBudgetOverview } from "../budget/hooks/useBudgetOverview"
+import { useTransactions } from "../transactions/hooks/useTransactions"
 
 export function DashboardLayout() {
+  const navigate = useNavigate();
+  const { tableData } = useBudgetOverview();
+  const { transactionsData, fetchTransactions } = useTransactions();
+
+  useEffect(() => {
+    fetchTransactions({ limit: 15 });
+  }, [fetchTransactions]);
+
+  const dynamicPopularCategories = useMemo<ListItem[]>(() => {
+    // Sort by highest allocated amount to simulate "popular"
+    const sorted = [...tableData].sort((a, b) => b.allocated - a.allocated);
+    
+    // Take top 5
+    return sorted.slice(0, 5).map(cat => {
+      // Assuming cat.iconColor is something like "#10b981", 
+      // we can add an alpha for the background. 
+      // The hook already generates an iconBgClass that is actually a color hex like #10b9811A.
+      return {
+        id: cat.id,
+        icon: <div style={{ color: cat.iconColor }}>{cat.icon}</div>,
+        iconBgColor: cat.iconBgClass, // Actually a hex color string with opacity like "#10b9811A"
+        title: cat.name,
+        amount: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cat.allocated),
+        showChevron: true,
+      };
+    });
+  }, [tableData]);
+
+  const dynamicHistoryTransactions = useMemo<ListItem[]>(() => {
+    if (!transactionsData?.data) return [];
+
+    return transactionsData.data.map(t => {
+      const category = tableData.find(cat => cat.id === t.budgetItemId);
+      const icon = category ? category.icon : <ShoppingBag className="w-5 h-5 text-slate-600" />;
+      const iconBgColor = category ? category.iconBgClass : undefined; 
+      const iconBgClass = category ? "" : "bg-slate-100";
+
+      return {
+        id: t._id,
+        icon: <div style={{ color: category?.iconColor || 'inherit' }}>{icon}</div>,
+        iconBgColor,
+        iconBgClass,
+        title: t.name,
+        subtitle: new Date(t.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        amount: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Math.abs(t.amount)),
+      };
+    });
+  }, [transactionsData, tableData]);
+
+  const handleCategoryClick = () => {
+    navigate("/budget");
+  };
+
+  const handleTransactionClick = () => {
+    navigate("/transactions");
+  };
+
   return (
     <div className="min-h-screen flex w-full bg-ds-background">
       <Sidebar />
@@ -32,39 +76,26 @@ export function DashboardLayout() {
             
             {/* Column 1 */}
             <div className="flex flex-col gap-6">
-              <div className="h-[240px]">
-                <BalanceCard />
-              </div>
-              <ListWidget title="POPULAR CATEGORY" items={popularCategories} />
+
+              <ListWidget 
+                title="POPULAR CATEGORY" 
+                items={dynamicPopularCategories} 
+                onItemClick={handleCategoryClick} 
+              />
             </div>
 
             {/* Column 2 */}
             <div className="flex flex-col gap-6">
-              <MetricCard 
-                title="REVENUE" 
-                subtitle="Last Week" 
-                amount="$1,550.00" 
-                percentUp="35% Usages" 
-                percentDown="65% Remaining"
-                icon={<div className="w-4 h-4 bg-green-700 rounded-sm" />}
-                iconColorClass="border-green-600 text-green-700"
-              />
               <ExpensesChart />
-              <FrequencyCard />
             </div>
 
             {/* Column 3 */}
             <div className="flex flex-col gap-6">
-              <MetricCard 
-                title="SAVINGS" 
-                subtitle="Last Week" 
-                amount="$260.00" 
-                percentUp="15% Usages" 
-                percentDown="85% Remaining"
-                icon={<div className="w-4 h-4 rounded-full bg-green-800" />}
-                iconColorClass="border-green-800"
+              <ListWidget 
+                title="HISTORY TRANSACTION" 
+                items={dynamicHistoryTransactions} 
+                onItemClick={handleTransactionClick}
               />
-              <ListWidget title="HISTORY TRANSACTION" items={historyTransactions} />
             </div>
 
           </div>

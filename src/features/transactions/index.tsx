@@ -132,11 +132,6 @@ export function TransactionsPage() {
             <div className="flex justify-between items-end">
               <div className="flex flex-col gap-2">
                 <h1 className="text-[32px] font-extrabold tracking-tight text-foreground">Transactions</h1>
-                <div className="flex items-center text-[13px] font-medium text-muted-foreground gap-2">
-                  <span>WealthConsole</span>
-                  <span className="text-muted-foreground/50">{'>'}</span>
-                  <span className="text-[#05603A] font-semibold">Transactions</span>
-                </div>
               </div>
             </div>
 

@@ -1,5 +1,5 @@
 import React from "react"
-import { Car, Utensils, Tv, HeartPulse, Wallet, Box } from "lucide-react"
+import { Car, Utensils, Tv, HeartPulse, Wallet, Box, Home } from "lucide-react"
 
 export const iconMap: Record<string, React.ReactNode> = {
   car: <Car className="w-5 h-5" />,
@@ -7,6 +7,7 @@ export const iconMap: Record<string, React.ReactNode> = {
   tv: <Tv className="w-5 h-5" />,
   heart: <HeartPulse className="w-5 h-5" />,
   wallet: <Wallet className="w-5 h-5" />,
+  housing: <Home className="w-5 h-5" />,
   default: <Box className="w-5 h-5" />,
 }
 

@@ -37,9 +37,11 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="w-full relative flex flex-col">
-      <div className={`overflow-y-auto custom-scrollbar ${containerClassName}`}>
-        <Table className="relative">
-          <TableHeader className="sticky top-0 bg-ds-background/95 backdrop-blur supports-[backdrop-filter]:bg-ds-background/60 z-10 shadow-[0_1px_0_0_rgba(0,0,0,0.1)]">
+      <Table 
+        className="relative" 
+        containerClassName={`overflow-y-auto custom-scrollbar ${containerClassName}`}
+      >
+        <TableHeader className="sticky top-0 bg-ds-background/95 backdrop-blur supports-[backdrop-filter]:bg-ds-background/60 z-10 shadow-[0_1px_0_0_rgba(0,0,0,0.1)]">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="border-b border-muted/40 hover:bg-transparent">
                 {headerGroup.headers.map((header) => {
@@ -81,12 +83,11 @@ export function DataTable<TData, TValue>({
             )}
           </TableBody>
           {appendRowComponent && (
-            <TableFooter className="hover:bg-transparent border-t border-muted/40 bg-ds-background/80 sticky bottom-0 z-10 backdrop-blur">
+            <TableFooter className="border-t-2 border-border bg-card sticky bottom-0 z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
               {appendRowComponent}
             </TableFooter>
           )}
-        </Table>
-      </div>
+      </Table>
     </div>
   )
 }

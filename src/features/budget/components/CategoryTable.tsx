@@ -5,6 +5,7 @@ import { DataTable } from "@/components/ui/data-table"
 import { useTableEditor } from "@/hooks/useTableEditor"
 import { Input } from "@/components/ui/input"
 import { CheckCircle2, AlertTriangle, Filter, MoreVertical, Plus, ImageIcon } from "lucide-react"
+import { iconMap } from "../utils/icons"
 import { Button } from "@/components/ui/button"
 import { TableRow, TableCell } from "@/components/ui/table"
 import {
@@ -219,19 +220,21 @@ function AppendCategoryRow({
   onCreate, 
   nameInputRef 
 }: { 
-  onCreate: (name: string, description: string, allocated: number) => void,
+  onCreate: (name: string, description: string, allocated: number, icon: string) => void,
   nameInputRef?: React.RefObject<HTMLInputElement | null>
 }) {
   const [name, setName] = React.useState("")
   const [description, setDescription] = React.useState("")
   const [allocated, setAllocated] = React.useState("")
+  const [iconName, setIconName] = React.useState("default")
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && name.trim()) {
-      onCreate(name, description, Number(allocated.replace(/,/g, '')) || 0)
+      onCreate(name, description, Number(allocated.replace(/,/g, '')) || 0, iconName)
       setName("")
       setDescription("")
       setAllocated("")
+      setIconName("default")
     }
   }
 
@@ -239,9 +242,27 @@ function AppendCategoryRow({
     <TableRow className="border-b-0 hover:bg-transparent opacity-60 focus-within:opacity-100 transition-opacity group">
       <TableCell className="py-2">
         <div className="flex items-center gap-4 pl-2">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted/80">
-            <ImageIcon className="w-5 h-5 text-muted-foreground" />
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="focus:outline-none">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted/80 cursor-pointer hover:bg-muted transition-colors text-muted-foreground">
+                {iconMap[iconName] || <ImageIcon className="w-5 h-5" />}
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48 p-2">
+              <div className="grid grid-cols-4 gap-2">
+                {Object.keys(iconMap).map(key => (
+                  <button 
+                    key={key} 
+                    onClick={() => setIconName(key)}
+                    className={`w-10 h-10 rounded-md flex items-center justify-center hover:bg-muted transition-colors ${iconName === key ? 'bg-muted ring-1 ring-border text-foreground' : 'text-muted-foreground'}`}
+                    title={key}
+                  >
+                    {iconMap[key]}
+                  </button>
+                ))}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <div className="flex flex-col gap-1 w-full max-w-[200px]">
             <Input 
               ref={nameInputRef}
@@ -288,10 +309,11 @@ function AppendCategoryRow({
             className="h-8 w-8 bg-[#05603A] hover:bg-[#05603A]/90 text-white rounded-lg shrink-0"
             onClick={() => {
               if (name.trim()) {
-                onCreate(name, description, Number(allocated.replace(/,/g, '')) || 0)
+                onCreate(name, description, Number(allocated.replace(/,/g, '')) || 0, iconName)
                 setName("")
                 setDescription("")
                 setAllocated("")
+                setIconName("default")
               }
             }}
             disabled={!name.trim()}
@@ -307,7 +329,7 @@ function AppendCategoryRow({
 interface CategoryTableProps {
   categories: BudgetCategory[]
   onUpdateItem: (categoryId: string, updates: any) => void
-  onCreateItem: (name: string, description: string, allocated: number) => void
+  onCreateItem: (name: string, description: string, allocated: number, icon: string) => void
   onDeleteItem: (categoryId: string) => void
   isLoading?: boolean
 }
