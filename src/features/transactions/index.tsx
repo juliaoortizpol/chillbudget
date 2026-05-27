@@ -10,6 +10,30 @@ import { useTransactions } from "./hooks/useTransactions"
 import { format } from "date-fns"
 import { type TransactionCategory } from "./data/mock-transactions"
 
+function getDateRangeFilter(dateRange: string): { startDate?: string, endDate?: string } {
+  let startDate: string | undefined;
+  let endDate: string | undefined;
+
+  const now = new Date();
+  if (dateRange === 'Last 7 Days') {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    startDate = d.toISOString();
+    endDate = now.toISOString();
+  } else if (dateRange === 'Last 30 Days') {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    startDate = d.toISOString();
+    endDate = now.toISOString();
+  } else if (dateRange === 'This Month') {
+    const d = new Date(now.getFullYear(), now.getMonth(), 1);
+    startDate = d.toISOString();
+    endDate = now.toISOString();
+  }
+
+  return { startDate, endDate };
+}
+
 export function TransactionsPage() {
   const { activeBudget, isFetchingBudgets, fetchBudgets } = useGlobalBudget();
   const { 
@@ -17,14 +41,27 @@ export function TransactionsPage() {
     updateTransaction, createTransaction, deleteTransaction 
   } = useTransactions();
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [dateRange, setDateRange] = React.useState("Last 30 Days");
+  const [categoryId, setCategoryId] = React.useState<string | null>(null);
+  const [type, setType] = React.useState<string | null>(null);
 
   useEffect(() => {
-    fetchTransactions({ page: currentPage, limit: 10 }).then((res) => {
+    const { startDate, endDate } = getDateRangeFilter(dateRange);
+
+    fetchTransactions({ 
+      page: currentPage, 
+      limit: 10,
+      budgetItemId: categoryId || undefined,
+      type: type as any || undefined,
+      startDate,
+      endDate
+    }).then((res) => {
       if (res && res.meta && res.meta.totalPages > 0 && currentPage > res.meta.totalPages) {
         setCurrentPage(res.meta.totalPages);
       }
     });
-  }, [fetchTransactions, currentPage]);
+  }, [fetchTransactions, currentPage, dateRange, categoryId, type]);
 
   const isLoading = isFetchingBudgets || isFetchingTransactions;
   
@@ -75,6 +112,14 @@ export function TransactionsPage() {
       }
     });
   }, [transactionsData, dynamicCategories]);
+
+  const filteredUiTransactions = useMemo(() => {
+    if (!searchQuery.trim()) return uiTransactions;
+    const lower = searchQuery.toLowerCase();
+    return uiTransactions.filter(t => t.description.toLowerCase().includes(lower));
+  }, [uiTransactions, searchQuery]);
+
+  const filterCategories = useMemo(() => Object.values(dynamicCategories).map((c: any) => ({ id: c.id, name: c.name })), [dynamicCategories]);
 
   const handleUpdateItem = async (id: string, updates: any) => {
     const dto: any = {};
@@ -145,7 +190,23 @@ export function TransactionsPage() {
                 />
               )}
               
-              <TransactionsFilterBar />
+              <TransactionsFilterBar 
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
+                categoryId={categoryId}
+                onCategoryChange={setCategoryId}
+                type={type}
+                onTypeChange={setType}
+                categories={filterCategories}
+                onClearFilters={() => {
+                  setSearchQuery("");
+                  setDateRange("All Time");
+                  setCategoryId(null);
+                  setType(null);
+                }}
+              />
               
               <div className="flex flex-col gap-2">
                 {isLoading && !uiTransactions.length ? (
@@ -153,7 +214,7 @@ export function TransactionsPage() {
                 ) : (
                   <>
                     <TransactionsTable 
-                      data={uiTransactions as any} 
+                      data={filteredUiTransactions as any} 
                       onUpdateItem={handleUpdateItem} 
                       onDeleteItem={handleDeleteItem}
                       onAppendItem={handleAppendItem}
