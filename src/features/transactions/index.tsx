@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react"
-import { Sidebar } from "@/components/Sidebar"
+import { PageHeader } from "@/components/layout/PageHeader"
 import { TransactionsFilterBar } from "./components/TransactionsFilterBar"
 import { TransactionsTable } from "./components/TransactionsTable"
 import { Pagination } from "./components/Pagination"
@@ -167,20 +167,11 @@ export function TransactionsPage() {
     await fetchBudgets();
   }
   return (
-    <div className="min-h-screen flex w-full bg-ds-background">
-      <Sidebar />
-      <main className="flex-1 flex flex-col">
-        <div className="flex-1 p-8 lg:p-10 overflow-auto">
-          <div className="flex flex-col max-w-7xl mx-auto gap-8">
-            
-            {/* Header */}
-            <div className="flex justify-between items-end">
-              <div className="flex flex-col gap-2">
-                <h1 className="text-[32px] font-extrabold tracking-tight text-foreground">Transactions</h1>
-              </div>
-            </div>
+    <div className="flex flex-col max-w-7xl mx-auto gap-6">
+      
+      <PageHeader title="Transactions" />
 
-            {/* Content Area */}
+      {/* Content Area */}
             <div className="flex flex-col gap-6">
               {!hasCategories && !isLoading && (
                 <Disclaimer 
@@ -234,9 +225,6 @@ export function TransactionsPage() {
               </div>
             </div>
 
-          </div>
-        </div>
-      </main>
     </div>
   )
 }

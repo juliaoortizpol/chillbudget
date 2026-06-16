@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
-import { Sidebar } from "@/components/Sidebar"
+// Sidebar removed as it is now in MainLayout
 
 import { ListWidget, type ListItem } from "./components/ListWidget"
 import { ExpensesChart } from "./components/ExpensesChart"
@@ -67,40 +67,32 @@ export function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen flex w-full bg-ds-background">
-      <Sidebar />
-      <main className="flex-1 flex flex-col">
-        {/* We will add AppBar here later as requested */}
-        <div className="flex-1 p-8 lg:p-10 overflow-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-            
-            {/* Column 1 */}
-            <div className="flex flex-col gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+      
+      {/* Column 1 */}
+      <div className="flex flex-col gap-6">
 
-              <ListWidget 
-                title="POPULAR CATEGORY" 
-                items={dynamicPopularCategories} 
-                onItemClick={handleCategoryClick} 
-              />
-            </div>
+        <ListWidget 
+          title="POPULAR CATEGORY" 
+          items={dynamicPopularCategories} 
+          onItemClick={handleCategoryClick} 
+        />
+      </div>
 
-            {/* Column 2 */}
-            <div className="flex flex-col gap-6">
-              <ExpensesChart />
-            </div>
+      {/* Column 2 */}
+      <div className="flex flex-col gap-6">
+        <ExpensesChart />
+      </div>
 
-            {/* Column 3 */}
-            <div className="flex flex-col gap-6">
-              <ListWidget 
-                title="HISTORY TRANSACTION" 
-                items={dynamicHistoryTransactions} 
-                onItemClick={handleTransactionClick}
-              />
-            </div>
+      {/* Column 3 */}
+      <div className="flex flex-col gap-6">
+        <ListWidget 
+          title="HISTORY TRANSACTION" 
+          items={dynamicHistoryTransactions} 
+          onItemClick={handleTransactionClick}
+        />
+      </div>
 
-          </div>
-        </div>
-      </main>
     </div>
   )
 }
