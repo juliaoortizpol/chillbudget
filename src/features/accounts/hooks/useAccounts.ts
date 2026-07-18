@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useFetch } from "@/hooks/useFetch";
+import type { CreateAccountDto } from "../types/accounts";
 
 export type AccountType =
   | "checking"
@@ -33,6 +34,8 @@ export function useAccounts() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const fetchAccounts = useCallback(async () => {
     setIsLoading(true);
@@ -58,10 +61,37 @@ export function useAccounts() {
     fetchAccounts();
   }, [fetchAccounts]);
 
+  const createAccount = useCallback(
+    async (dto: CreateAccountDto) => {
+      setIsCreating(true);
+      setCreateError(null);
+
+      try {
+        const account = await fetchApi<Account>("/accounts", {
+          method: "POST",
+          body: JSON.stringify(dto),
+        });
+        setAccounts((current) => [...current, account]);
+        return account;
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to create account";
+        setCreateError(message);
+        throw err;
+      } finally {
+        setIsCreating(false);
+      }
+    },
+    [fetchApi],
+  );
+
   return {
     accounts,
     isLoading,
     error,
     fetchAccounts,
+    createAccount,
+    isCreating,
+    createError,
   };
 }

@@ -5,10 +5,24 @@ import { AccountsTable } from './components/AccountsTable';
 import { AddAccountForm } from './components/AddAccountForm';
 import { AccountsEmptyState } from './components/AccountsEmptyState';
 import { useAccounts } from './hooks/useAccounts';
+import type { CreateAccountDto } from './types/accounts';
 
 export function AccountsPage() {
   const [isAddingAccount, setIsAddingAccount] = useState(false);
-  const { accounts, isLoading, error, fetchAccounts } = useAccounts();
+  const {
+    accounts,
+    isLoading,
+    error,
+    fetchAccounts,
+    createAccount,
+    isCreating,
+    createError,
+  } = useAccounts();
+
+  const handleCreateAccount = async (account: CreateAccountDto) => {
+    await createAccount(account);
+    setIsAddingAccount(false);
+  };
 
   return (
     <div className="flex flex-col max-w-7xl mx-auto gap-6">
@@ -22,7 +36,9 @@ export function AccountsPage() {
       {isAddingAccount ? (
         <AddAccountForm 
           onCancel={() => setIsAddingAccount(false)} 
-          onSave={() => setIsAddingAccount(false)} 
+          onSave={handleCreateAccount}
+          isSaving={isCreating}
+          saveError={createError}
         />
       ) : (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

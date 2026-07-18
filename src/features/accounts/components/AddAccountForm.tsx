@@ -10,10 +10,17 @@ import type { CreateAccountDto } from '../types/accounts';
 
 interface AddAccountFormProps {
   onCancel: () => void;
-  onSave: (account: CreateAccountDto) => void;
+  onSave: (account: CreateAccountDto) => Promise<void>;
+  isSaving: boolean;
+  saveError: string | null;
 }
 
-export function AddAccountForm({ onCancel, onSave }: AddAccountFormProps) {
+export function AddAccountForm({
+  onCancel,
+  onSave,
+  isSaving,
+  saveError,
+}: AddAccountFormProps) {
   const {
     search,
     updateSearch,
@@ -34,7 +41,7 @@ export function AddAccountForm({ onCancel, onSave }: AddAccountFormProps) {
   const [last4Digits, setLast4Digits] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const name = accountName.trim();
     const customInstitution = search.trim();
 
@@ -56,14 +63,18 @@ export function AddAccountForm({ onCancel, onSave }: AddAccountFormProps) {
     }
 
     setValidationError(null);
-    onSave({
-      name,
-      type: accountType,
-      ...(last4Digits && { last4Digits }),
-      ...(selectedInstitution
-        ? { institutionId: selectedInstitution._id }
-        : { institution: customInstitution }),
-    });
+    try {
+      await onSave({
+        name,
+        type: accountType,
+        ...(last4Digits && { last4Digits }),
+        ...(selectedInstitution
+          ? { institutionId: selectedInstitution._id }
+          : { institution: customInstitution }),
+      });
+    } catch {
+      // The request error is displayed from the accounts hook.
+    }
   };
 
   return (
@@ -102,6 +113,7 @@ export function AddAccountForm({ onCancel, onSave }: AddAccountFormProps) {
                 className="w-full h-11 bg-slate-50 border border-slate-200 rounded-md px-4 text-sm outline-none focus:border-[#0f766e] focus:ring-1 focus:ring-[#0f766e] transition-all text-slate-900"
                 value={accountName}
                 onChange={(event) => setAccountName(event.target.value)}
+                disabled={isSaving}
               />
             </div>
 
@@ -113,6 +125,7 @@ export function AddAccountForm({ onCancel, onSave }: AddAccountFormProps) {
                   className="w-full h-11 bg-slate-50 border border-slate-200 rounded-md px-4 text-sm outline-none focus:border-[#0f766e] focus:ring-1 focus:ring-[#0f766e] transition-all text-slate-900 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22currentColor%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.293%207.293a1%201%200%20011.414%200L10%2010.586l3.293-3.293a1%201%200%20111.414%201.414l-4%204a1%201%200%2001-1.414%200l-4-4a1%201%200%20010-1.414z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] bg-[position:right_0.5rem_center] bg-no-repeat pr-8"
                   value={accountType}
                   onChange={(event) => selectAccountType(event.target.value)}
+                  disabled={isSaving}
                 >
                   {availableAccountTypes.map((type) => (
                     <option key={type} value={type}>{formatAccountType(type)}</option>
@@ -135,24 +148,27 @@ export function AddAccountForm({ onCancel, onSave }: AddAccountFormProps) {
                   onChange={(event) =>
                     setLast4Digits(event.target.value.replace(/\D/g, '').slice(0, 4))
                   }
+                  disabled={isSaving}
                 />
                 <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               </div>
               <p className="text-[11px] text-slate-400 mt-1">Required for Card accounts to help identify transactions.</p>
             </div>
-            {validationError && (
-              <p className="text-sm font-medium text-red-600">{validationError}</p>
+            {(validationError || saveError) && (
+              <p className="text-sm font-medium text-red-600">
+                {validationError || saveError}
+              </p>
             )}
           </div>
         </div>
 
         {/* Action footer */}
         <div className="p-6 md:p-8 pt-4 flex justify-end items-center gap-4 border-t border-slate-50 mt-auto">
-          <Button variant="ghost" onClick={onCancel} className="text-slate-600 font-bold hover:bg-slate-100 hover:text-slate-900 px-6 h-11">
+          <Button type="button" variant="ghost" onClick={onCancel} disabled={isSaving} className="text-slate-600 font-bold hover:bg-slate-100 hover:text-slate-900 px-6 h-11">
             Cancel
           </Button>
-          <Button onClick={handleSave} className="bg-[#0f766e] hover:bg-[#0d645e] text-white font-bold h-11 px-6 rounded-lg shadow-sm">
-            Save Account
+          <Button type="button" onClick={handleSave} disabled={isSaving} className="bg-[#0f766e] hover:bg-[#0d645e] text-white font-bold h-11 px-6 rounded-lg shadow-sm">
+            {isSaving ? 'Saving...' : 'Save Account'}
           </Button>
         </div>
       </div>
