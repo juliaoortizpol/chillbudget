@@ -3,6 +3,7 @@ import { AccountsHeader } from './components/AccountsHeader';
 import { PortfolioToolbar } from './components/PortfolioToolbar';
 import { AccountsTable } from './components/AccountsTable';
 import { AddAccountForm } from './components/AddAccountForm';
+import { AccountsEmptyState } from './components/AccountsEmptyState';
 import { useAccounts } from './hooks/useAccounts';
 
 export function AccountsPage() {
@@ -43,6 +44,8 @@ export function AccountsPage() {
                 Try again
               </button>
             </div>
+          ) : accounts.length === 0 ? (
+            <AccountsEmptyState onAddAccount={() => setIsAddingAccount(true)} />
           ) : (
             <AccountsTable accounts={accounts} />
           )}
