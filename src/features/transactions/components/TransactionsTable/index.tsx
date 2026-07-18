@@ -151,7 +151,7 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
   const {
     date, setDate,
     isCalendarOpen, setIsCalendarOpen,
-    amount, setAmount, handleInteraction, handleAmountChange, categoryKey, setCategoryKey,
+    amount, setAmount, handleInteraction, handleAmountChange, handleAmountFocus, handleAmountBlur, categoryKey, setCategoryKey,
     description, setDescription
   } = useAppendTransactionRow()
 
@@ -220,9 +220,11 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
           <Input 
-            placeholder="0.00" 
+            placeholder="-0.00"
             className="h-9 w-36 bg-background pl-7 font-medium" 
             value={amount}
+            onFocus={handleAmountFocus}
+            onBlur={handleAmountBlur}
             onChange={handleAmountChange}
           />
         </div>
@@ -236,7 +238,7 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
               onAppend({ date, description, categoryKey, amount });
               // Reset
               setDescription("");
-              setAmount("-");
+              setAmount("");
               setCategoryKey("");
             }
           }}

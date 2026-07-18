@@ -84,9 +84,7 @@ export function useEditableCategoryCell(initialValue: TransactionCategory, onSav
 export function useAppendTransactionRow() {
   const [date, setDate] = React.useState<Date | undefined>()
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false)
-  // New transactions default to expenses. Removing the minus sign lets the
-  // user explicitly enter a positive income amount.
-  const [amount, setAmount] = React.useState("-")
+  const [amount, setAmount] = React.useState("")
   const [categoryKey, setCategoryKey] = React.useState("")
   const [description, setDescription] = React.useState("")
 
@@ -101,6 +99,17 @@ export function useAppendTransactionRow() {
     setAmount(formatMoneyInput(e.target.value))
   }
 
+  const handleAmountFocus = () => {
+    handleInteraction()
+    // Start a new amount as an expense. The user can remove the sign for income.
+    if (amount === "") setAmount("-")
+  }
+
+  const handleAmountBlur = () => {
+    // Restore the placeholder when no numeric amount was entered.
+    if (amount === "-") setAmount("")
+  }
+
   return {
     date,
     setDate,
@@ -110,6 +119,8 @@ export function useAppendTransactionRow() {
     setAmount,
     handleInteraction,
     handleAmountChange,
+    handleAmountFocus,
+    handleAmountBlur,
     categoryKey,
     setCategoryKey,
     description,
