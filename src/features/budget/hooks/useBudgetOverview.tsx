@@ -1,9 +1,8 @@
-import { useEffect, useMemo } from "react"
+import { useMemo } from "react"
 
 import { useGlobalBudget } from "../context/BudgetContext"
 import type { BudgetCategory } from "../components/CategoryTable"
 import { getIcon } from "../utils/icons"
-import { useTransactions } from "../../transactions/hooks/useTransactions"
 
 export function useBudgetOverview() {
   const {
@@ -16,36 +15,6 @@ export function useBudgetOverview() {
     isFetchingBudgets,
     activeBudget,
   } = useGlobalBudget();
-  const {
-    transactionsData,
-    fetchTransactions,
-    isFetchingTransactions,
-  } = useTransactions();
-
-  useEffect(() => {
-    if (!activeBudget) return;
-
-    fetchTransactions({
-      type: "expense",
-      startDate: activeBudget.startDate,
-      endDate: activeBudget.endDate,
-      // Budget totals must include the whole period, not just the visible table page.
-      limit: 10000,
-    });
-  }, [activeBudget, fetchTransactions]);
-
-  const spentByBudgetItem = useMemo(() => {
-    const totals: Record<string, number> = {};
-
-    for (const transaction of transactionsData?.data || []) {
-      if (transaction.type !== "expense" || !transaction.budgetItemId) continue;
-      totals[transaction.budgetItemId] =
-        (totals[transaction.budgetItemId] || 0) + Math.abs(transaction.amount);
-    }
-
-    return totals;
-  }, [transactionsData]);
-
   const handleCreateBudget = async () => {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -68,9 +37,7 @@ export function useBudgetOverview() {
     const mapped = activeBudget.items.map(item => {
       const allocated = item.plannedAmount || 0;
 
-      // Spending is the absolute value of expense transactions in this budget period.
-      // Income must never count toward a category's used budget.
-      const spent = item._id ? spentByBudgetItem[item._id] || 0 : 0;
+      const spent = item.spent || 0;
 
       // Extract base color if it's a hex, otherwise fallback to gray
       const baseColor = item.color || "#6b7280";
@@ -93,7 +60,7 @@ export function useBudgetOverview() {
       if (a.allocated === 0 && b.allocated > 0) return 1;
       return a.name.localeCompare(b.name);
     });
-  }, [activeBudget, spentByBudgetItem]);
+  }, [activeBudget]);
 
   const totalAllocated = useMemo(() => {
     return tableData.reduce((sum, item) => sum + item.allocated, 0);
@@ -195,7 +162,7 @@ export function useBudgetOverview() {
     totalAllocated,
     totalSpent,
     comparison,
-    isLoading: isFetchingBudgets || isFetchingTransactions,
+    isLoading: isFetchingBudgets,
     handleUpdateItem,
     handleAddBudgetItem,
     handleCreateBudget,

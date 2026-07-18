@@ -14,7 +14,8 @@ export function DashboardLayout() {
   const { transactionsData, fetchTransactions } = useTransactions();
 
   useEffect(() => {
-    fetchTransactions({ limit: 15 });
+    // One shared request supplies both transaction history and the expense chart.
+    fetchTransactions({ limit: 100 });
   }, [fetchTransactions]);
 
   const dynamicPopularCategories = useMemo<ListItem[]>(() => {
@@ -40,7 +41,7 @@ export function DashboardLayout() {
   const dynamicHistoryTransactions = useMemo<ListItem[]>(() => {
     if (!transactionsData?.data) return [];
 
-    return transactionsData.data.map(t => {
+    return transactionsData.data.slice(0, 15).map(t => {
       const category = tableData.find(cat => cat.id === t.budgetItemId);
       const icon = category ? category.icon : <ShoppingBag className="w-5 h-5 text-slate-600" />;
       const iconBgColor = category ? category.iconBgClass : undefined; 
@@ -81,7 +82,7 @@ export function DashboardLayout() {
 
       {/* Column 2 */}
       <div className="flex flex-col gap-6">
-        <ExpensesChart />
+        <ExpensesChart transactions={transactionsData?.data || []} />
       </div>
 
       {/* Column 3 */}

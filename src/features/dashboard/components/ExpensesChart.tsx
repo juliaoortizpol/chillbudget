@@ -1,26 +1,11 @@
-import { useEffect, useMemo } from "react"
+import { useMemo } from "react"
 import { DashboardCard } from "./DashboardCard"
 import { LineChart, Line, XAxis, ResponsiveContainer, Tooltip } from "recharts"
-import { useTransactions } from "@/features/transactions/hooks/useTransactions"
+import type { Transaction } from "@/features/transactions/hooks/useTransactions"
 
 const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
 
-export function ExpensesChart() {
-  const { transactionsData, fetchTransactions } = useTransactions()
-
-  useEffect(() => {
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 7);
-    startDate.setHours(0, 0, 0, 0);
-
-    fetchTransactions({ 
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      limit: 100 
-    });
-  }, [fetchTransactions])
-
+export function ExpensesChart({ transactions }: { transactions: Transaction[] }) {
   const { chartData, totalAmount } = useMemo(() => {
     // Default empty week
     const dataMap: Record<string, number> = {
@@ -28,16 +13,16 @@ export function ExpensesChart() {
     }
     let total = 0
 
-    if (transactionsData?.data) {
+    if (transactions.length) {
       const now = new Date()
       // Let's just look at the last 7 days
       const sevenDaysAgo = new Date(now)
       sevenDaysAgo.setDate(now.getDate() - 7)
       sevenDaysAgo.setHours(0, 0, 0, 0)
 
-      transactionsData.data.forEach(t => {
+      transactions.forEach(t => {
         const d = new Date(t.date)
-        if (d >= sevenDaysAgo && d <= now) {
+        if (t.type === "expense" && d >= sevenDaysAgo && d <= now) {
           const amount = Math.abs(t.amount);
           total += amount;
           const dayName = DAYS[d.getDay()];
@@ -57,7 +42,7 @@ export function ExpensesChart() {
     ]
 
     return { chartData, totalAmount: total }
-  }, [transactionsData])
+  }, [transactions])
 
   return (
     <DashboardCard title="EXPENSES">

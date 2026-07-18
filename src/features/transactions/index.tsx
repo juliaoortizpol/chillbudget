@@ -41,10 +41,6 @@ export function TransactionsPage() {
     transactionsData, fetchTransactions, isFetchingTransactions, 
     updateTransaction, createTransaction, deleteTransaction 
   } = useTransactions();
-  const {
-    transactionsData: expenseTransactionsData,
-    fetchTransactions: fetchExpenseTransactions,
-  } = useTransactions();
   const [currentPage, setCurrentPage] = React.useState(1);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [dateRange, setDateRange] = React.useState("Last 30 Days");
@@ -68,51 +64,6 @@ export function TransactionsPage() {
     });
   }, [fetchTransactions, currentPage, dateRange, categoryId, type]);
 
-  useEffect(() => {
-    if (!activeBudget) return;
-
-    fetchExpenseTransactions({
-      type: "expense",
-      startDate: activeBudget.startDate,
-      endDate: activeBudget.endDate,
-      limit: 10000,
-    });
-  }, [activeBudget, fetchExpenseTransactions]);
-
-  const spentByBudgetItem = useMemo(() => {
-    const totals: Record<string, number> = {};
-
-    for (const transaction of expenseTransactionsData?.data || []) {
-      if (transaction.type !== "expense" || !transaction.budgetItemId) continue;
-      totals[transaction.budgetItemId] =
-        (totals[transaction.budgetItemId] || 0) + Math.abs(transaction.amount);
-    }
-
-    return totals;
-  }, [expenseTransactionsData]);
-
-  const transactionSummary = useMemo(() => {
-    const totalSpent = (expenseTransactionsData?.data || []).reduce(
-      (sum, transaction) =>
-        transaction.type === "expense" ? sum + Math.abs(transaction.amount) : sum,
-      0
-    );
-    const monthlyBudget = activeBudget?.items?.reduce(
-      (sum, item) => sum + (item.plannedAmount || 0),
-      0
-    ) || 0;
-    const totalTransactions =
-      expenseTransactionsData?.meta?.total ?? expenseTransactionsData?.data?.length ?? 0;
-
-    return {
-      totalSpent,
-      monthlyBudget,
-      totalTransactions,
-      averageTransaction: totalTransactions > 0 ? totalSpent / totalTransactions : 0,
-      budgetUsed: monthlyBudget > 0 ? (totalSpent / monthlyBudget) * 100 : 0,
-    };
-  }, [activeBudget, expenseTransactionsData]);
-
   const isLoading = isFetchingBudgets || isFetchingTransactions;
   
   const dynamicCategories = React.useMemo(() => {
@@ -122,7 +73,7 @@ export function TransactionsPage() {
       if (!item._id) return acc;
       
       const allocated = item.plannedAmount || 0;
-      const spent = spentByBudgetItem[item._id] || 0;
+      const spent = item.spent || 0;
       const baseColor = item.color || "#6b7280";
 
       acc[item._id] = {
@@ -135,7 +86,7 @@ export function TransactionsPage() {
       };
       return acc;
     }, {} as Record<string, any>);
-  }, [activeBudget, spentByBudgetItem]);
+  }, [activeBudget]);
 
   const hasCategories = Object.keys(dynamicCategories).length > 0;
 
@@ -171,17 +122,29 @@ export function TransactionsPage() {
     return uiTransactions.filter(t => t.description.toLowerCase().includes(lower));
   }, [uiTransactions, searchQuery]);
 
-  const filterCategories = useMemo(() => Object.values(dynamicCategories).map((c: any) => ({ id: c.id, name: c.name })), [dynamicCategories]);
+  const transactionSummary = useMemo(() => {
+    const totalSpent = filteredUiTransactions.reduce(
+      (sum, transaction) => transaction.amount < 0 ? sum + Math.abs(transaction.amount) : sum,
+      0
+    );
+    const monthlyBudget = activeBudget?.items
+      ?.filter((item) => !categoryId || item._id === categoryId)
+      .reduce((sum, item) => sum + (item.plannedAmount || 0), 0) || 0;
+    const maxTransaction = filteredUiTransactions.reduce(
+      (max, transaction) => Math.max(max, Math.abs(transaction.amount)),
+      0
+    );
 
-  const refreshBudgetSpending = async () => {
-    if (!activeBudget) return;
-    await fetchExpenseTransactions({
-      type: "expense",
-      startDate: activeBudget.startDate,
-      endDate: activeBudget.endDate,
-      limit: 10000,
-    });
-  };
+    return {
+      totalSpent,
+      monthlyBudget,
+      maxTransaction,
+      totalTransactions: filteredUiTransactions.length,
+      budgetUsed: monthlyBudget > 0 ? (totalSpent / monthlyBudget) * 100 : 0,
+    };
+  }, [activeBudget, categoryId, filteredUiTransactions]);
+
+  const filterCategories = useMemo(() => Object.values(dynamicCategories).map((c: any) => ({ id: c.id, name: c.name })), [dynamicCategories]);
 
   const handleUpdateItem = async (id: string, updates: any) => {
     const dto: any = {};
@@ -195,7 +158,6 @@ export function TransactionsPage() {
     
     await updateTransaction(id, dto);
     await fetchTransactions({ page: currentPage, limit: 10 });
-    await refreshBudgetSpending();
     await fetchBudgets();
   }
 
@@ -206,7 +168,6 @@ export function TransactionsPage() {
         setCurrentPage(res.meta.totalPages);
       }
     });
-    await refreshBudgetSpending();
     await fetchBudgets();
   }
 
@@ -228,7 +189,6 @@ export function TransactionsPage() {
     } else {
       setCurrentPage(1);
     }
-    await refreshBudgetSpending();
     await fetchBudgets();
   }
   return (
