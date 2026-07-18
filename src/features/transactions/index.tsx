@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/layout/PageHeader"
 import { TransactionsFilterBar } from "./components/TransactionsFilterBar"
 import { TransactionsTable } from "./components/TransactionsTable"
 import { Pagination } from "./components/Pagination"
+import { TransactionsSummary } from "./components/TransactionsSummary"
 import { useGlobalBudget } from "../budget/context/BudgetContext"
 import { getIcon } from "../budget/utils/icons"
 import { Disclaimer } from "@/components/ui/disclaimer"
@@ -89,6 +90,28 @@ export function TransactionsPage() {
 
     return totals;
   }, [expenseTransactionsData]);
+
+  const transactionSummary = useMemo(() => {
+    const totalSpent = (expenseTransactionsData?.data || []).reduce(
+      (sum, transaction) =>
+        transaction.type === "expense" ? sum + Math.abs(transaction.amount) : sum,
+      0
+    );
+    const monthlyBudget = activeBudget?.items?.reduce(
+      (sum, item) => sum + (item.plannedAmount || 0),
+      0
+    ) || 0;
+    const totalTransactions =
+      expenseTransactionsData?.meta?.total ?? expenseTransactionsData?.data?.length ?? 0;
+
+    return {
+      totalSpent,
+      monthlyBudget,
+      totalTransactions,
+      averageTransaction: totalTransactions > 0 ? totalSpent / totalTransactions : 0,
+      budgetUsed: monthlyBudget > 0 ? (totalSpent / monthlyBudget) * 100 : 0,
+    };
+  }, [activeBudget, expenseTransactionsData]);
 
   const isLoading = isFetchingBudgets || isFetchingTransactions;
   
@@ -215,6 +238,8 @@ export function TransactionsPage() {
 
       {/* Content Area */}
             <div className="flex flex-col gap-6">
+              <TransactionsSummary {...transactionSummary} />
+
               {!hasCategories && !isLoading && (
                 <Disclaimer 
                   type="warning"
