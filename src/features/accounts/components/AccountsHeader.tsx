@@ -1,4 +1,3 @@
-import React from 'react';
 import { RefreshCw, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/PageHeader';

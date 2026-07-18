@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { AccountsHeader } from './components/AccountsHeader';
 import { PortfolioToolbar } from './components/PortfolioToolbar';
 import { AccountsTable } from './components/AccountsTable';
 import { AddAccountForm } from './components/AddAccountForm';
-import { mockAccounts } from './data/mock-accounts';
+import { useAccounts } from './hooks/useAccounts';
 
 export function AccountsPage() {
   const [isAddingAccount, setIsAddingAccount] = useState(false);
+  const { accounts, isLoading, error, fetchAccounts } = useAccounts();
 
   return (
     <div className="flex flex-col max-w-7xl mx-auto gap-6">
@@ -27,7 +28,24 @@ export function AccountsPage() {
           {/* Card Header Toolbar */}
           <PortfolioToolbar />
           {/* Table */}
-          <AccountsTable accounts={mockAccounts} />
+          {isLoading ? (
+            <div className="p-10 text-center text-sm text-slate-500">
+              Loading accounts...
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center gap-3 p-10 text-center">
+              <p className="text-sm text-red-600">{error}</p>
+              <button
+                type="button"
+                onClick={fetchAccounts}
+                className="text-sm font-semibold text-[#0f766e] hover:underline"
+              >
+                Try again
+              </button>
+            </div>
+          ) : (
+            <AccountsTable accounts={accounts} />
+          )}
         </div>
       )}
     </div>

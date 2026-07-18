@@ -1,13 +1,31 @@
-import React from 'react';
 import { MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { Account } from '../data/mock-accounts';
+import type { Account, AccountStatus, AccountType } from '../hooks/useAccounts';
 
 interface AccountsTableProps {
   accounts: Account[];
 }
 
 export function AccountsTable({ accounts }: AccountsTableProps) {
+  const formatAccountType = (type?: AccountType) =>
+    type
+      ? type
+          .split('_')
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ')
+      : 'Other';
+
+  const formatStatus = (status?: AccountStatus) => {
+    if (status === 're_auth_required') return 'Re-auth Required';
+    if (status === 'pending') return 'Pending';
+    return 'Active';
+  };
+
+  const formatLastSynced = (lastSynced?: string) => {
+    if (!lastSynced) return 'Never';
+    return new Date(lastSynced).toLocaleString();
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
@@ -21,45 +39,51 @@ export function AccountsTable({ accounts }: AccountsTableProps) {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-50">
-          {accounts.map((account) => (
-            <tr key={account.id} className="hover:bg-slate-50/50 transition-colors group">
+          {accounts.map((account) => {
+            const status = formatStatus(account.status);
+            const accountDetail = account.last4Digits
+              ? `${formatAccountType(account.type)} •••• ${account.last4Digits}`
+              : account.name;
+
+            return (
+            <tr key={account._id} className="hover:bg-slate-50/50 transition-colors group">
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg ${account.iconBg}`}>
-                    {account.icon}
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg bg-emerald-100 text-emerald-700">
+                    {account.institution.charAt(0).toUpperCase()}
                   </div>
                   <div>
                     <div className="font-bold text-slate-900">{account.institution}</div>
-                    <div className="text-slate-500 text-xs mt-0.5">{account.accountName}</div>
+                    <div className="text-slate-500 text-xs mt-0.5">{accountDetail}</div>
                   </div>
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <span className="text-slate-700 font-medium">{account.type}</span>
+                <span className="text-slate-700 font-medium">{formatAccountType(account.type)}</span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${
-                    account.status === 'Active' ? 'bg-[#0f766e]' : 
-                    account.status === 'Pending' ? 'bg-slate-300' : 
+                    status === 'Active' ? 'bg-[#0f766e]' :
+                    status === 'Pending' ? 'bg-slate-300' :
                     'bg-red-500'
                   }`} />
                   <span className={`font-semibold ${
-                    account.status === 'Active' ? 'text-[#0f766e]' : 
-                    account.status === 'Pending' ? 'text-slate-500' : 
+                    status === 'Active' ? 'text-[#0f766e]' :
+                    status === 'Pending' ? 'text-slate-500' :
                     'text-red-600'
                   }`}>
-                    {account.status}
+                    {status}
                   </span>
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <span className={`${account.status === 'Re-auth Required' ? 'text-slate-500 italic' : 'text-slate-700'}`}>
-                  {account.lastSynced}
+                <span className={`${status === 'Re-auth Required' ? 'text-slate-500 italic' : 'text-slate-700'}`}>
+                  {formatLastSynced(account.lastSynced)}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right">
-                {account.actionRequired ? (
+                {status === 'Re-auth Required' ? (
                   <button className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-bold rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition-colors">
                     Fix Connection
                   </button>
@@ -70,7 +94,8 @@ export function AccountsTable({ accounts }: AccountsTableProps) {
                 )}
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>
