@@ -1,5 +1,10 @@
-import { Landmark, Search, CreditCard, Mail, Lock } from 'lucide-react';
+import { Landmark, CreditCard, Mail, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { InstitutionSelector } from './InstitutionSelector';
+import {
+  formatAccountType,
+  useInstitutionSelector,
+} from '../hooks/useInstitutionSelector';
 
 interface AddAccountFormProps {
   onCancel: () => void;
@@ -7,6 +12,23 @@ interface AddAccountFormProps {
 }
 
 export function AddAccountForm({ onCancel, onSave }: AddAccountFormProps) {
+  const {
+    search,
+    updateSearch,
+    selectedInstitution,
+    isOpen,
+    open,
+    close,
+    filteredInstitutions,
+    isLoading,
+    error,
+    retry,
+    selectInstitution,
+    accountType,
+    selectAccountType,
+    availableAccountTypes,
+  } = useInstitutionSelector();
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 animate-in fade-in slide-in-from-top-4 duration-300">
       
@@ -20,18 +42,19 @@ export function AddAccountForm({ onCancel, onSave }: AddAccountFormProps) {
           </div>
 
           <div className="flex flex-col gap-4">
-            {/* Bank Name */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-slate-600 tracking-wider uppercase">Bank or Institution Name</label>
-              <div className="relative">
-                <input 
-                  type="text" 
-                  placeholder="Search or type bank name..." 
-                  className="w-full h-11 bg-slate-50 border border-slate-200 rounded-md px-4 text-sm outline-none focus:border-[#0f766e] focus:ring-1 focus:ring-[#0f766e] transition-all text-slate-900"
-                />
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              </div>
-            </div>
+            <InstitutionSelector
+              search={search}
+              onSearchChange={updateSearch}
+              selectedInstitution={selectedInstitution}
+              isOpen={isOpen}
+              onOpen={open}
+              onClose={close}
+              institutions={filteredInstitutions}
+              isLoading={isLoading}
+              error={error}
+              onRetry={() => retry()}
+              onSelect={selectInstitution}
+            />
 
             {/* Account Nickname */}
             <div className="flex flex-col gap-1.5">
@@ -47,12 +70,14 @@ export function AddAccountForm({ onCancel, onSave }: AddAccountFormProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-600 tracking-wider uppercase">Account Type</label>
-                <select className="w-full h-11 bg-slate-50 border border-slate-200 rounded-md px-4 text-sm outline-none focus:border-[#0f766e] focus:ring-1 focus:ring-[#0f766e] transition-all text-slate-900 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22currentColor%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.293%207.293a1%201%200%20011.414%200L10%2010.586l3.293-3.293a1%201%200%20111.414%201.414l-4%204a1%201%200%2001-1.414%200l-4-4a1%201%200%20010-1.414z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] bg-[position:right_0.5rem_center] bg-no-repeat pr-8">
-                  <option>Checking</option>
-                  <option>Savings</option>
-                  <option>Credit Card</option>
-                  <option>Investment</option>
-                  <option>Loan</option>
+                <select
+                  className="w-full h-11 bg-slate-50 border border-slate-200 rounded-md px-4 text-sm outline-none focus:border-[#0f766e] focus:ring-1 focus:ring-[#0f766e] transition-all text-slate-900 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22currentColor%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.293%207.293a1%201%200%20011.414%200L10%2010.586l3.293-3.293a1%201%200%20111.414%201.414l-4%204a1%201%200%2001-1.414%200l-4-4a1%201%200%20010-1.414z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] bg-[position:right_0.5rem_center] bg-no-repeat pr-8"
+                  value={accountType}
+                  onChange={(event) => selectAccountType(event.target.value)}
+                >
+                  {availableAccountTypes.map((type) => (
+                    <option key={type} value={type}>{formatAccountType(type)}</option>
+                  ))}
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
