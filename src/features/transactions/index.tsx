@@ -250,7 +250,10 @@ export function TransactionsPage() {
               
               <TransactionsFilterBar 
                 searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
+                onSearchChange={(query) => {
+                  setSearchQuery(query);
+                  setCurrentPage(1);
+                }}
                 dateRange={dateRange}
                 onDateRangeChange={setDateRange}
                 categoryId={categoryId}
@@ -280,9 +283,9 @@ export function TransactionsPage() {
                     />
                     {transactionsData?.meta && (
                       <Pagination 
-                        currentPage={currentPage}
-                        totalPages={transactionsData.meta.totalPages}
-                        totalItems={transactionsData.meta.total}
+                        currentPage={searchQuery.trim() ? 1 : currentPage}
+                        totalPages={searchQuery.trim() ? 1 : transactionsData.meta.totalPages}
+                        totalItems={searchQuery.trim() ? filteredUiTransactions.length : transactionsData.meta.total}
                         limit={transactionsData.meta.limit}
                         onPageChange={setCurrentPage}
                       />
