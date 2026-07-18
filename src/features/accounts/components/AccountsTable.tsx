@@ -1,12 +1,18 @@
-import { MoreHorizontal } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Account, AccountStatus, AccountType } from '../hooks/useAccounts';
 
 interface AccountsTableProps {
   accounts: Account[];
+  onDeleteAccount: (accountId: string) => void;
+  deletingAccountId: string | null;
 }
 
-export function AccountsTable({ accounts }: AccountsTableProps) {
+export function AccountsTable({
+  accounts,
+  onDeleteAccount,
+  deletingAccountId,
+}: AccountsTableProps) {
   const formatAccountType = (type?: AccountType) =>
     type
       ? type
@@ -83,15 +89,25 @@ export function AccountsTable({ accounts }: AccountsTableProps) {
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right">
-                {status === 'Re-auth Required' ? (
-                  <button className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-bold rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition-colors">
-                    Fix Connection
-                  </button>
-                ) : (
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600">
-                    <MoreHorizontal className="w-5 h-5" />
+                <div className="flex items-center justify-end gap-2">
+                  {status === 'Re-auth Required' && (
+                    <button className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-bold rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition-colors">
+                      Fix Connection
+                    </button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={deletingAccountId === account._id}
+                    onClick={() => onDeleteAccount(account._id)}
+                    className="h-8 w-8 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    aria-label={`Delete ${account.name}`}
+                    title="Delete account"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </Button>
-                )}
+                </div>
               </td>
             </tr>
             );

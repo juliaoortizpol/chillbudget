@@ -17,11 +17,28 @@ export function AccountsPage() {
     createAccount,
     isCreating,
     createError,
+    deleteAccount,
+    deletingAccountId,
+    deleteError,
   } = useAccounts();
 
   const handleCreateAccount = async (account: CreateAccountDto) => {
     await createAccount(account);
     setIsAddingAccount(false);
+  };
+
+  const handleDeleteAccount = async (accountId: string) => {
+    const account = accounts.find((item) => item._id === accountId);
+    const confirmed = window.confirm(
+      `Delete ${account?.name || 'this account'}? This action removes it from your account list.`,
+    );
+    if (!confirmed) return;
+
+    try {
+      await deleteAccount(accountId);
+    } catch {
+      // The hook exposes the request error below the table.
+    }
   };
 
   return (
@@ -63,7 +80,18 @@ export function AccountsPage() {
           ) : accounts.length === 0 ? (
             <AccountsEmptyState onAddAccount={() => setIsAddingAccount(true)} />
           ) : (
-            <AccountsTable accounts={accounts} />
+            <>
+              <AccountsTable
+                accounts={accounts}
+                onDeleteAccount={handleDeleteAccount}
+                deletingAccountId={deletingAccountId}
+              />
+              {deleteError && (
+                <p className="border-t border-slate-100 px-6 py-3 text-sm text-red-600">
+                  {deleteError}
+                </p>
+              )}
+            </>
           )}
         </div>
       )}

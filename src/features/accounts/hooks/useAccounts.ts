@@ -36,6 +36,10 @@ export function useAccounts() {
   const [error, setError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [deletingAccountId, setDeletingAccountId] = useState<string | null>(
+    null,
+  );
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const fetchAccounts = useCallback(async () => {
     setIsLoading(true);
@@ -85,6 +89,28 @@ export function useAccounts() {
     [fetchApi],
   );
 
+  const deleteAccount = useCallback(
+    async (accountId: string) => {
+      setDeletingAccountId(accountId);
+      setDeleteError(null);
+
+      try {
+        await fetchApi(`/accounts/${accountId}`, { method: "DELETE" });
+        setAccounts((current) =>
+          current.filter((account) => account._id !== accountId),
+        );
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to delete account";
+        setDeleteError(message);
+        throw err;
+      } finally {
+        setDeletingAccountId(null);
+      }
+    },
+    [fetchApi],
+  );
+
   return {
     accounts,
     isLoading,
@@ -93,5 +119,8 @@ export function useAccounts() {
     createAccount,
     isCreating,
     createError,
+    deleteAccount,
+    deletingAccountId,
+    deleteError,
   };
 }
