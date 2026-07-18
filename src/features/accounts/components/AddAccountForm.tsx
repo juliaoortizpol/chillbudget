@@ -5,10 +5,12 @@ import {
   formatAccountType,
   useInstitutionSelector,
 } from '../hooks/useInstitutionSelector';
+import { useState } from 'react';
+import type { CreateAccountDto } from '../types/accounts';
 
 interface AddAccountFormProps {
   onCancel: () => void;
-  onSave: () => void;
+  onSave: (account: CreateAccountDto) => void;
 }
 
 export function AddAccountForm({ onCancel, onSave }: AddAccountFormProps) {
@@ -28,6 +30,41 @@ export function AddAccountForm({ onCancel, onSave }: AddAccountFormProps) {
     selectAccountType,
     availableAccountTypes,
   } = useInstitutionSelector();
+  const [accountName, setAccountName] = useState('');
+  const [last4Digits, setLast4Digits] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const handleSave = () => {
+    const name = accountName.trim();
+    const customInstitution = search.trim();
+
+    if (!name) {
+      setValidationError('Account nickname is required.');
+      return;
+    }
+    if (!selectedInstitution && !customInstitution) {
+      setValidationError('Select or enter an institution.');
+      return;
+    }
+    if (last4Digits && !/^\d{4}$/.test(last4Digits)) {
+      setValidationError('Last 4 digits must contain exactly four numbers.');
+      return;
+    }
+    if (accountType === 'credit_card' && !/^\d{4}$/.test(last4Digits)) {
+      setValidationError('Last 4 digits are required for credit card accounts.');
+      return;
+    }
+
+    setValidationError(null);
+    onSave({
+      name,
+      type: accountType,
+      ...(last4Digits && { last4Digits }),
+      ...(selectedInstitution
+        ? { institutionId: selectedInstitution._id }
+        : { institution: customInstitution }),
+    });
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 animate-in fade-in slide-in-from-top-4 duration-300">
@@ -63,11 +100,13 @@ export function AddAccountForm({ onCancel, onSave }: AddAccountFormProps) {
                 type="text" 
                 placeholder="e.g. Rainy Day Fund" 
                 className="w-full h-11 bg-slate-50 border border-slate-200 rounded-md px-4 text-sm outline-none focus:border-[#0f766e] focus:ring-1 focus:ring-[#0f766e] transition-all text-slate-900"
+                value={accountName}
+                onChange={(event) => setAccountName(event.target.value)}
               />
             </div>
 
-            {/* Type & Balance Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Account Type */}
+            <div className="grid grid-cols-1 gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-600 tracking-wider uppercase">Account Type</label>
                 <select
@@ -80,17 +119,6 @@ export function AddAccountForm({ onCancel, onSave }: AddAccountFormProps) {
                   ))}
                 </select>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-slate-600 tracking-wider uppercase">Initial Balance</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">$</span>
-                  <input 
-                    type="text" 
-                    placeholder="0.00" 
-                    className="w-full h-11 bg-slate-50 border border-slate-200 rounded-md pl-7 pr-4 text-sm outline-none focus:border-[#0f766e] focus:ring-1 focus:ring-[#0f766e] transition-all text-slate-900 font-medium"
-                  />
-                </div>
-              </div>
             </div>
 
             {/* Last 4 Digits */}
@@ -100,13 +128,21 @@ export function AddAccountForm({ onCancel, onSave }: AddAccountFormProps) {
                 <input 
                   type="text" 
                   maxLength={4}
+                  inputMode="numeric"
                   placeholder="e.g. 1234" 
                   className="w-full h-11 bg-slate-50 border border-slate-200 rounded-md px-4 text-sm outline-none focus:border-[#0f766e] focus:ring-1 focus:ring-[#0f766e] transition-all text-slate-900"
+                  value={last4Digits}
+                  onChange={(event) =>
+                    setLast4Digits(event.target.value.replace(/\D/g, '').slice(0, 4))
+                  }
                 />
                 <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               </div>
               <p className="text-[11px] text-slate-400 mt-1">Required for Card accounts to help identify transactions.</p>
             </div>
+            {validationError && (
+              <p className="text-sm font-medium text-red-600">{validationError}</p>
+            )}
           </div>
         </div>
 
@@ -115,7 +151,7 @@ export function AddAccountForm({ onCancel, onSave }: AddAccountFormProps) {
           <Button variant="ghost" onClick={onCancel} className="text-slate-600 font-bold hover:bg-slate-100 hover:text-slate-900 px-6 h-11">
             Cancel
           </Button>
-          <Button onClick={onSave} className="bg-[#0f766e] hover:bg-[#0d645e] text-white font-bold h-11 px-6 rounded-lg shadow-sm">
+          <Button onClick={handleSave} className="bg-[#0f766e] hover:bg-[#0d645e] text-white font-bold h-11 px-6 rounded-lg shadow-sm">
             Save Account
           </Button>
         </div>
