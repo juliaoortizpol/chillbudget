@@ -5,7 +5,7 @@ import { useLogin } from "../../hooks/useLogin"
 import { useSignup } from "../../hooks/useSignup"
 import { useGoogleLogin } from "../../hooks/useGoogleLogin"
 
-function validate(values: FormValues): FormErrors {
+function validate(values: FormValues, mode: "login" | "signup"): FormErrors {
   const errors: FormErrors = {}
 
   if (!values.email.trim()) {
@@ -20,12 +20,20 @@ function validate(values: FormValues): FormErrors {
     errors.password = "Password must be at least 8 characters."
   }
 
+  if (mode === "signup") {
+    if (!values.confirmPassword) {
+      errors.confirmPassword = "Please confirm your password."
+    } else if (values.password !== values.confirmPassword) {
+      errors.confirmPassword = "Passwords do not match."
+    }
+  }
+
   return errors
 }
 
 export function useLoginForm() {
   const [mode, setMode] = useState<"login" | "signup">("login")
-  const [values, setValues] = useState<FormValues>({ email: "", password: "" })
+  const [values, setValues] = useState<FormValues>({ email: "", password: "", confirmPassword: "" })
   const [errors, setErrors] = useState<FormErrors>({})
   
   const { login, isLoading: isLoginLoading } = useLogin()
@@ -47,7 +55,7 @@ export function useLoginForm() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    const validationErrors = validate(values)
+    const validationErrors = validate(values, mode)
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)

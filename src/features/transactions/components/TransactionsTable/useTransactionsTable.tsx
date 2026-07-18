@@ -84,7 +84,9 @@ export function useEditableCategoryCell(initialValue: TransactionCategory, onSav
 export function useAppendTransactionRow() {
   const [date, setDate] = React.useState<Date | undefined>()
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false)
-  const [amount, setAmount] = React.useState("")
+  // New transactions default to expenses. Removing the minus sign lets the
+  // user explicitly enter a positive income amount.
+  const [amount, setAmount] = React.useState("-")
   const [categoryKey, setCategoryKey] = React.useState("")
   const [description, setDescription] = React.useState("")
 

@@ -9,6 +9,9 @@ function LoginForm() {
   const { mode, toggleMode, values, errors, isLoading, handleChange, handleSubmit, handleSocialLogin } = useLoginForm()
 
   const styles = {
+    header: "mb-7",
+    title: "text-2xl font-heading font-bold text-ds-text-primary leading-tight",
+    subtitle: "text-sm text-ds-text-secondary mt-1",
     form: "flex flex-col gap-5",
     errorBanner: "flex items-start gap-3 rounded-sm bg-ds-danger/10 border border-ds-danger/20 px-4 py-3",
     errorIcon: "text-ds-danger mt-0.5 shrink-0",
@@ -24,77 +27,101 @@ function LoginForm() {
     socialContainer: "flex gap-3",
     signupContainer: "text-center text-sm text-ds-text-secondary",
     signupLink: "font-semibold text-ds-primary hover:text-ds-primary-hover transition-colors",
-    trustContainer: "flex items-center justify-center gap-4 pt-2",
-    trustItem: "flex items-center gap-1.5 text-xs text-ds-text-secondary",
-    trustDot: "text-ds-border",
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className={styles.form}>
-      {errors.form && (
-        <div className={styles.errorBanner}>
-          <AlertCircle size={16} className={styles.errorIcon} />
-          <div>
-            <p className={styles.errorTitle}>{mode === "login" ? "Invalid credentials" : "Error"}</p>
-            <p className={styles.errorText}>{errors.form}</p>
-          </div>
-        </div>
-      )}
-
-      <FormField
-        id="email"
-        label="Email address"
-        type="email"
-        placeholder="name@company.com"
-        autoComplete="email"
-        value={values.email}
-        onChange={handleChange("email")}
-        error={errors.email}
-        icon={<Mail size={16} />}
-      />
-
-      <FormField
-        id="password"
-        label="Password"
-        type="password"
-        placeholder="••••••••"
-        autoComplete="current-password"
-        value={values.password}
-        onChange={handleChange("password")}
-        error={errors.password}
-        icon={<Lock size={16} />}
-        rightSlot={
-          mode === "login" ? (
-            <a href="#" className={styles.forgotPassword}>
-              Forgot password?
-            </a>
-          ) : null
-        }
-      />
-
-      <Button
-        type="submit"
-        disabled={isLoading}
-        className={styles.submitBtn}
-      >
-        {isLoading ? (
-          <span className={styles.loadingContent}>
-            <svg className={styles.spinner} viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-            </svg>
-            {mode === "login" ? "Signing in…" : "Signing up…"}
-          </span>
-        ) : (
-          mode === "login" ? "Log in" : "Sign up"
-        )}
-      </Button>
-
-      <div className={styles.dividerContainer}>
-        <Separator className="flex-1" />
-        <span className={styles.dividerText}>or continue with</span>
-        <Separator className="flex-1" />
+    <>
+      {/* Heading */}
+      <div className={styles.header}>
+        <h1 className={styles.title}>
+          {mode === "login" ? "Welcome back" : "Create your sanctuary account"}
+        </h1>
+        <p className={styles.subtitle}>
+          {mode === "login" ? "Login to your financial sanctuary" : "Start taking control of your money"}
+        </p>
       </div>
+
+      <form onSubmit={handleSubmit} noValidate className={styles.form}>
+        {errors.form && (
+          <div className={styles.errorBanner}>
+            <AlertCircle size={16} className={styles.errorIcon} />
+            <div>
+              <p className={styles.errorTitle}>{mode === "login" ? "Invalid credentials" : "Error"}</p>
+              <p className={styles.errorText}>{errors.form}</p>
+            </div>
+          </div>
+        )}
+
+        <FormField
+          id="email"
+          label="Email address"
+          type="email"
+          placeholder="name@company.com"
+          autoComplete="email"
+          value={values.email}
+          onChange={handleChange("email")}
+          error={errors.email}
+          icon={<Mail size={16} />}
+        />
+
+        <FormField
+          id="password"
+          label="Password"
+          type="password"
+          placeholder="••••••••"
+          autoComplete="current-password"
+          value={values.password}
+          onChange={handleChange("password")}
+          error={errors.password}
+          icon={<Lock size={16} />}
+          rightSlot={
+            mode === "login" ? (
+              <a href="#" className={styles.forgotPassword}>
+                Forgot password?
+              </a>
+            ) : null
+          }
+        />
+
+        {mode === "signup" && (
+          <FormField
+            id="confirmPassword"
+            label="Confirm Password"
+            type="password"
+            placeholder="••••••••"
+            autoComplete="new-password"
+            value={values.confirmPassword || ""}
+            onChange={handleChange("confirmPassword")}
+            error={errors.confirmPassword}
+            icon={<Lock size={16} />}
+          />
+        )}
+
+        <Button
+          type="submit"
+          disabled={isLoading}
+          className={styles.submitBtn}
+        >
+          {isLoading ? (
+            <span className={styles.loadingContent}>
+              <svg className={styles.spinner} viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+              {mode === "login" ? "Signing in…" : "Signing up…"}
+            </span>
+          ) : (
+            mode === "login" ? "Log in" : "Sign up"
+          )}
+        </Button>
+
+        <div className={styles.dividerContainer}>
+          <Separator className="flex-1" />
+          <span className={styles.dividerText}>
+            {mode === "login" ? "or continue with" : "Or sign up with"}
+          </span>
+          <Separator className="flex-1" />
+        </div>
 
       <div className={styles.socialContainer}>
         <SocialLoginButton provider="google" onClick={() => handleSocialLogin("google")} disabled={isLoading} />
@@ -107,19 +134,8 @@ function LoginForm() {
           {mode === "login" ? "Sign up" : "Log in"}
         </a>
       </p>
-
-      <div className={styles.trustContainer}>
-        <span className={styles.trustItem}>
-          <ShieldCheck size={13} />
-          256-bit encryption
-        </span>
-        <span className={styles.trustDot}>·</span>
-        <span className={styles.trustItem}>
-          <Landmark size={13} />
-          FDIC insured
-        </span>
-      </div>
     </form>
+    </>
   )
 }
 

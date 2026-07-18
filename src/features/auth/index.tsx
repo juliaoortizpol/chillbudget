@@ -25,12 +25,6 @@ function LoginPage() {
             <img src="/logo.png" alt="Sanctuary Logo" className="h-20 object-contain" />
           </div>
 
-          {/* Heading */}
-          <div className={styles.header}>
-            <h1 className={styles.title}>Welcome back</h1>
-            <p className={styles.subtitle}>Login to your financial sanctuary</p>
-          </div>
-
           {/* Form */}
           <LoginForm />
         </div>

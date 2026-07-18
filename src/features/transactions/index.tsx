@@ -40,6 +40,10 @@ export function TransactionsPage() {
     transactionsData, fetchTransactions, isFetchingTransactions, 
     updateTransaction, createTransaction, deleteTransaction 
   } = useTransactions();
+  const {
+    transactionsData: expenseTransactionsData,
+    fetchTransactions: fetchExpenseTransactions,
+  } = useTransactions();
   const [currentPage, setCurrentPage] = React.useState(1);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [dateRange, setDateRange] = React.useState("Last 30 Days");
@@ -63,6 +67,29 @@ export function TransactionsPage() {
     });
   }, [fetchTransactions, currentPage, dateRange, categoryId, type]);
 
+  useEffect(() => {
+    if (!activeBudget) return;
+
+    fetchExpenseTransactions({
+      type: "expense",
+      startDate: activeBudget.startDate,
+      endDate: activeBudget.endDate,
+      limit: 10000,
+    });
+  }, [activeBudget, fetchExpenseTransactions]);
+
+  const spentByBudgetItem = useMemo(() => {
+    const totals: Record<string, number> = {};
+
+    for (const transaction of expenseTransactionsData?.data || []) {
+      if (transaction.type !== "expense" || !transaction.budgetItemId) continue;
+      totals[transaction.budgetItemId] =
+        (totals[transaction.budgetItemId] || 0) + Math.abs(transaction.amount);
+    }
+
+    return totals;
+  }, [expenseTransactionsData]);
+
   const isLoading = isFetchingBudgets || isFetchingTransactions;
   
   const dynamicCategories = React.useMemo(() => {
@@ -72,7 +99,7 @@ export function TransactionsPage() {
       if (!item._id) return acc;
       
       const allocated = item.plannedAmount || 0;
-      const spent = item.spent || 0;
+      const spent = spentByBudgetItem[item._id] || 0;
       const baseColor = item.color || "#6b7280";
 
       acc[item._id] = {
@@ -85,7 +112,7 @@ export function TransactionsPage() {
       };
       return acc;
     }, {} as Record<string, any>);
-  }, [activeBudget]);
+  }, [activeBudget, spentByBudgetItem]);
 
   const hasCategories = Object.keys(dynamicCategories).length > 0;
 
@@ -108,7 +135,9 @@ export function TransactionsPage() {
         date: format(new Date(t.date), "MMM d, yyyy"),
         description: t.name,
         category: cat,
-        amount: t.type === 'expense' ? -t.amount : t.amount
+        // Email-imported expenses can already be stored as negative amounts.
+        // Normalize the display sign instead of negating the raw value blindly.
+        amount: t.type === 'expense' ? -Math.abs(t.amount) : Math.abs(t.amount)
       }
     });
   }, [transactionsData, dynamicCategories]);
@@ -120,6 +149,16 @@ export function TransactionsPage() {
   }, [uiTransactions, searchQuery]);
 
   const filterCategories = useMemo(() => Object.values(dynamicCategories).map((c: any) => ({ id: c.id, name: c.name })), [dynamicCategories]);
+
+  const refreshBudgetSpending = async () => {
+    if (!activeBudget) return;
+    await fetchExpenseTransactions({
+      type: "expense",
+      startDate: activeBudget.startDate,
+      endDate: activeBudget.endDate,
+      limit: 10000,
+    });
+  };
 
   const handleUpdateItem = async (id: string, updates: any) => {
     const dto: any = {};
@@ -133,6 +172,7 @@ export function TransactionsPage() {
     
     await updateTransaction(id, dto);
     await fetchTransactions({ page: currentPage, limit: 10 });
+    await refreshBudgetSpending();
     await fetchBudgets();
   }
 
@@ -143,6 +183,7 @@ export function TransactionsPage() {
         setCurrentPage(res.meta.totalPages);
       }
     });
+    await refreshBudgetSpending();
     await fetchBudgets();
   }
 
@@ -164,6 +205,7 @@ export function TransactionsPage() {
     } else {
       setCurrentPage(1);
     }
+    await refreshBudgetSpending();
     await fetchBudgets();
   }
   return (

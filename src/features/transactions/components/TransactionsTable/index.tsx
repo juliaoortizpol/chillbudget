@@ -156,6 +156,7 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
   } = useAppendTransactionRow()
 
   const hasCategories = Object.keys(categories).length > 0;
+  const hasAmount = amount !== "" && amount !== "-";
 
   return (
     <tr className="border-t-0 bg-[#f4f7f4]/40">
@@ -231,15 +232,15 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
           size="icon" 
           className="h-9 w-9 bg-[#05603A] hover:bg-[#05603A]/90 text-white rounded-lg shrink-0"
           onClick={() => {
-            if (onAppend && description && amount && categoryKey) {
+            if (onAppend && description && hasAmount && categoryKey) {
               onAppend({ date, description, categoryKey, amount });
               // Reset
               setDescription("");
-              setAmount("");
+              setAmount("-");
               setCategoryKey("");
             }
           }}
-          disabled={!description || !amount || !categoryKey}
+          disabled={!description || !hasAmount || !categoryKey}
         >
           <Plus className="w-5 h-5" />
         </Button>
