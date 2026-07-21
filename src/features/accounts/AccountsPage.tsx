@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { AccountsHeader } from './components/AccountsHeader';
-import { PortfolioToolbar } from './components/PortfolioToolbar';
+import { PortfolioToolbar, type AccountsView } from './components/PortfolioToolbar';
 import { AccountsTable } from './components/AccountsTable';
 import { AddAccountForm } from './components/AddAccountForm';
 import { AccountsEmptyState } from './components/AccountsEmptyState';
 import { useAccounts } from './hooks/useAccounts';
 import type { CreateAccountDto } from './types/accounts';
+import { ConnectionsPanel } from './components/ConnectionsPanel';
+import { useGmailConnection } from './hooks/useGmailConnection';
 
 export function AccountsPage() {
   const [isAddingAccount, setIsAddingAccount] = useState(false);
+  const [activeView, setActiveView] = useState<AccountsView>('accounts');
   const {
     accounts,
     isLoading,
@@ -21,6 +24,10 @@ export function AccountsPage() {
     deletingAccountId,
     deleteError,
   } = useAccounts();
+  const gmail = useGmailConnection();
+  const canRefresh =
+    gmail.connection.connected &&
+    accounts.some((account) => Boolean(account.institutionId));
 
   const handleCreateAccount = async (account: CreateAccountDto) => {
     await createAccount(account);
@@ -41,6 +48,15 @@ export function AccountsPage() {
     }
   };
 
+  const handleRefreshAll = async () => {
+    try {
+      await gmail.sync();
+      await fetchAccounts();
+    } catch {
+      // The Gmail hook exposes synchronization errors.
+    }
+  };
+
   return (
     <div className="flex flex-col max-w-7xl mx-auto gap-6">
       
@@ -48,6 +64,9 @@ export function AccountsPage() {
       <AccountsHeader 
         isAddingAccount={isAddingAccount} 
         onToggleAddAccount={() => setIsAddingAccount(!isAddingAccount)} 
+        canRefresh={canRefresh}
+        isRefreshing={gmail.isSyncing}
+        onRefresh={handleRefreshAll}
       />
 
       {isAddingAccount ? (
@@ -60,9 +79,20 @@ export function AccountsPage() {
       ) : (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           {/* Card Header Toolbar */}
-          <PortfolioToolbar />
+          <PortfolioToolbar activeView={activeView} onViewChange={setActiveView} />
           {/* Table */}
-          {isLoading ? (
+          {activeView === 'connections' ? (
+            <ConnectionsPanel
+              connection={gmail.connection}
+              isLoading={gmail.isLoading}
+              isConnecting={gmail.isConnecting}
+              isDisconnecting={gmail.isDisconnecting}
+              error={gmail.error}
+              onConnect={gmail.connect}
+              onDisconnect={gmail.disconnect}
+              onRetry={gmail.fetchStatus}
+            />
+          ) : isLoading ? (
             <div className="p-10 text-center text-sm text-slate-500">
               Loading accounts...
             </div>
@@ -92,6 +122,11 @@ export function AccountsPage() {
                 </p>
               )}
             </>
+          )}
+          {gmail.syncMessage && (
+            <p className="border-t border-emerald-100 bg-emerald-50 px-6 py-3 text-sm text-emerald-700">
+              {gmail.syncMessage}
+            </p>
           )}
         </div>
       )}

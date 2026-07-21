@@ -5,17 +5,20 @@ import { PageHeader } from '@/components/layout/PageHeader';
 interface AccountsHeaderProps {
   isAddingAccount: boolean;
   onToggleAddAccount: () => void;
+  canRefresh: boolean;
+  isRefreshing: boolean;
+  onRefresh: () => void;
 }
 
-export function AccountsHeader({ isAddingAccount, onToggleAddAccount }: AccountsHeaderProps) {
+export function AccountsHeader({ isAddingAccount, onToggleAddAccount, canRefresh, isRefreshing, onRefresh }: AccountsHeaderProps) {
   return (
     <PageHeader 
       title="Financial Accounts" 
       subtitle="Manage your connected institutions and liquidity."
     >
-        <Button variant="outline" className="bg-white text-slate-700 font-medium h-10 px-4 rounded-md shadow-sm border-slate-200">
-          <RefreshCw className="w-4 h-4 mr-2 text-slate-500" />
-          Refresh All
+        <Button onClick={onRefresh} disabled={!canRefresh || isRefreshing} variant="outline" className="bg-white text-slate-700 font-medium h-10 px-4 rounded-md shadow-sm border-slate-200">
+          <RefreshCw className={`w-4 h-4 mr-2 text-slate-500 ${isRefreshing ? "animate-spin" : ""}`} />
+          {isRefreshing ? "Refreshing..." : "Refresh All"}
         </Button>
         <Button 
           onClick={onToggleAddAccount}
