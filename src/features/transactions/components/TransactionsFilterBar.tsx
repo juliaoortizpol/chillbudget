@@ -52,13 +52,13 @@ export function TransactionsFilterBar({
       <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 hide-scrollbar">
         
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger render={
             <Button variant="outline" className="gap-2 bg-background whitespace-nowrap shrink-0">
               <Calendar className="w-4 h-4 text-muted-foreground" />
               {dateRange}
               <span className="text-muted-foreground ml-1">v</span>
             </Button>
-          </DropdownMenuTrigger>
+          } />
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onDateRangeChange('All Time')}>All Time</DropdownMenuItem>
             <DropdownMenuItem onClick={() => onDateRangeChange('Last 7 Days')}>Last 7 Days</DropdownMenuItem>
@@ -68,13 +68,13 @@ export function TransactionsFilterBar({
         </DropdownMenu>
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger render={
             <Button variant="outline" className="gap-2 bg-background whitespace-nowrap shrink-0">
               <Shapes className="w-4 h-4 text-muted-foreground" />
               {selectedCategoryName}
               <span className="text-muted-foreground ml-1">v</span>
             </Button>
-          </DropdownMenuTrigger>
+          } />
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onCategoryChange(null)}>All Categories</DropdownMenuItem>
             {categories.map(c => (
@@ -86,13 +86,13 @@ export function TransactionsFilterBar({
         </DropdownMenu>
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger render={
             <Button variant="outline" className="gap-2 bg-background whitespace-nowrap shrink-0">
               <CreditCard className="w-4 h-4 text-muted-foreground" />
               Type: {typeDisplay}
               <span className="text-muted-foreground ml-1">v</span>
             </Button>
-          </DropdownMenuTrigger>
+          } />
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onTypeChange(null)}>All</DropdownMenuItem>
             <DropdownMenuItem onClick={() => onTypeChange('expense')}>Expense</DropdownMenuItem>
