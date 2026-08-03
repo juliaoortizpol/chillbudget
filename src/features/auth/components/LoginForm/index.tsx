@@ -9,10 +9,10 @@ function LoginForm() {
   const { mode, toggleMode, values, errors, isLoading, handleChange, handleSubmit, handleSocialLogin } = useLoginForm()
 
   const styles = {
-    header: "mb-7",
-    title: "text-2xl font-heading font-bold text-ds-text-primary leading-tight",
+    header: "mb-5 sm:mb-7",
+    title: "text-xl font-heading font-bold text-ds-text-primary leading-tight sm:text-2xl",
     subtitle: "text-sm text-ds-text-secondary mt-1",
-    form: "flex flex-col gap-5",
+    form: "flex flex-col gap-4 sm:gap-5",
     errorBanner: "flex items-start gap-3 rounded-sm bg-ds-danger/10 border border-ds-danger/20 px-4 py-3",
     errorIcon: "text-ds-danger mt-0.5 shrink-0",
     errorTitle: "text-sm font-semibold text-ds-danger",
