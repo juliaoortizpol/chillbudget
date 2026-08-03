@@ -300,4 +300,13 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     @apply bg-muted-foreground/40;
   }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--ds-text-primary);
+    caret-color: var(--ds-text-primary);
+    box-shadow: 0 0 0 1000px var(--ds-surface) inset;
+    transition: background-color 9999s ease-out 0s;
+  }
 }

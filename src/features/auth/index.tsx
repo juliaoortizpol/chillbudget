@@ -12,7 +12,7 @@ function LoginPage() {
     header: "mb-7",
     title: "text-2xl font-heading font-bold text-ds-text-primary leading-tight",
     subtitle: "text-sm text-ds-text-secondary mt-1",
-    footer: "text-center text-xs text-ds-text-secondary mt-6",
+    footer: "text-center text-xs font-medium text-ds-text-secondary mt-6",
   }
 
   return (

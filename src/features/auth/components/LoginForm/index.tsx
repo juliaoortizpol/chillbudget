@@ -17,7 +17,6 @@ function LoginForm() {
     errorIcon: "text-ds-danger mt-0.5 shrink-0",
     errorTitle: "text-sm font-semibold text-ds-danger",
     errorText: "text-xs text-ds-danger mt-0.5",
-    forgotPassword: "text-xs font-medium text-ds-primary hover:text-ds-primary-hover transition-colors",
     submitBtn: "btn-primary w-full h-11",
     loadingContent: "flex items-center gap-2",
     spinner: "animate-spin size-4",
@@ -34,10 +33,10 @@ function LoginForm() {
       {/* Heading */}
       <div className={styles.header}>
         <h1 className={styles.title}>
-          {mode === "login" ? "Welcome back" : "Create your sanctuary account"}
+          {mode === "login" ? "Welcome back" : "Create your chillBudget account"}
         </h1>
         <p className={styles.subtitle}>
-          {mode === "login" ? "Login to your financial sanctuary" : "Start taking control of your money"}
+          {mode === "login" ? "Track your money. Plan with confidence. Chill." : "Start taking control of your money"}
         </p>
       </div>
 
@@ -54,10 +53,11 @@ function LoginForm() {
 
         <FormField
           id="email"
+          name="email"
           label="Email address"
           type="email"
           placeholder="name@company.com"
-          autoComplete="email"
+          autoComplete={mode === "login" ? "username" : "email"}
           value={values.email}
           onChange={handleChange("email")}
           error={errors.email}
@@ -66,26 +66,21 @@ function LoginForm() {
 
         <FormField
           id="password"
+          name="password"
           label="Password"
           type="password"
           placeholder="••••••••"
-          autoComplete="current-password"
+          autoComplete={mode === "login" ? "current-password" : "new-password"}
           value={values.password}
           onChange={handleChange("password")}
           error={errors.password}
           icon={<Lock size={16} />}
-          rightSlot={
-            mode === "login" ? (
-              <a href="#" className={styles.forgotPassword}>
-                Forgot password?
-              </a>
-            ) : null
-          }
         />
 
         {mode === "signup" && (
           <FormField
             id="confirmPassword"
+            name="confirmPassword"
             label="Confirm Password"
             type="password"
             placeholder="••••••••"
@@ -125,7 +120,6 @@ function LoginForm() {
 
       <div className={styles.socialContainer}>
         <SocialLoginButton provider="google" onClick={() => handleSocialLogin("google")} disabled={isLoading} />
-        <SocialLoginButton provider="apple" onClick={() => handleSocialLogin("apple")} disabled={isLoading} />
       </div>
 
       <p className={styles.signupContainer}>
