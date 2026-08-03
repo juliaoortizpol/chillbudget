@@ -102,7 +102,7 @@ export function AccountsPage() {
               <button
                 type="button"
                 onClick={fetchAccounts}
-                className="text-sm font-semibold text-[#0f766e] hover:underline"
+                className="text-sm font-semibold text-primary hover:underline"
               >
                 Try again
               </button>

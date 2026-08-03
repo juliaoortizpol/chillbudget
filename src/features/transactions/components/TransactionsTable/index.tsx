@@ -232,7 +232,7 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
       <td className="p-2 pr-4 text-right">
         <Button 
           size="icon" 
-          className="h-9 w-9 bg-[#05603A] hover:bg-[#05603A]/90 text-white rounded-lg shrink-0"
+          className="h-9 w-9 bg-primary hover:bg-ds-primary-hover text-white rounded-lg shrink-0"
           onClick={() => {
             if (onAppend && description && hasAmount && categoryKey) {
               onAppend({ date, description, categoryKey, amount });

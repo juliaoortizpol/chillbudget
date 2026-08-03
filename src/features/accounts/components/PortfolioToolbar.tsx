@@ -13,7 +13,7 @@ export function PortfolioToolbar({
   const tabClass = (view: AccountsView) =>
     `rounded-md px-4 py-1.5 text-sm ${
       activeView === view
-        ? "bg-white font-semibold text-[#0f766e] shadow-sm"
+        ? "bg-white font-semibold text-primary shadow-sm"
         : "font-medium text-slate-500 hover:text-slate-700"
     }`;
 

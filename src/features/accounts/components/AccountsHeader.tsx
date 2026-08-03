@@ -23,7 +23,7 @@ export function AccountsHeader({ isAddingAccount, onToggleAddAccount, canRefresh
         <Button 
           onClick={onToggleAddAccount}
           variant={isAddingAccount ? "outline" : "default"}
-          className={isAddingAccount ? "bg-white text-slate-700 font-medium h-10 px-4 rounded-md shadow-sm border-slate-200 hover:bg-slate-50" : "bg-[#0f766e] hover:bg-[#0d645e] text-white font-medium h-10 px-4 rounded-md shadow-sm"}
+          className={isAddingAccount ? "bg-white text-slate-700 font-medium h-10 px-4 rounded-md shadow-sm border-slate-200 hover:bg-slate-50" : "bg-primary hover:bg-ds-primary-hover text-white font-medium h-10 px-4 rounded-md shadow-sm"}
         >
           {isAddingAccount ? (
             <>

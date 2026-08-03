@@ -84,7 +84,7 @@ export function AddAccountForm({
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
         <div className="p-6 md:p-8 flex-1 flex flex-col gap-6">
           
-          <div className="flex items-center gap-2 text-[#0f766e] pb-2">
+          <div className="flex items-center gap-2 text-primary pb-2">
             <Landmark className="w-6 h-6" />
             <h2 className="text-xl font-bold tracking-tight">Account Details</h2>
           </div>
@@ -110,7 +110,7 @@ export function AddAccountForm({
               <input 
                 type="text" 
                 placeholder="e.g. Rainy Day Fund" 
-                className="w-full h-11 bg-slate-50 border border-slate-200 rounded-md px-4 text-sm outline-none focus:border-[#0f766e] focus:ring-1 focus:ring-[#0f766e] transition-all text-slate-900"
+                className="w-full h-11 bg-slate-50 border border-slate-200 rounded-md px-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-slate-900"
                 value={accountName}
                 onChange={(event) => setAccountName(event.target.value)}
                 disabled={isSaving}
@@ -122,7 +122,7 @@ export function AddAccountForm({
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-600 tracking-wider uppercase">Account Type</label>
                 <select
-                  className="w-full h-11 bg-slate-50 border border-slate-200 rounded-md px-4 text-sm outline-none focus:border-[#0f766e] focus:ring-1 focus:ring-[#0f766e] transition-all text-slate-900 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22currentColor%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.293%207.293a1%201%200%20011.414%200L10%2010.586l3.293-3.293a1%201%200%20111.414%201.414l-4%204a1%201%200%2001-1.414%200l-4-4a1%201%200%20010-1.414z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] bg-[position:right_0.5rem_center] bg-no-repeat pr-8"
+                  className="w-full h-11 bg-slate-50 border border-slate-200 rounded-md px-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-slate-900 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22currentColor%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.293%207.293a1%201%200%20011.414%200L10%2010.586l3.293-3.293a1%201%200%20111.414%201.414l-4%204a1%201%200%2001-1.414%200l-4-4a1%201%200%20010-1.414z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] bg-[position:right_0.5rem_center] bg-no-repeat pr-8"
                   value={accountType}
                   onChange={(event) => selectAccountType(event.target.value)}
                   disabled={isSaving}
@@ -143,7 +143,7 @@ export function AddAccountForm({
                   maxLength={4}
                   inputMode="numeric"
                   placeholder="e.g. 1234" 
-                  className="w-full h-11 bg-slate-50 border border-slate-200 rounded-md px-4 text-sm outline-none focus:border-[#0f766e] focus:ring-1 focus:ring-[#0f766e] transition-all text-slate-900"
+                  className="w-full h-11 bg-slate-50 border border-slate-200 rounded-md px-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-slate-900"
                   value={last4Digits}
                   onChange={(event) =>
                     setLast4Digits(event.target.value.replace(/\D/g, '').slice(0, 4))
@@ -167,7 +167,7 @@ export function AddAccountForm({
           <Button type="button" variant="ghost" onClick={onCancel} disabled={isSaving} className="text-slate-600 font-bold hover:bg-slate-100 hover:text-slate-900 px-6 h-11">
             Cancel
           </Button>
-          <Button type="button" onClick={handleSave} disabled={isSaving} className="bg-[#0f766e] hover:bg-[#0d645e] text-white font-bold h-11 px-6 rounded-lg shadow-sm">
+          <Button type="button" onClick={handleSave} disabled={isSaving} className="bg-primary hover:bg-ds-primary-hover text-white font-bold h-11 px-6 rounded-lg shadow-sm">
             {isSaving ? 'Saving...' : 'Save Account'}
           </Button>
         </div>
@@ -177,7 +177,7 @@ export function AddAccountForm({
       <div className="flex flex-col gap-6">
         
         {/* Gmail Card */}
-        <div className="bg-[#0f766e] rounded-xl p-8 text-white shadow-sm flex flex-col gap-4">
+        <div className="bg-gradient-to-br from-[#0B2C40] to-primary rounded-xl p-8 text-white shadow-sm flex flex-col gap-4">
           <div className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center mb-2">
             <Mail className="w-6 h-6 text-white" />
           </div>
@@ -185,7 +185,7 @@ export function AddAccountForm({
           <p className="text-[#a7f3d0] text-sm leading-relaxed mb-4">
             Securely link your Gmail to automatically track digital receipts and recurring subscriptions.
           </p>
-          <Button className="w-full bg-white text-[#0f766e] hover:bg-slate-50 font-bold h-12 rounded-lg shadow-sm">
+          <Button className="w-full bg-white text-primary hover:bg-slate-50 font-bold h-12 rounded-lg shadow-sm">
             Link Gmail Account
           </Button>
         </div>

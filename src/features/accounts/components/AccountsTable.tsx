@@ -70,12 +70,12 @@ export function AccountsTable({
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${
-                    status === 'Active' ? 'bg-[#0f766e]' :
+                    status === 'Active' ? 'bg-primary' :
                     status === 'Pending' ? 'bg-slate-300' :
                     'bg-red-500'
                   }`} />
                   <span className={`font-semibold ${
-                    status === 'Active' ? 'text-[#0f766e]' :
+                    status === 'Active' ? 'text-primary' :
                     status === 'Pending' ? 'text-slate-500' :
                     'text-red-600'
                   }`}>

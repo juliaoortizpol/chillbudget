@@ -2,7 +2,7 @@ import { LoginForm } from "./components/LoginForm"
 
 function LoginPage() {
   const styles = {
-    main: "min-h-screen flex items-center justify-center bg-ds-background px-4",
+    main: "min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,_#DDF6F1_0%,_#F5FAF9_45%,_#EDF7FA_100%)] px-4",
     wrapper: "w-full max-w-[420px]",
     card: "card shadow-elevated px-8 py-9",
     logoContainer: "flex items-center gap-2.5 mb-8",
@@ -21,8 +21,12 @@ function LoginPage() {
         {/* Card */}
         <div className={styles.card}>
           {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <img src="/logo.png" alt="Sanctuary Logo" className="h-20 object-contain" />
+          <div className="flex justify-center mb-5">
+            <img
+              src="/chillbudget-logo.png"
+              alt="chillBudget"
+              className="h-48 w-auto max-w-full object-contain"
+            />
           </div>
 
           {/* Form */}
@@ -31,7 +35,7 @@ function LoginPage() {
 
         {/* Footer */}
         <p className={styles.footer}>
-          © {new Date().getFullYear()} FlowBudget · Personal Finance App
+          © {new Date().getFullYear()} chillBudget · Track. Plan. Chill.
         </p>
       </div>
     </main>

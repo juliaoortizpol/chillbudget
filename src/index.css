@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────
-   FlowBudget Design System
+   chillBudget Design System
    Stack: Vite + React + TypeScript + Tailwind CSS v4 + shadcn/ui
    ───────────────────────────────────────────────────────────── */
 
@@ -69,10 +69,10 @@
 
   /* ── Design system extra colors ─────────────────────────── */
   /* Use: bg-ds-primary, text-ds-success, border-ds-border, etc. */
-  --color-ds-primary:        #16A34A;
-  --color-ds-primary-hover:  #15803D;
-  --color-ds-secondary:      #2563EB;
-  --color-ds-success:        #22C55E;
+  --color-ds-primary:        #167F78;
+  --color-ds-primary-hover:  #106860;
+  --color-ds-secondary:      #0B2C40;
+  --color-ds-success:        #2FA99E;
   --color-ds-danger:         #EF4444;
   --color-ds-warning:        #F59E0B;
   --color-ds-background:     var(--ds-background);
@@ -108,49 +108,49 @@
 /* ── Light mode CSS variables ────────────────────────────── */
 :root {
   /* shadcn semantic tokens → design system values */
-  --background:           #F8FAFC;
-  --foreground:           #0F172A;
+  --background:           #F5FAF9;
+  --foreground:           #0B2C40;
   --card:                 #FFFFFF;
-  --card-foreground:      #0F172A;
+  --card-foreground:      #0B2C40;
   --popover:              #FFFFFF;
-  --popover-foreground:   #0F172A;
-  --primary:              #16A34A;
+  --popover-foreground:   #0B2C40;
+  --primary:              #167F78;
   --primary-foreground:   #FFFFFF;
-  --secondary:            #F1F5F9;
-  --secondary-foreground: #0F172A;
-  --muted:                #F1F5F9;
-  --muted-foreground:     #64748B;
-  --accent:               #F1F5F9;
-  --accent-foreground:    #0F172A;
+  --secondary:            #EAF5F3;
+  --secondary-foreground: #0B2C40;
+  --muted:                #EDF6F5;
+  --muted-foreground:     #55727B;
+  --accent:               #DFF3EF;
+  --accent-foreground:    #0B2C40;
   --destructive:          #EF4444;
-  --border:               #E2E8F0;
-  --input:                #E2E8F0;
-  --ring:                 #16A34A;
+  --border:               #D7E7E5;
+  --input:                #C9DEDB;
+  --ring:                 #2FA99E;
   --radius:               0.75rem;
 
   /* Charts */
-  --chart-1: #16A34A;
-  --chart-2: #2563EB;
-  --chart-3: #F59E0B;
+  --chart-1: #2FA99E;
+  --chart-2: #0B2C40;
+  --chart-3: #FFC63D;
   --chart-4: #EF4444;
-  --chart-5: #22C55E;
+  --chart-5: #5DD6BC;
 
   /* Sidebar */
   --sidebar:                    #FFFFFF;
-  --sidebar-foreground:         #0F172A;
-  --sidebar-primary:            #16A34A;
+  --sidebar-foreground:         #0B2C40;
+  --sidebar-primary:            #167F78;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent:             #F1F5F9;
-  --sidebar-accent-foreground:  #0F172A;
-  --sidebar-border:             #E2E8F0;
-  --sidebar-ring:               #16A34A;
+  --sidebar-accent:             #E3F4F1;
+  --sidebar-accent-foreground:  #0B2C40;
+  --sidebar-border:             #D7E7E5;
+  --sidebar-ring:               #2FA99E;
 
   /* Design system extras (light) */
-  --ds-background:     #F8FAFC;
+  --ds-background:     #F5FAF9;
   --ds-surface:        #FFFFFF;
-  --ds-text-primary:   #0F172A;
-  --ds-text-secondary: #64748B;
-  --ds-border:         #E2E8F0;
+  --ds-text-primary:   #0B2C40;
+  --ds-text-secondary: #55727B;
+  --ds-border:         #D7E7E5;
 }
 
 /* ── Dark mode CSS variables ─────────────────────────────── */
@@ -161,7 +161,7 @@
   --card-foreground:      #F1F5F9;
   --popover:              #0F172A;
   --popover-foreground:   #F1F5F9;
-  --primary:              #22C55E;
+  --primary:              #5DD6BC;
   --primary-foreground:   #020617;
   --secondary:            #1E293B;
   --secondary-foreground: #F1F5F9;
@@ -172,11 +172,11 @@
   --destructive:          #F87171;
   --border:               #1E293B;
   --input:                #1E293B;
-  --ring:                 #22C55E;
+  --ring:                 #5DD6BC;
 
   /* Charts */
-  --chart-1: #22C55E;
-  --chart-2: #60A5FA;
+  --chart-1: #5DD6BC;
+  --chart-2: #78CFE0;
   --chart-3: #FCD34D;
   --chart-4: #F87171;
   --chart-5: #34D399;
@@ -184,12 +184,12 @@
   /* Sidebar */
   --sidebar:                    #0F172A;
   --sidebar-foreground:         #F1F5F9;
-  --sidebar-primary:            #22C55E;
+  --sidebar-primary:            #5DD6BC;
   --sidebar-primary-foreground: #020617;
   --sidebar-accent:             #1E293B;
   --sidebar-accent-foreground:  #F1F5F9;
   --sidebar-border:             #1E293B;
-  --sidebar-ring:               #22C55E;
+  --sidebar-ring:               #5DD6BC;
 
   /* Design system extras (dark) */
   --ds-background:     #020617;

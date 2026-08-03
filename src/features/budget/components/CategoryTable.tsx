@@ -306,7 +306,7 @@ function AppendCategoryRow({
         <div className="flex justify-end pr-2">
           <Button 
             size="icon" 
-            className="h-8 w-8 bg-[#05603A] hover:bg-[#05603A]/90 text-white rounded-lg shrink-0"
+            className="h-8 w-8 bg-primary hover:bg-ds-primary-hover text-white rounded-lg shrink-0"
             onClick={() => {
               if (name.trim()) {
                 onCreate(name, description, Number(allocated.replace(/,/g, '')) || 0, iconName)
@@ -356,7 +356,7 @@ export function CategoryTable({
         <div className="flex gap-2">
           <Button 
             onClick={() => nameInputRef.current?.focus()}
-            className="bg-[#05603A] hover:bg-[#05603A]/90 text-white rounded-lg gap-2 h-9 px-4 font-bold tracking-wide"
+            className="bg-primary hover:bg-ds-primary-hover text-white rounded-lg gap-2 h-9 px-4 font-bold tracking-wide"
           >
             <Plus className="w-4 h-4" strokeWidth={3} /> Add Item
           </Button>

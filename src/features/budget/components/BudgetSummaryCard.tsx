@@ -89,7 +89,7 @@ export function BudgetSummaryCard({ totalAllocated, totalSpent, comparison }: Bu
             {/* Custom Progress Bar */}
             <div className="h-3 w-full bg-muted/60 rounded-full overflow-hidden flex">
               <div 
-                className={`h-full ${isOverspent ? "bg-red-500" : "bg-[#05603A]"}`} 
+                className={`h-full ${isOverspent ? "bg-red-500" : "bg-primary"}`}
                 style={{ width: `${Math.min(utilizedPercent, 100)}%` }} 
               />
             </div>

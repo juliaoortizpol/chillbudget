@@ -10,7 +10,7 @@ export function AccountsEmptyState({
 }: AccountsEmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-[#0f766e]">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
         <Landmark className="h-7 w-7" />
       </div>
       <h3 className="mt-5 text-lg font-bold text-slate-900">
@@ -23,7 +23,7 @@ export function AccountsEmptyState({
       <Button
         type="button"
         onClick={onAddAccount}
-        className="mt-6 h-10 bg-[#0f766e] px-5 font-semibold text-white hover:bg-[#0d645e]"
+        className="mt-6 h-10 bg-primary px-5 font-semibold text-white hover:bg-ds-primary-hover"
       >
         <Plus className="mr-2 h-4 w-4" />
         Add Account

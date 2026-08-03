@@ -18,7 +18,7 @@ export function SidebarNavItem({ icon: Icon, label, href, isActive }: SidebarNav
         clsx(
           "flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium transition-colors cursor-pointer",
           isActive 
-            ? "bg-[#05603A]/10 text-[#05603A] font-bold" 
+            ? "bg-primary/10 text-primary font-bold"
             : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
         )
       )}

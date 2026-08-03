@@ -86,7 +86,7 @@ export function Pagination({
               variant={isCurrent ? "default" : "ghost"}
               size="sm"
               className={isCurrent 
-                ? "h-8 w-8 bg-[#05603A] hover:bg-[#05603A]/90 text-white p-0 font-bold" 
+                ? "h-8 w-8 bg-primary hover:bg-ds-primary-hover text-white p-0 font-bold"
                 : "h-8 w-8 text-muted-foreground font-medium p-0 hover:bg-muted/50"
               }
               onClick={() => onPageChange(Number(p))}

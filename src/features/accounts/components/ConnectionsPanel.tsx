@@ -40,7 +40,7 @@ export function ConnectionsPanel({
     return (
       <div className="m-6 flex flex-col items-start justify-between gap-5 rounded-xl border border-emerald-200 bg-emerald-50 p-6 sm:flex-row sm:items-center">
         <div className="flex items-start gap-4">
-          <div className="rounded-xl bg-white p-3 text-[#0f766e] shadow-sm">
+          <div className="rounded-xl bg-white p-3 text-primary shadow-sm">
             <Mail className="h-6 w-6" />
           </div>
           <div>
@@ -50,7 +50,7 @@ export function ConnectionsPanel({
             </p>
           </div>
         </div>
-        <Button onClick={onConnect} disabled={isConnecting} className="bg-[#0f766e] text-white hover:bg-[#0d645e]">
+        <Button onClick={onConnect} disabled={isConnecting} className="bg-primary text-white hover:bg-ds-primary-hover">
           <Plus className="mr-2 h-4 w-4" />
           {isConnecting ? "Connecting..." : "Add Gmail Connection"}
         </Button>
@@ -82,7 +82,7 @@ export function ConnectionsPanel({
               </td>
               <td className="px-6 py-4 text-slate-600">{connection.email}</td>
               <td className="px-6 py-4">
-                <span className={needsReconnect ? "font-semibold text-amber-600" : "font-semibold text-[#0f766e]"}>
+                <span className={needsReconnect ? "font-semibold text-amber-600" : "font-semibold text-primary"}>
                   {needsReconnect ? "Reconnect required" : "Connected"}
                 </span>
               </td>

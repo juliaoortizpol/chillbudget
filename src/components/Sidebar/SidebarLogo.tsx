@@ -1,11 +1,7 @@
 export function SidebarLogo() {
   return (
-    <div className="flex items-center justify-center px-6 py-6 border-b border-border/40">
-      {/* 
-        This references the logo from the public directory.
-        Make sure to place the logo.png in the 'public' folder.
-      */}
-      <img src="/logo.png" alt="Sanctuary Logo" className="h-16 object-contain" />
+    <div className="flex items-center justify-center border-b border-border/60 bg-gradient-to-b from-white to-[#F1FAF8] px-5 py-5">
+      <img src="/chillbudget-logo.png" alt="chillBudget" className="h-24 w-auto object-contain" />
     </div>
   );
 }

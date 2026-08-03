@@ -38,7 +38,7 @@ export function InstitutionSelector({
         <input
           type="text"
           placeholder="Search or type bank name..."
-          className="h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition-all focus:border-[#0f766e] focus:ring-1 focus:ring-[#0f766e]"
+          className="h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
           value={search}
           onFocus={onOpen}
           onBlur={onClose}
@@ -57,7 +57,7 @@ export function InstitutionSelector({
                 <p className="text-sm text-red-600">{error}</p>
                 <button
                   type="button"
-                  className="mt-1 text-xs font-bold text-[#0f766e]"
+                  className="mt-1 text-xs font-bold text-primary"
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={onRetry}
                 >
@@ -98,7 +98,7 @@ export function InstitutionSelector({
       </div>
 
       {selectedInstitution && (
-        <p className="text-[11px] font-medium text-[#0f766e]">
+        <p className="text-[11px] font-medium text-primary">
           Supported institution selected
         </p>
       )}
