@@ -55,13 +55,13 @@ export function ExpensesChart({ transactions, isLoading = false, error, onRetry 
   return (
     <DashboardCard title="WEEKLY EXPENSES">
       {isLoading ? (
-        <div className="flex min-h-[304px] animate-pulse flex-col pt-2" aria-hidden="true">
+        <div className="flex min-h-[220px] animate-pulse flex-col pt-2 sm:min-h-[304px]" aria-hidden="true">
           <div className="h-3 w-20 rounded bg-muted" />
           <div className="mt-3 h-9 w-28 rounded bg-muted" />
           <div className="mt-auto h-32 rounded-xl bg-muted/70" />
         </div>
       ) : error ? (
-        <div className="flex min-h-[304px] flex-col items-center justify-center px-4 text-center" role="alert">
+        <div className="flex min-h-[220px] flex-col items-center justify-center px-4 text-center sm:min-h-[304px]" role="alert">
           <AlertCircle className="mb-3 h-8 w-8 text-destructive" />
           <p className="text-sm font-semibold text-foreground">Unable to load expenses</p>
           <p className="mt-1 text-xs text-muted-foreground">Please try again.</p>
@@ -72,7 +72,7 @@ export function ExpensesChart({ transactions, isLoading = false, error, onRetry 
           )}
         </div>
       ) : totalAmount === 0 ? (
-        <div className="flex min-h-[304px] flex-col items-center justify-center px-4 text-center">
+        <div className="flex min-h-[220px] flex-col items-center justify-center px-4 text-center sm:min-h-[304px]">
           <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <ChartNoAxesColumn className="h-6 w-6 text-primary" />
           </div>
@@ -88,7 +88,7 @@ export function ExpensesChart({ transactions, isLoading = false, error, onRetry 
         </h3>
       </div>
       
-      <div className="h-[200px] w-full mt-2 -ml-2">
+      <div className="mt-2 -ml-2 h-[160px] w-full sm:h-[200px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
             <XAxis 
