@@ -1,4 +1,4 @@
-import { Search, Calendar, Shapes, CreditCard, ListFilter, ChevronDown } from "lucide-react"
+import { Search, Calendar, Shapes, CreditCard, ListX, ChevronDown } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import {
@@ -36,12 +36,14 @@ export function TransactionsFilterBar({
   
   const selectedCategoryName = categoryId ? categories.find(c => c.id === categoryId)?.name || "Category" : "Category";
   const typeDisplay = type ? (type === 'expense' ? "Expense" : "Income") : "All";
+  const hasActiveFilters = Boolean(searchQuery.trim() || dateRange !== "All Time" || categoryId || type);
   
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3 shadow-sm sm:p-4 xl:flex-row xl:items-center xl:gap-4">
       <div className="relative flex-1 w-full">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input 
+          aria-label="Search transactions"
           placeholder="Search transactions..."
           className="pl-9 bg-muted/40 border-transparent focus-visible:bg-transparent transition-colors"
           value={searchQuery}
@@ -69,7 +71,7 @@ export function TransactionsFilterBar({
 
         <DropdownMenu>
           <DropdownMenuTrigger render={
-            <Button variant="outline" className="w-full min-w-0 justify-between gap-2 whitespace-nowrap bg-background sm:w-auto sm:max-w-56">
+            <Button variant="outline" className="w-full min-w-0 justify-between gap-2 whitespace-nowrap bg-background sm:w-auto sm:max-w-56" title={selectedCategoryName}>
               <Shapes className="w-4 h-4 text-muted-foreground" />
               <span className="truncate">{selectedCategoryName}</span>
               <ChevronDown className="ml-1 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -100,9 +102,16 @@ export function TransactionsFilterBar({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="outline" className="w-full bg-background sm:w-10 sm:px-0" onClick={onClearFilters} aria-label="Clear filters" title="Clear filters">
-          <ListFilter className="w-4 h-4 text-muted-foreground" />
-          <span className="sm:hidden">Clear filters</span>
+        <Button
+          variant="outline"
+          className="w-full bg-background disabled:opacity-50 sm:w-auto lg:w-10 lg:px-0"
+          onClick={onClearFilters}
+          aria-label="Clear filters"
+          title={hasActiveFilters ? "Clear filters" : "No filters to clear"}
+          disabled={!hasActiveFilters}
+        >
+          <ListX className="h-4 w-4 text-muted-foreground" />
+          <span className="lg:hidden">Clear filters</span>
         </Button>
       </div>
     </div>

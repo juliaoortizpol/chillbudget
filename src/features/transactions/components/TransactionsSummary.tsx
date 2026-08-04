@@ -23,13 +23,13 @@ export function TransactionsSummary({
   budgetUsed,
 }: TransactionsSummaryProps) {
   return (
-    <div className="grid grid-cols-1 overflow-hidden rounded-xl border border-border bg-card shadow-sm sm:grid-cols-2 lg:grid-cols-4">
-      <div className="px-6 py-4">
+    <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card shadow-sm lg:grid-cols-4">
+      <div className="px-4 py-4 sm:px-6">
         <div className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
           Spent in Shown Rows
         </div>
-        <div className="mt-1 flex items-center gap-2">
-          <span className="text-xl font-bold text-foreground">
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <span className="text-lg font-bold tabular-nums text-foreground sm:text-xl">
             {formatCurrency(totalSpent)}
           </span>
           {monthlyBudget > 0 && (
@@ -40,29 +40,29 @@ export function TransactionsSummary({
         </div>
       </div>
 
-      <div className="border-t border-border px-6 py-4 sm:border-l sm:border-t-0">
+      <div className="border-l border-border px-4 py-4 sm:px-6">
         <div className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
           Monthly Budget
         </div>
-        <div className="mt-1 text-xl font-bold text-foreground">
+        <div className="mt-1 text-lg font-bold tabular-nums text-foreground sm:text-xl">
           {formatCurrency(monthlyBudget)}
         </div>
       </div>
 
-      <div className="border-t border-border px-6 py-4 lg:border-l lg:border-t-0">
+      <div className="border-t border-border px-4 py-4 sm:px-6 lg:border-l lg:border-t-0">
         <div className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
           Max in Shown Rows
         </div>
-        <div className="mt-1 text-xl font-bold text-foreground">
+        <div className="mt-1 text-lg font-bold tabular-nums text-foreground sm:text-xl">
           {formatCurrency(maxTransaction)}
         </div>
       </div>
 
-      <div className="border-t border-border px-6 py-4 sm:border-l lg:border-t-0">
+      <div className="border-l border-t border-border px-4 py-4 sm:px-6 lg:border-t-0">
         <div className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
           Transactions Shown
         </div>
-        <div className="mt-1 text-xl font-bold text-foreground">
+        <div className="mt-1 text-lg font-bold tabular-nums text-foreground sm:text-xl">
           {totalTransactions.toLocaleString()}
         </div>
       </div>

@@ -14,7 +14,7 @@ export function SidebarProfile() {
 
   return (
     <div className="p-4 border-t border-border/40 mt-auto m-4 rounded-xl border border-border bg-card">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3" aria-label={email ? `Signed in as ${email}` : "Signed in user"}>
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/15 bg-primary/10 text-sm font-bold text-primary">
           {initials || <UserRound className="h-5 w-5" />}
         </div>

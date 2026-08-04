@@ -1,7 +1,7 @@
 import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Calendar as CalendarIcon, Plus } from "lucide-react"
+import { Calendar as CalendarIcon, ChevronDown, Plus } from "lucide-react"
 import { useTableEditor } from "@/hooks/useTableEditor"
 import { cn, formatMoneyInput } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -158,16 +158,24 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
   const hasCategories = Object.keys(categories).length > 0;
   const hasAmount = amount !== "" && amount !== "-";
   const showCurrencySymbol = /\d/.test(amount);
+  const canAppend = Boolean(description.trim() && hasAmount && categoryKey);
+  const addButtonLabel = !description.trim()
+    ? "Enter a description first"
+    : !categoryKey
+      ? "Select a category first"
+      : !hasAmount
+        ? "Enter an amount first"
+        : "Add transaction";
 
   return (
-    <tr className="grid grid-cols-1 gap-3 border-t-0 bg-[#f4f7f4]/40 p-3 sm:grid-cols-2 xl:table-row xl:p-0">
-      <td className="block p-0 xl:table-cell xl:p-2 xl:pl-4">
+    <div className="grid grid-cols-1 gap-3 border-t border-border bg-[#f4f7f4]/40 p-3 sm:grid-cols-2 xl:grid-cols-[132px_minmax(180px,1fr)_minmax(160px,0.8fr)_144px_44px] xl:items-center xl:gap-2 xl:py-2 xl:pl-4 xl:pr-3">
+      <div className="min-w-0">
         <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
           <PopoverTrigger render={
             <Button
               variant="outline"
               className={cn(
-                "h-9 w-full justify-start border-input bg-background px-3 text-left font-normal xl:w-32",
+                "h-9 w-full justify-start border-input bg-background px-3 text-left font-normal",
                 !date && "text-muted-foreground"
               )}
             />
@@ -186,8 +194,8 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
             />
           </PopoverContent>
         </Popover>
-      </td>
-      <td className="block p-0 xl:table-cell xl:p-2">
+      </div>
+      <div className="min-w-0">
         <Input 
           placeholder="Enter description..." 
           className="h-9 bg-background" 
@@ -197,10 +205,12 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
             setDescription(e.target.value);
           }}
         />
-      </td>
-      <td className="block p-0 xl:table-cell xl:p-2">
+      </div>
+      <div className="min-w-0">
         <div className="relative">
           <select 
+            aria-label="Transaction category"
+            title={categoryKey ? categories[categoryKey]?.name : undefined}
             className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
             onChange={(e) => {
               handleInteraction();
@@ -214,10 +224,10 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
               <option key={key} value={key}>{cat.name}</option>
             ))}
           </select>
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">v</span>
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         </div>
-      </td>
-      <td className="block p-0 xl:table-cell xl:p-2">
+      </div>
+      <div className="min-w-0">
         <div className="relative">
           {showCurrencySymbol && (
             <span className="absolute left-3 top-1/2 -translate-y-1/2 font-medium text-muted-foreground">$</span>
@@ -225,7 +235,7 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
           <Input 
             placeholder="-0.00"
             className={cn(
-              "h-9 w-full bg-background font-medium xl:w-36",
+              "h-9 w-full bg-background font-medium",
               showCurrencySymbol ? "pl-7" : "pl-3"
             )}
             value={amount}
@@ -234,11 +244,14 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
             onChange={handleAmountChange}
           />
         </div>
-      </td>
-      <td className="block p-0 sm:col-span-2 xl:table-cell xl:p-2 xl:pr-4 xl:text-right">
+      </div>
+      <div className="sm:col-span-2 xl:col-span-1">
         <Button 
+          type="button"
           size="icon" 
-          className="h-9 w-full shrink-0 rounded-lg bg-primary text-white hover:bg-ds-primary-hover xl:w-9"
+          className="h-9 w-full shrink-0 rounded-lg bg-primary text-white hover:bg-ds-primary-hover disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100 xl:w-9"
+          aria-label={addButtonLabel}
+          title={addButtonLabel}
           onClick={() => {
             if (onAppend && description && hasAmount && categoryKey) {
               onAppend({ date, description, categoryKey, amount });
@@ -248,13 +261,13 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
               setCategoryKey("");
             }
           }}
-          disabled={!description || !hasAmount || !categoryKey}
+          disabled={!canAppend}
         >
           <Plus className="w-5 h-5" />
           <span className="xl:hidden">Add transaction</span>
         </Button>
-      </td>
-    </tr>
+      </div>
+    </div>
   )
 }
 
@@ -284,11 +297,11 @@ export function TransactionsTable({
       <DataTable 
         columns={columns} 
         data={data} 
-        containerClassName="max-h-none h-auto"
+        containerClassName="max-h-none h-auto [&_table]:min-w-[700px]"
         emptyTitle={emptyTitle}
         emptyDescription={emptyDescription}
-        appendRowComponent={<AppendTransactionRow categories={categories} onAppend={onAppendItem} />}
       />
+      <AppendTransactionRow categories={categories} onAppend={onAppendItem} />
     </div>
   )
 }
