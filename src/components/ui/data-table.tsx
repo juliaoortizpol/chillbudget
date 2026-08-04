@@ -21,6 +21,8 @@ interface DataTableProps<TData, TValue> {
   data: TData[]
   appendRowComponent?: React.ReactNode
   containerClassName?: string
+  emptyTitle?: string
+  emptyDescription?: string
 }
 
 export function DataTable<TData, TValue>({
@@ -28,6 +30,8 @@ export function DataTable<TData, TValue>({
   data,
   appendRowComponent,
   containerClassName = "max-h-[280px]",
+  emptyTitle = "No results",
+  emptyDescription,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -76,8 +80,13 @@ export function DataTable<TData, TValue>({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                  No results.
+                <TableCell colSpan={columns.length} className="h-32 text-center">
+                  <div className="flex flex-col items-center justify-center px-4">
+                    <p className="text-sm font-semibold text-foreground">{emptyTitle}</p>
+                    {emptyDescription && (
+                      <p className="mt-1 text-xs text-muted-foreground">{emptyDescription}</p>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             )}

@@ -157,16 +157,17 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
 
   const hasCategories = Object.keys(categories).length > 0;
   const hasAmount = amount !== "" && amount !== "-";
+  const showCurrencySymbol = /\d/.test(amount);
 
   return (
-    <tr className="border-t-0 bg-[#f4f7f4]/40">
-      <td className="p-2 pl-4">
+    <tr className="grid grid-cols-1 gap-3 border-t-0 bg-[#f4f7f4]/40 p-3 sm:grid-cols-2 xl:table-row xl:p-0">
+      <td className="block p-0 xl:table-cell xl:p-2 xl:pl-4">
         <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
           <PopoverTrigger render={
             <Button
               variant="outline"
               className={cn(
-                "h-9 w-32 justify-start text-left font-normal bg-background border-input px-3",
+                "h-9 w-full justify-start border-input bg-background px-3 text-left font-normal xl:w-32",
                 !date && "text-muted-foreground"
               )}
             />
@@ -186,7 +187,7 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
           </PopoverContent>
         </Popover>
       </td>
-      <td className="p-2">
+      <td className="block p-0 xl:table-cell xl:p-2">
         <Input 
           placeholder="Enter description..." 
           className="h-9 bg-background" 
@@ -197,7 +198,7 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
           }}
         />
       </td>
-      <td className="p-2">
+      <td className="block p-0 xl:table-cell xl:p-2">
         <div className="relative">
           <select 
             className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
@@ -216,12 +217,17 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
           <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">v</span>
         </div>
       </td>
-      <td className="p-2">
+      <td className="block p-0 xl:table-cell xl:p-2">
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
+          {showCurrencySymbol && (
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-medium text-muted-foreground">$</span>
+          )}
           <Input 
             placeholder="-0.00"
-            className="h-9 w-36 bg-background pl-7 font-medium" 
+            className={cn(
+              "h-9 w-full bg-background font-medium xl:w-36",
+              showCurrencySymbol ? "pl-7" : "pl-3"
+            )}
             value={amount}
             onFocus={handleAmountFocus}
             onBlur={handleAmountBlur}
@@ -229,10 +235,10 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
           />
         </div>
       </td>
-      <td className="p-2 pr-4 text-right">
+      <td className="block p-0 sm:col-span-2 xl:table-cell xl:p-2 xl:pr-4 xl:text-right">
         <Button 
           size="icon" 
-          className="h-9 w-9 bg-primary hover:bg-ds-primary-hover text-white rounded-lg shrink-0"
+          className="h-9 w-full shrink-0 rounded-lg bg-primary text-white hover:bg-ds-primary-hover xl:w-9"
           onClick={() => {
             if (onAppend && description && hasAmount && categoryKey) {
               onAppend({ date, description, categoryKey, amount });
@@ -245,13 +251,32 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
           disabled={!description || !hasAmount || !categoryKey}
         >
           <Plus className="w-5 h-5" />
+          <span className="xl:hidden">Add transaction</span>
         </Button>
       </td>
     </tr>
   )
 }
 
-export function TransactionsTable({ data, onUpdateItem, onDeleteItem, onAppendItem, categories = {} }: { data: Transaction[], onUpdateItem?: (id: string, updates: any) => void, onDeleteItem?: (id: string) => void, onAppendItem?: (data: any) => void, categories?: Record<string, TransactionCategory> }) {
+interface TransactionsTableProps {
+  data: Transaction[]
+  onUpdateItem?: (id: string, updates: any) => void
+  onDeleteItem?: (id: string) => void
+  onAppendItem?: (data: any) => void
+  categories?: Record<string, TransactionCategory>
+  emptyTitle?: string
+  emptyDescription?: string
+}
+
+export function TransactionsTable({
+  data,
+  onUpdateItem,
+  onDeleteItem,
+  onAppendItem,
+  categories = {},
+  emptyTitle,
+  emptyDescription,
+}: TransactionsTableProps) {
   const { columns } = useTransactionsTable(onUpdateItem, onDeleteItem, categories)
 
   return (
@@ -260,6 +285,8 @@ export function TransactionsTable({ data, onUpdateItem, onDeleteItem, onAppendIt
         columns={columns} 
         data={data} 
         containerClassName="max-h-none h-auto"
+        emptyTitle={emptyTitle}
+        emptyDescription={emptyDescription}
         appendRowComponent={<AppendTransactionRow categories={categories} onAppend={onAppendItem} />}
       />
     </div>

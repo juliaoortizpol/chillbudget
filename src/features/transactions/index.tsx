@@ -146,6 +146,29 @@ export function TransactionsPage() {
 
   const filterCategories = useMemo(() => Object.values(dynamicCategories).map((c: any) => ({ id: c.id, name: c.name })), [dynamicCategories]);
 
+  const emptyState = useMemo(() => {
+    const hasSpecificFilters = Boolean(searchQuery.trim() || categoryId || type);
+
+    if (hasSpecificFilters) {
+      return {
+        title: "No matching transactions",
+        description: "Try changing or clearing your search and filters.",
+      };
+    }
+
+    if (dateRange === "All Time") {
+      return {
+        title: "No transactions yet",
+        description: "Add your first transaction using the form below.",
+      };
+    }
+
+    return {
+      title: `No transactions in ${dateRange.toLowerCase()}`,
+      description: "Choose a different period or add a new transaction.",
+    };
+  }, [categoryId, dateRange, searchQuery, type]);
+
   const handleUpdateItem = async (id: string, updates: any) => {
     const dto: any = {};
     if (updates.description !== undefined) dto.name = updates.description;
@@ -240,6 +263,8 @@ export function TransactionsPage() {
                       onDeleteItem={handleDeleteItem}
                       onAppendItem={handleAppendItem}
                       categories={dynamicCategories} 
+                      emptyTitle={emptyState.title}
+                      emptyDescription={emptyState.description}
                     />
                     {transactionsData?.meta && (
                       <Pagination 
