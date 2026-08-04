@@ -10,12 +10,24 @@ import { useTransactions } from "../transactions/hooks/useTransactions"
 
 export function DashboardLayout() {
   const navigate = useNavigate();
-  const { tableData } = useBudgetOverview();
-  const { transactionsData, fetchTransactions } = useTransactions();
+  const {
+    tableData,
+    isLoading: isLoadingBudget,
+    error: budgetError,
+    retry: retryBudget,
+  } = useBudgetOverview();
+  const {
+    transactionsData,
+    fetchTransactions,
+    isFetchingTransactions,
+    fetchTransactionsError,
+  } = useTransactions();
+
+  const loadTransactions = () => fetchTransactions({ limit: 100 });
 
   useEffect(() => {
     // One shared request supplies both transaction history and the expense chart.
-    fetchTransactions({ limit: 100 });
+    void loadTransactions().catch(() => undefined);
   }, [fetchTransactions]);
 
   const dynamicPopularCategories = useMemo<ListItem[]>(() => {
@@ -41,7 +53,7 @@ export function DashboardLayout() {
   const dynamicHistoryTransactions = useMemo<ListItem[]>(() => {
     if (!transactionsData?.data) return [];
 
-    return transactionsData.data.slice(0, 15).map(t => {
+    return transactionsData.data.slice(0, 5).map(t => {
       const category = tableData.find(cat => cat.id === t.budgetItemId);
       const icon = category ? category.icon : <ShoppingBag className="w-5 h-5 text-slate-600" />;
       const iconBgColor = category ? category.iconBgClass : undefined; 
@@ -68,32 +80,52 @@ export function DashboardLayout() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6">
+      <header>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Overview</h1>
+        <p className="mt-1 text-sm text-muted-foreground">A quick look at your budget and recent activity.</p>
+      </header>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       
       {/* Column 1 */}
       <div className="flex flex-col gap-6">
 
         <ListWidget 
-          title="POPULAR CATEGORY" 
+          title="TOP BUDGET CATEGORIES"
           items={dynamicPopularCategories} 
+          isLoading={isLoadingBudget}
+          error={budgetError}
+          emptyMessage="No budget categories yet"
+          onRetry={() => void retryBudget()}
           onItemClick={handleCategoryClick} 
         />
       </div>
 
       {/* Column 2 */}
       <div className="flex flex-col gap-6">
-        <ExpensesChart transactions={transactionsData?.data || []} />
+        <ExpensesChart
+          transactions={transactionsData?.data || []}
+          isLoading={isFetchingTransactions}
+          error={fetchTransactionsError}
+          onRetry={() => void loadTransactions().catch(() => undefined)}
+        />
       </div>
 
       {/* Column 3 */}
       <div className="flex flex-col gap-6">
         <ListWidget 
-          title="HISTORY TRANSACTION" 
+          title="RECENT TRANSACTIONS"
           items={dynamicHistoryTransactions} 
+          isLoading={isFetchingTransactions}
+          error={fetchTransactionsError}
+          emptyMessage="No transactions yet"
+          onRetry={() => void loadTransactions().catch(() => undefined)}
           onItemClick={handleTransactionClick}
         />
       </div>
 
+      </div>
     </div>
   )
 }

@@ -13,6 +13,7 @@ export function useBudgetOverview() {
     deleteBudgetItem,
     addBudgetItem,
     isFetchingBudgets,
+    fetchBudgetsError,
     activeBudget,
   } = useGlobalBudget();
   const handleCreateBudget = async () => {
@@ -163,6 +164,8 @@ export function useBudgetOverview() {
     totalSpent,
     comparison,
     isLoading: isFetchingBudgets,
+    error: fetchBudgetsError,
+    retry: fetchBudgets,
     handleUpdateItem,
     handleAddBudgetItem,
     handleCreateBudget,

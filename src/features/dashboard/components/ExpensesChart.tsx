@@ -1,11 +1,19 @@
 import { useMemo } from "react"
 import { DashboardCard } from "./DashboardCard"
+import { AlertCircle, ChartNoAxesColumn } from "lucide-react"
 import { LineChart, Line, XAxis, ResponsiveContainer, Tooltip } from "recharts"
 import type { Transaction } from "@/features/transactions/hooks/useTransactions"
 
 const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
 
-export function ExpensesChart({ transactions }: { transactions: Transaction[] }) {
+interface ExpensesChartProps {
+  transactions: Transaction[]
+  isLoading?: boolean
+  error?: string | null
+  onRetry?: () => void
+}
+
+export function ExpensesChart({ transactions, isLoading = false, error, onRetry }: ExpensesChartProps) {
   const { chartData, totalAmount } = useMemo(() => {
     // Default empty week
     const dataMap: Record<string, number> = {
@@ -45,7 +53,34 @@ export function ExpensesChart({ transactions }: { transactions: Transaction[] })
   }, [transactions])
 
   return (
-    <DashboardCard title="EXPENSES">
+    <DashboardCard title="WEEKLY EXPENSES">
+      {isLoading ? (
+        <div className="flex min-h-[304px] animate-pulse flex-col pt-2" aria-hidden="true">
+          <div className="h-3 w-20 rounded bg-muted" />
+          <div className="mt-3 h-9 w-28 rounded bg-muted" />
+          <div className="mt-auto h-32 rounded-xl bg-muted/70" />
+        </div>
+      ) : error ? (
+        <div className="flex min-h-[304px] flex-col items-center justify-center px-4 text-center" role="alert">
+          <AlertCircle className="mb-3 h-8 w-8 text-destructive" />
+          <p className="text-sm font-semibold text-foreground">Unable to load expenses</p>
+          <p className="mt-1 text-xs text-muted-foreground">Please try again.</p>
+          {onRetry && (
+            <button type="button" className="mt-4 text-sm font-semibold text-primary hover:text-ds-primary-hover" onClick={onRetry}>
+              Try again
+            </button>
+          )}
+        </div>
+      ) : totalAmount === 0 ? (
+        <div className="flex min-h-[304px] flex-col items-center justify-center px-4 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <ChartNoAxesColumn className="h-6 w-6 text-primary" />
+          </div>
+          <p className="text-sm font-semibold text-foreground">No expenses in the last 7 days</p>
+          <p className="mt-1 text-xs text-muted-foreground">Your weekly spending will appear here.</p>
+        </div>
+      ) : (
+      <>
       <div className="flex flex-col mb-4 mt-1">
         <span className="text-xs text-muted-foreground">Last 7 Days</span>
         <h3 className="text-[32px] font-bold tracking-tight mt-1 mb-2">
@@ -60,7 +95,7 @@ export function ExpensesChart({ transactions }: { transactions: Transaction[] })
               dataKey="name" 
               axisLine={false} 
               tickLine={false} 
-              tick={{ fontSize: 10, fill: '#A0A0A0', fontWeight: 700 }} 
+              tick={{ fontSize: 10, fill: '#55727B', fontWeight: 700 }}
               dy={10}
             />
             <Tooltip 
@@ -68,9 +103,9 @@ export function ExpensesChart({ transactions }: { transactions: Transaction[] })
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   return (
-                    <div className="bg-[#FF4F64] text-white text-[13px] font-bold px-3 py-1.5 rounded-lg shadow-md relative translate-y-[-10px]">
+                    <div className="relative -translate-y-2.5 rounded-lg bg-primary px-3 py-1.5 text-[13px] font-bold text-primary-foreground shadow-md">
                       ${payload[0].value}
-                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#FF4F64] rotate-45 rounded-sm"></div>
+                      <div className="absolute -bottom-1 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rotate-45 rounded-sm bg-primary"></div>
                     </div>
                   )
                 }
@@ -80,14 +115,16 @@ export function ExpensesChart({ transactions }: { transactions: Transaction[] })
             <Line 
               type="monotone" 
               dataKey="value" 
-              stroke="#FFB6C1" 
+              stroke="#2FA99E"
               strokeWidth={4} 
               dot={false}
-              activeDot={{ r: 5, fill: "#FF4F64", stroke: "white", strokeWidth: 2 }}
+              activeDot={{ r: 5, fill: "#167F78", stroke: "white", strokeWidth: 2 }}
             />
           </LineChart>
         </ResponsiveContainer>
       </div>
+      </>
+      )}
     </DashboardCard>
   )
 }
