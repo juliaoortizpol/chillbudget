@@ -1,5 +1,5 @@
 import { SidebarNavItem } from "./SidebarNavItem";
-import { LayoutDashboard, ArrowLeftRight, Wallet, PieChart, Flag, Settings } from "lucide-react";
+import { LayoutDashboard, ArrowLeftRight, Wallet, PieChart } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
 const navItems = [
@@ -7,8 +7,6 @@ const navItems = [
   { icon: ArrowLeftRight, label: "Transactions", href: "/transactions" },
   { icon: Wallet, label: "Accounts", href: "/accounts" },
   { icon: PieChart, label: "Budget", href: "/budget" },
-  { icon: Flag, label: "Goals", href: "/goals" },
-  { icon: Settings, label: "Settings", href: "/settings" },
 ];
 
 export function SidebarNav() {

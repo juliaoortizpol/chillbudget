@@ -1,13 +1,43 @@
 import { SidebarLogo } from "./SidebarLogo";
 import { SidebarNav } from "./SidebarNav";
 import { SidebarProfile } from "./SidebarProfile";
+import { X } from "lucide-react";
 
-export function Sidebar() {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function Sidebar({ isOpen, onClose }: SidebarProps) {
   return (
-    <aside className="w-64 h-screen bg-sidebar border-r border-sidebar-border flex flex-col hidden md:flex shrink-0 sticky top-0">
-      <SidebarLogo />
-      <SidebarNav />
-      <SidebarProfile />
-    </aside>
+    <>
+      {isOpen && (
+        <button
+          type="button"
+          aria-label="Close navigation menu"
+          className="fixed inset-0 z-40 bg-[#0B2C40]/45 backdrop-blur-[1px] md:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      <aside
+        id="app-sidebar"
+        className={`fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar shadow-xl transition-transform duration-200 ease-out md:sticky md:top-0 md:z-auto md:h-screen md:translate-x-0 md:shadow-none ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <button
+          type="button"
+          aria-label="Close navigation menu"
+          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden"
+          onClick={onClose}
+        >
+          <X className="h-5 w-5" />
+        </button>
+        <SidebarLogo />
+        <SidebarNav />
+        <SidebarProfile />
+      </aside>
+    </>
   );
 }
