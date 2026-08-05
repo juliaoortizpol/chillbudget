@@ -1,7 +1,8 @@
 import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Calendar as CalendarIcon, ChevronDown, Plus } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Calendar as CalendarIcon, ChevronDown, Plus, Trash2, X } from "lucide-react"
 import { useTableEditor } from "@/hooks/useTableEditor"
 import { cn, formatMoneyInput } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -147,7 +148,8 @@ export function EditableCategoryCell({ initialValue, onSave, categories }: { ini
 
 
 
-function AppendTransactionRow({ categories, onAppend }: { categories: Record<string, TransactionCategory>, onAppend?: (data: any) => void }) {
+function AppendTransactionForm({ categories, onAppend, onComplete, inline = false }: { categories: Record<string, TransactionCategory>, onAppend?: (data: any) => void | Promise<void>, onComplete?: () => void, inline?: boolean }) {
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const {
     date, setDate,
     isCalendarOpen, setIsCalendarOpen,
@@ -168,7 +170,12 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
         : "Add transaction";
 
   return (
-    <div className="grid grid-cols-1 gap-3 border-t border-border bg-[#f4f7f4]/40 p-3 sm:grid-cols-2 xl:grid-cols-[132px_minmax(180px,1fr)_minmax(160px,0.8fr)_144px_44px] xl:items-center xl:gap-2 xl:py-2 xl:pl-4 xl:pr-3">
+    <div className={cn(
+      "grid grid-cols-1 gap-3 bg-muted/35 p-3 sm:grid-cols-2",
+      inline
+        ? "border-t border-border lg:grid-cols-[120px_minmax(140px,1fr)_minmax(120px,0.8fr)_120px_36px] lg:items-center lg:gap-2 lg:py-2 lg:pl-4 lg:pr-3"
+        : "rounded-xl"
+    )}>
       <div className="min-w-0">
         <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
           <PopoverTrigger render={
@@ -245,26 +252,34 @@ function AppendTransactionRow({ categories, onAppend }: { categories: Record<str
           />
         </div>
       </div>
-      <div className="sm:col-span-2 xl:col-span-1">
+      <div className={cn("sm:col-span-2", inline && "lg:col-span-1")}>
         <Button 
           type="button"
           size="icon" 
-          className="h-9 w-full shrink-0 rounded-lg bg-primary text-white hover:bg-ds-primary-hover disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100 xl:w-9"
+          className={cn(
+            "h-9 w-full shrink-0 rounded-lg bg-primary text-white hover:bg-ds-primary-hover disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100",
+            inline && "lg:w-9"
+          )}
           aria-label={addButtonLabel}
           title={addButtonLabel}
-          onClick={() => {
+          onClick={async () => {
             if (onAppend && description && hasAmount && categoryKey) {
-              onAppend({ date, description, categoryKey, amount });
-              // Reset
-              setDescription("");
-              setAmount("");
-              setCategoryKey("");
+              setIsSubmitting(true)
+              try {
+                await onAppend({ date, description, categoryKey, amount });
+                setDescription("");
+                setAmount("");
+                setCategoryKey("");
+                onComplete?.()
+              } finally {
+                setIsSubmitting(false)
+              }
             }
           }}
-          disabled={!canAppend}
+          disabled={!canAppend || isSubmitting}
         >
           <Plus className="w-5 h-5" />
-          <span className="xl:hidden">Add transaction</span>
+          <span className={cn(inline && "lg:hidden")}>{isSubmitting ? "Adding..." : "Add transaction"}</span>
         </Button>
       </div>
     </div>
@@ -275,10 +290,66 @@ interface TransactionsTableProps {
   data: Transaction[]
   onUpdateItem?: (id: string, updates: any) => void
   onDeleteItem?: (id: string) => void
-  onAppendItem?: (data: any) => void
+  onAppendItem?: (data: any) => void | Promise<void>
   categories?: Record<string, TransactionCategory>
   emptyTitle?: string
   emptyDescription?: string
+}
+
+interface AddTransactionDialogProps {
+  categories: Record<string, TransactionCategory>
+  onAppend?: (data: any) => void | Promise<void>
+}
+
+export function AddTransactionDialog({ categories, onAppend }: AddTransactionDialogProps) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsOpen(false)
+    }
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    window.addEventListener("keydown", handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [isOpen])
+
+  return (
+    <>
+      <Button
+        type="button"
+        className="fixed bottom-4 right-4 z-30 h-11 bg-primary px-4 text-white shadow-lg hover:bg-ds-primary-hover md:hidden"
+        onClick={() => setIsOpen(true)}
+      >
+        <Plus className="h-4 w-4" />
+        Add transaction
+      </Button>
+
+      {isOpen && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="add-transaction-title">
+          <button type="button" className="absolute inset-0 bg-[#0B2C40]/50 backdrop-blur-[1px]" onClick={() => setIsOpen(false)} aria-label="Close add transaction dialog" />
+          <div className="relative z-10 w-full rounded-t-2xl border border-border bg-card p-5 shadow-2xl sm:max-w-2xl sm:rounded-2xl sm:p-6">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <h2 id="add-transaction-title" className="text-xl font-bold text-foreground">Add transaction</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Keep the minus sign for an expense; remove it for income.</p>
+              </div>
+              <button type="button" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground" onClick={() => setIsOpen(false)} aria-label="Close dialog">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <AppendTransactionForm categories={categories} onAppend={onAppend} onComplete={() => setIsOpen(false)} />
+          </div>
+        </div>
+      )}
+    </>
+  )
 }
 
 export function TransactionsTable({
@@ -294,14 +365,79 @@ export function TransactionsTable({
 
   return (
     <div className="border border-border shadow-sm rounded-xl bg-card relative overflow-hidden flex flex-col">
-      <DataTable 
-        columns={columns} 
-        data={data} 
-        containerClassName="max-h-none h-auto [&_table]:min-w-[700px]"
-        emptyTitle={emptyTitle}
-        emptyDescription={emptyDescription}
-      />
-      <AppendTransactionRow categories={categories} onAppend={onAppendItem} />
+      <div className="md:hidden">
+        {data.length > 0 ? (
+          <div className="divide-y divide-border">
+            {data.map((transaction) => (
+              <article key={transaction.id} className="p-3">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <EditableTextCell
+                      initialValue={transaction.description}
+                      onSave={(value) => onUpdateItem?.(transaction.id, { description: value })}
+                      className="text-sm font-bold leading-tight text-foreground"
+                    />
+
+                    <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+                      <EditableDateCell
+                        initialValue={transaction.date}
+                        onSave={(value) => onUpdateItem?.(transaction.id, { date: value })}
+                        className="shrink-0 text-xs font-medium text-muted-foreground"
+                      />
+                      <span className="text-muted-foreground/40">•</span>
+                      <div className="min-w-0 overflow-hidden [&>div]:max-w-full [&>div]:truncate [&>div]:px-2 [&>div]:py-0.5">
+                    <EditableCategoryCell
+                      initialValue={transaction.category}
+                      onSave={(value) => onUpdateItem?.(transaction.id, { category: value })}
+                      categories={categories}
+                    />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <EditableCurrencyCell
+                      initialValue={transaction.amount}
+                      onSave={(value) => onUpdateItem?.(transaction.id, { amount: value })}
+                      className="text-sm font-bold tabular-nums"
+                    />
+                    {onDeleteItem && (
+                      <button
+                        type="button"
+                        onClick={() => onDeleteItem(transaction.id)}
+                        className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                        aria-label={`Delete ${transaction.description}`}
+                        title="Delete transaction"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="flex min-h-32 flex-col items-center justify-center px-6 py-8 text-center">
+            <p className="text-sm font-semibold text-foreground">{emptyTitle || "No results"}</p>
+            {emptyDescription && <p className="mt-1 text-xs text-muted-foreground">{emptyDescription}</p>}
+          </div>
+        )}
+      </div>
+
+      <div className="hidden md:block">
+        <DataTable
+          columns={columns}
+          data={data}
+          containerClassName="max-h-none h-auto"
+          emptyTitle={emptyTitle}
+          emptyDescription={emptyDescription}
+          hideHeaderWhenEmpty
+        />
+      </div>
+      <div className="hidden md:block">
+        <AppendTransactionForm categories={categories} onAppend={onAppendItem} inline />
+      </div>
     </div>
   )
 }

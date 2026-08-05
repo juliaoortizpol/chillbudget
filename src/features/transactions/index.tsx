@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from "react"
 import { PageHeader } from "@/components/layout/PageHeader"
 import { TransactionsFilterBar } from "./components/TransactionsFilterBar"
-import { TransactionsTable } from "./components/TransactionsTable"
+import { AddTransactionDialog, TransactionsTable } from "./components/TransactionsTable"
 import { Pagination } from "./components/Pagination"
 import { TransactionsSummary } from "./components/TransactionsSummary"
 import { useGlobalBudget } from "../budget/context/BudgetContext"
@@ -42,17 +42,31 @@ export function TransactionsPage() {
     updateTransaction, createTransaction, deleteTransaction 
   } = useTransactions();
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [pageSize, setPageSize] = React.useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches ? 5 : 10
+  );
   const [searchQuery, setSearchQuery] = React.useState("");
   const [dateRange, setDateRange] = React.useState("Last 30 Days");
   const [categoryId, setCategoryId] = React.useState<string | null>(null);
   const [type, setType] = React.useState<string | null>(null);
 
   useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const handleChange = (event: MediaQueryListEvent) => {
+      setPageSize(event.matches ? 5 : 10);
+      setCurrentPage(1);
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
     const { startDate, endDate } = getDateRangeFilter(dateRange);
 
     fetchTransactions({ 
       page: currentPage, 
-      limit: 10,
+      limit: pageSize,
       budgetItemId: categoryId || undefined,
       type: type as any || undefined,
       startDate,
@@ -62,7 +76,7 @@ export function TransactionsPage() {
         setCurrentPage(res.meta.totalPages);
       }
     });
-  }, [fetchTransactions, currentPage, dateRange, categoryId, type]);
+  }, [fetchTransactions, currentPage, dateRange, categoryId, type, pageSize]);
 
   const isLoading = isFetchingBudgets || isFetchingTransactions;
   
@@ -180,13 +194,13 @@ export function TransactionsPage() {
     if (updates.category !== undefined) dto.budgetItemId = updates.category.id;
     
     await updateTransaction(id, dto);
-    await fetchTransactions({ page: currentPage, limit: 10 });
+    await fetchTransactions({ page: currentPage, limit: pageSize });
     await fetchBudgets();
   }
 
   const handleDeleteItem = async (id: string) => {
     await deleteTransaction(id);
-    await fetchTransactions({ page: currentPage, limit: 10 }).then((res) => {
+    await fetchTransactions({ page: currentPage, limit: pageSize }).then((res) => {
       if (res && res.meta && res.meta.totalPages > 0 && currentPage > res.meta.totalPages) {
         setCurrentPage(res.meta.totalPages);
       }
@@ -208,16 +222,17 @@ export function TransactionsPage() {
     await createTransaction(dto);
     
     if (currentPage === 1) {
-      await fetchTransactions({ page: 1, limit: 10 });
+      await fetchTransactions({ page: 1, limit: pageSize });
     } else {
       setCurrentPage(1);
     }
     await fetchBudgets();
   }
   return (
-    <div className="flex flex-col max-w-7xl mx-auto gap-6">
+    <div className="mx-auto flex max-w-7xl flex-col gap-6 pb-20 md:pb-0">
       
       <PageHeader title="Transactions" />
+      <AddTransactionDialog categories={dynamicCategories} onAppend={handleAppendItem} />
 
       {/* Content Area */}
             <div className="flex flex-col gap-6">
@@ -231,6 +246,7 @@ export function TransactionsPage() {
                 />
               )}
               
+              <div className="sticky top-16 z-20 -mx-1 bg-ds-background/95 px-1 py-2 backdrop-blur md:static md:mx-0 md:bg-transparent md:p-0">
               <TransactionsFilterBar 
                 searchQuery={searchQuery}
                 onSearchChange={(query) => {
@@ -251,6 +267,7 @@ export function TransactionsPage() {
                   setType(null);
                 }}
               />
+              </div>
               
               <div className="flex flex-col gap-2">
                 {isLoading && !uiTransactions.length ? (

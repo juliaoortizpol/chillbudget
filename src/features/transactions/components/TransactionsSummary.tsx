@@ -23,7 +23,7 @@ export function TransactionsSummary({
   budgetUsed,
 }: TransactionsSummaryProps) {
   return (
-    <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card shadow-sm lg:grid-cols-4">
+    <div className="hidden grid-cols-2 overflow-hidden rounded-xl border border-border bg-card shadow-sm md:grid lg:grid-cols-4">
       <div className="px-4 py-4 sm:px-6">
         <div className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
           Spent in Shown Rows

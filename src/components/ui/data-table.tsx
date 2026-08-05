@@ -23,6 +23,7 @@ interface DataTableProps<TData, TValue> {
   containerClassName?: string
   emptyTitle?: string
   emptyDescription?: string
+  hideHeaderWhenEmpty?: boolean
 }
 
 export function DataTable<TData, TValue>({
@@ -32,6 +33,7 @@ export function DataTable<TData, TValue>({
   containerClassName = "max-h-[280px]",
   emptyTitle = "No results",
   emptyDescription,
+  hideHeaderWhenEmpty = false,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -45,7 +47,7 @@ export function DataTable<TData, TValue>({
         className="relative" 
         containerClassName={`overflow-y-auto custom-scrollbar ${containerClassName}`}
       >
-        <TableHeader className="sticky top-0 bg-ds-background/95 backdrop-blur supports-[backdrop-filter]:bg-ds-background/60 z-10 shadow-[0_1px_0_0_rgba(0,0,0,0.1)]">
+        <TableHeader className={`${hideHeaderWhenEmpty && data.length === 0 ? "hidden" : ""} sticky top-0 z-10 bg-ds-background/95 shadow-[0_1px_0_0_rgba(0,0,0,0.1)] backdrop-blur supports-[backdrop-filter]:bg-ds-background/60`}>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="border-b border-muted/40 hover:bg-transparent">
                 {headerGroup.headers.map((header) => {

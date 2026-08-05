@@ -58,7 +58,7 @@ export function Pagination({
   const pages = getPagesToShow();
 
   return (
-    <div className="flex items-center justify-between w-full mt-4 animate-in fade-in duration-300">
+    <div className="mt-4 flex w-full flex-col items-center justify-between gap-3 animate-in fade-in duration-300 sm:flex-row">
       <span className="text-[13px] font-medium text-muted-foreground">
         Showing <strong className="text-foreground">{startItem}-{endItem}</strong> of <strong className="text-foreground">{totalItems}</strong> transactions
       </span>
