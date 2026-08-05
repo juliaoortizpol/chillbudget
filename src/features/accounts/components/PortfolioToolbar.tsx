@@ -1,6 +1,3 @@
-import { ListFilter } from "lucide-react";
-import { Button } from "@/components/ui/button";
-
 export type AccountsView = "accounts" | "connections";
 
 export function PortfolioToolbar({
@@ -18,12 +15,12 @@ export function PortfolioToolbar({
     }`;
 
   return (
-    <div className="flex flex-col items-start justify-between gap-4 border-b border-slate-100 p-6 pb-4 sm:flex-row sm:items-center">
+    <div className="flex flex-col items-start justify-between gap-4 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:p-6 sm:pb-4">
       <h2 className="text-lg font-bold text-slate-900">
         {activeView === "accounts" ? "Account Portfolio" : "Connections"}
       </h2>
-      <div className="flex items-center gap-3">
-        <div className="flex rounded-lg bg-slate-100 p-1">
+      <div className="w-full sm:w-auto">
+        <div className="grid w-full grid-cols-2 rounded-lg bg-slate-100 p-1 sm:flex sm:w-auto">
           <button type="button" onClick={() => onViewChange("accounts")} className={tabClass("accounts")}>
             All Accounts
           </button>
@@ -31,11 +28,6 @@ export function PortfolioToolbar({
             Connections
           </button>
         </div>
-        {activeView === "accounts" && (
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-700">
-            <ListFilter className="h-5 w-5" />
-          </Button>
-        )}
       </div>
     </div>
   );

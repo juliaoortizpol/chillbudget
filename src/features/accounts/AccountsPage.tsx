@@ -64,6 +64,7 @@ export function AccountsPage() {
       <AccountsHeader 
         isAddingAccount={isAddingAccount} 
         onToggleAddAccount={() => setIsAddingAccount(!isAddingAccount)} 
+        showAddAccountAction={accounts.length > 0 || isAddingAccount}
         canRefresh={canRefresh}
         isRefreshing={gmail.isSyncing}
         onRefresh={handleRefreshAll}

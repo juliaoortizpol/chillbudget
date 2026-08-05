@@ -18,7 +18,7 @@ export function PageHeader({ title, subtitle, children }: PageHeaderProps) {
         )}
       </div>
       {children && (
-        <div className="flex items-center gap-3">
+        <div className="flex w-full items-center gap-3 sm:w-auto">
           {children}
         </div>
       )}

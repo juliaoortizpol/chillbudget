@@ -33,7 +33,53 @@ export function AccountsTable({
   };
 
   return (
-    <div className="overflow-x-auto">
+    <>
+    <div className="divide-y divide-slate-100 md:hidden">
+      {accounts.map((account) => {
+        const status = formatStatus(account.status);
+        const accountDetail = account.last4Digits
+          ? `${formatAccountType(account.type)} •••• ${account.last4Digits}`
+          : account.name;
+
+        return (
+          <article key={account._id} className="p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-lg font-bold text-primary">
+                  {account.institution.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <h3 className="truncate text-sm font-bold text-slate-900" title={account.institution}>{account.institution}</h3>
+                  <p className="mt-0.5 truncate text-xs text-slate-500" title={accountDetail}>{accountDetail}</p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                disabled={deletingAccountId === account._id}
+                onClick={() => onDeleteAccount(account._id)}
+                className="h-8 w-8 shrink-0 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                aria-label={`Delete ${account.name}`}
+                title="Delete account"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <span className={`h-2 w-2 rounded-full ${status === 'Active' ? 'bg-primary' : status === 'Pending' ? 'bg-slate-300' : 'bg-red-500'}`} />
+                <span className={`font-semibold ${status === 'Active' ? 'text-primary' : status === 'Pending' ? 'text-slate-500' : 'text-red-600'}`}>{status}</span>
+              </div>
+              <span className="text-slate-500">Synced: {formatLastSynced(account.lastSynced)}</span>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+
+    <div className="hidden overflow-x-auto md:block">
       <table className="w-full text-left text-sm">
         <thead>
           <tr className="border-b border-slate-100 text-xs font-semibold text-slate-400 tracking-wider uppercase">
@@ -115,5 +161,6 @@ export function AccountsTable({
         </tbody>
       </table>
     </div>
+    </>
   );
 }
