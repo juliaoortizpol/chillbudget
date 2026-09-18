@@ -19,6 +19,7 @@ interface ListWidgetProps {
   isLoading?: boolean
   error?: string | null
   emptyMessage?: string
+  emptyAction?: React.ReactNode
   onRetry?: () => void
   onItemClick?: (item: ListItem) => void
 }
@@ -29,6 +30,7 @@ export function ListWidget({
   isLoading = false,
   error,
   emptyMessage = "Nothing to show yet",
+  emptyAction,
   onRetry,
   onItemClick,
 }: ListWidgetProps) {
@@ -68,6 +70,7 @@ export function ListWidget({
             </div>
             <p className="text-sm font-semibold text-foreground">{emptyMessage}</p>
             <p className="mt-1 text-xs text-muted-foreground">New activity will appear here.</p>
+            {emptyAction}
           </div>
         )}
 

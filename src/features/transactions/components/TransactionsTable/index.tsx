@@ -297,12 +297,13 @@ interface TransactionsTableProps {
 }
 
 interface AddTransactionDialogProps {
+  defaultOpen?: boolean
   categories: Record<string, TransactionCategory>
   onAppend?: (data: any) => void | Promise<void>
 }
 
-export function AddTransactionDialog({ categories, onAppend }: AddTransactionDialogProps) {
-  const [isOpen, setIsOpen] = useState(false)
+export function AddTransactionDialog({ categories, onAppend, defaultOpen = false }: AddTransactionDialogProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
 
   useEffect(() => {
     if (!isOpen) return

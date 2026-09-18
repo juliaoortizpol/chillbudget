@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 // Sidebar removed as it is now in MainLayout
 
 import { ListWidget, type ListItem } from "./components/ListWidget"
@@ -8,9 +8,14 @@ import { ShoppingBag } from "lucide-react"
 import { useBudgetOverview } from "../budget/hooks/useBudgetOverview"
 import { useTransactions } from "../transactions/hooks/useTransactions"
 
+import { useAccounts } from "../accounts/hooks/useAccounts"
+import { OnboardingProgress, type OnboardingStep } from "./components/OnboardingProgress"
+import { OnboardingNextStep } from "./components/OnboardingNextStep"
+
 export function DashboardLayout() {
   const navigate = useNavigate();
   const {
+    activeBudget,
     tableData,
     isLoading: isLoadingBudget,
     error: budgetError,
@@ -23,11 +28,30 @@ export function DashboardLayout() {
     fetchTransactionsError,
   } = useTransactions();
 
+  const { accounts, isLoading: isLoadingAccounts, error: accountsError, fetchAccounts } = useAccounts();
+  const { transactionsData: expensesData, fetchTransactions: fetchExpenses, isFetchingTransactions: isLoadingExpenses, fetchTransactionsError: expensesError } = useTransactions();
+
+  useEffect(() => {
+    void fetchExpenses({ type: "expense", limit: 1 }).catch(() => undefined);
+  }, [fetchExpenses]);
+
+  const steps: OnboardingStep[] = [
+    { label: "Presupuesto", complete: Boolean(activeBudget), title: "Crea tu primer presupuesto", description: "Define tus categorías y cuánto quieres destinar a cada una para empezar a organizar tu dinero.", action: "Crear presupuesto", href: "/budget" },
+    { label: "Cuentas", complete: accounts.length > 0, title: "Agrega tu primera cuenta", description: "Registra una cuenta para organizar de dónde viene y a dónde va tu dinero.", action: "Agregar cuenta", href: "/accounts?create=1" },
+    { label: "Transacciones", complete: (expensesData?.meta.total ?? 0) > 0, title: "Registra tu primer gasto", description: tableData.length ? "Añade un gasto para empezar a ver tu actividad y entender cómo usas tu presupuesto." : "Agrega una categoría a tu presupuesto para poder registrar tu primer gasto.", action: tableData.length ? "Registrar gasto" : "Agregar categoría", href: tableData.length ? "/transactions?create=1" : "/budget" },
+  ];
+  const nextStep = steps.find(step => !step.complete);
+  const onboardingLoading = isLoadingBudget || isLoadingAccounts || isLoadingExpenses || (!expensesData && !expensesError);
+  const onboardingError = budgetError || accountsError || expensesError;
+  const expenseHref = !activeBudget || !tableData.length ? "/budget" : "/transactions?create=1";
+  const expenseAction = !activeBudget || !tableData.length ? "Configurar presupuesto" : "Registrar gasto";
+  const actionClass = "mt-4 inline-flex min-h-10 items-center justify-center rounded-lg border border-primary/20 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/10";
+
   const loadTransactions = () => fetchTransactions({ limit: 100 });
 
   useEffect(() => {
     // One shared request supplies both transaction history and the expense chart.
-    void loadTransactions().catch(() => undefined);
+    void fetchTransactions({ limit: 100 }).catch(() => undefined);
   }, [fetchTransactions]);
 
   const dynamicPopularCategories = useMemo<ListItem[]>(() => {
@@ -86,6 +110,24 @@ export function DashboardLayout() {
         <p className="mt-1 text-sm text-muted-foreground">A quick look at your budget and recent activity.</p>
       </header>
 
+      {onboardingLoading ? (
+        <div role="status" className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">Cargando tu progreso…</div>
+      ) : onboardingError ? (
+        <div role="alert" className="rounded-lg border border-border bg-card p-6 text-sm">
+          <p>No pudimos cargar tu progreso de configuración.</p>
+          <button type="button" className={actionClass} onClick={() => {
+            void retryBudget().catch(() => undefined);
+            void fetchAccounts();
+            void fetchExpenses({ type: "expense", limit: 1 }).catch(() => undefined);
+          }}>Reintentar</button>
+        </div>
+      ) : nextStep ? (
+        <>
+          <OnboardingProgress steps={steps} />
+          <OnboardingNextStep step={nextStep} />
+        </>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       
       {/* Column 1 */}
@@ -97,7 +139,8 @@ export function DashboardLayout() {
           isLoading={isLoadingBudget}
           error={budgetError}
           emptyMessage="No budget categories yet"
-          onRetry={() => void retryBudget()}
+          emptyAction={<Link className={actionClass} to="/budget">{activeBudget ? "Agregar categoría" : "Crear presupuesto"}</Link>}
+          onRetry={() => void retryBudget().catch(() => undefined)}
           onItemClick={handleCategoryClick} 
         />
       </div>
@@ -106,7 +149,8 @@ export function DashboardLayout() {
       <div className="flex flex-col gap-6">
         <ExpensesChart
           transactions={transactionsData?.data || []}
-          isLoading={isFetchingTransactions}
+          emptyAction={!onboardingLoading && !onboardingError && <Link className={actionClass} to={expenseHref}>{expenseAction}</Link>}
+          isLoading={isFetchingTransactions || (!transactionsData && !fetchTransactionsError)}
           error={fetchTransactionsError}
           onRetry={() => void loadTransactions().catch(() => undefined)}
         />
@@ -117,9 +161,10 @@ export function DashboardLayout() {
         <ListWidget 
           title="RECENT TRANSACTIONS"
           items={dynamicHistoryTransactions} 
-          isLoading={isFetchingTransactions}
+          isLoading={isFetchingTransactions || (!transactionsData && !fetchTransactionsError)}
           error={fetchTransactionsError}
           emptyMessage="No transactions yet"
+          emptyAction={!onboardingLoading && !onboardingError && <Link className={actionClass} to={expenseHref}>{expenseAction}</Link>}
           onRetry={() => void loadTransactions().catch(() => undefined)}
           onItemClick={handleTransactionClick}
         />

@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router-dom"
 import React, { useEffect, useMemo } from "react"
 import { PageHeader } from "@/components/layout/PageHeader"
 import { TransactionsFilterBar } from "./components/TransactionsFilterBar"
@@ -36,6 +37,7 @@ function getDateRangeFilter(dateRange: string): { startDate?: string, endDate?: 
 }
 
 export function TransactionsPage() {
+  const [searchParams] = useSearchParams();
   const { activeBudget, isFetchingBudgets, fetchBudgets } = useGlobalBudget();
   const { 
     transactionsData, fetchTransactions, isFetchingTransactions, 
@@ -232,7 +234,7 @@ export function TransactionsPage() {
     <div className="mx-auto flex max-w-7xl flex-col gap-6 pb-20 md:pb-0">
       
       <PageHeader title="Transactions" />
-      <AddTransactionDialog categories={dynamicCategories} onAppend={handleAppendItem} />
+      <AddTransactionDialog defaultOpen={searchParams.get("create") === "1"} categories={dynamicCategories} onAppend={handleAppendItem} />
 
       {/* Content Area */}
             <div className="flex flex-col gap-6">

@@ -10,10 +10,11 @@ interface ExpensesChartProps {
   transactions: Transaction[]
   isLoading?: boolean
   error?: string | null
+  emptyAction?: import("react").ReactNode
   onRetry?: () => void
 }
 
-export function ExpensesChart({ transactions, isLoading = false, error, onRetry }: ExpensesChartProps) {
+export function ExpensesChart({ transactions, isLoading = false, error, onRetry, emptyAction }: ExpensesChartProps) {
   const { chartData, totalAmount } = useMemo(() => {
     // Default empty week
     const dataMap: Record<string, number> = {
@@ -78,6 +79,7 @@ export function ExpensesChart({ transactions, isLoading = false, error, onRetry 
           </div>
           <p className="text-sm font-semibold text-foreground">No expenses in the last 7 days</p>
           <p className="mt-1 text-xs text-muted-foreground">Your weekly spending will appear here.</p>
+          {emptyAction}
         </div>
       ) : (
       <>

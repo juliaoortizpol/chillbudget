@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AccountsHeader } from './components/AccountsHeader';
 import { PortfolioToolbar, type AccountsView } from './components/PortfolioToolbar';
 import { AccountsTable } from './components/AccountsTable';
@@ -10,7 +11,8 @@ import { ConnectionsPanel } from './components/ConnectionsPanel';
 import { useGmailConnection } from './hooks/useGmailConnection';
 
 export function AccountsPage() {
-  const [isAddingAccount, setIsAddingAccount] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [isAddingAccount, setIsAddingAccount] = useState(() => searchParams.get("create") === "1");
   const [activeView, setActiveView] = useState<AccountsView>('accounts');
   const {
     accounts,

@@ -43,7 +43,7 @@ export interface UpdateBudgetItemDto {
 function useGetBudgets() {
   const { fetchApi } = useFetch();
   const [data, setData] = useState<Budget[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchBudgets = useCallback(async () => {

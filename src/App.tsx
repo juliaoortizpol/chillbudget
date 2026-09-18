@@ -11,11 +11,10 @@ import { MainLayout } from "@/components/layout/MainLayout"
 function App() {
   return (
     <BrowserRouter>
-      <BudgetProvider>
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/auth/callback" element={<OAuthCallback />} />
-        <Route element={<MainLayout />}>
+        <Route element={<BudgetProvider><MainLayout /></BudgetProvider>}>
           <Route path="/dashboard" element={<DashboardLayout />} />
           <Route path="/budget" element={<BudgetOverview />} />
           <Route path="/transactions" element={<TransactionsPage />} />
@@ -23,7 +22,6 @@ function App() {
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      </BudgetProvider>
     </BrowserRouter>
   )
 }
