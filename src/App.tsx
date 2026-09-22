@@ -4,6 +4,7 @@ import { DashboardLayout } from "@/features/dashboard"
 import { BudgetOverview } from "@/features/budget"
 import { TransactionsPage } from "@/features/transactions"
 import { AccountsPage } from "@/features/accounts"
+import { PlanningPage } from "@/features/planning"
 import { BudgetProvider } from "@/features/budget/context/BudgetContext"
 
 import { MainLayout } from "@/components/layout/MainLayout"
@@ -19,6 +20,7 @@ function App() {
           <Route path="/budget" element={<BudgetOverview />} />
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/accounts" element={<AccountsPage />} />
+          <Route path="/planning" element={<PlanningPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
