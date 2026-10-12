@@ -1,6 +1,12 @@
 import { useState, useCallback } from 'react';
 import { useFetch } from '../../../hooks/useFetch';
 
+export interface BudgetItemMatchingRule {
+  id: string;
+  keyword: string;
+  source: 'user' | 'suggested' | 'learned';
+}
+
 export interface BudgetItem {
   _id?: string;
   budgetId?: string;
@@ -12,6 +18,7 @@ export interface BudgetItem {
   plannedAmount: number;
   alertEnabled?: boolean;
   spent?: number;
+  matchingRules?: BudgetItemMatchingRule[];
 }
 
 export interface Budget {
@@ -36,6 +43,9 @@ export interface CreateBudgetDto {
 }
 
 export interface UpdateBudgetItemDto {
+  name?: string;
+  description?: string;
+  matchingRules?: BudgetItemMatchingRule[];
   plannedAmount?: number;
   alertEnabled?: boolean;
 }

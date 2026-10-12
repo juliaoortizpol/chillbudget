@@ -21,7 +21,7 @@ export function SidebarNav() {
           icon={item.icon}
           label={item.label}
           href={item.href}
-          isActive={location.pathname === item.href || (location.pathname === '/' && item.href === '/dashboard')}
+          isActive={location.pathname === item.href || location.pathname.startsWith(`${item.href}/`) || (location.pathname === '/' && item.href === '/dashboard')}
         />
       ))}
     </nav>

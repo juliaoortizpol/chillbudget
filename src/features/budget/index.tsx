@@ -17,7 +17,7 @@ export function BudgetOverview() {
   } = useBudgetOverview();
 
   return (
-    <div className="flex flex-col max-w-7xl mx-auto gap-6">
+    <div className="flex flex-col gap-6">
 
       <PageHeader 
         title="Budget Overview" 

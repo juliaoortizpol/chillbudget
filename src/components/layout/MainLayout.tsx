@@ -47,7 +47,7 @@ export function MainLayout() {
             <span className="text-primary">chill</span>Budget
           </span>
         </header>
-        <div className="flex-1 p-4 lg:p-8 overflow-auto">
+        <div className="min-w-0 w-full flex-1 p-4 lg:p-8 overflow-auto">
           <Outlet />
         </div>
       </main>

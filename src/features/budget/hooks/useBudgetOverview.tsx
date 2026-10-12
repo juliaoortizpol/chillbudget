@@ -2,6 +2,7 @@ import { useMemo } from "react"
 
 import { useGlobalBudget } from "../context/BudgetContext"
 import type { BudgetCategory } from "../components/CategoryTable"
+import type { BudgetItemMatchingRule, UpdateBudgetItemDto } from "./useBudget"
 import { getIcon } from "../utils/icons"
 
 export function useBudgetOverview() {
@@ -46,7 +47,7 @@ export function useBudgetOverview() {
       return {
         id: item._id || '',
         name: item.name,
-        description: item.description || item.type,
+        matchingRules: item.matchingRules,
         allocated,
         spent,
         icon: getIcon(item.icon),
@@ -71,7 +72,7 @@ export function useBudgetOverview() {
     return tableData.reduce((sum, item) => sum + item.spent, 0);
   }, [tableData]);
 
-  const handleUpdateItem = async (itemId: string, updates: any) => {
+  const handleUpdateItem = async (itemId: string, updates: UpdateBudgetItemDto) => {
     if (!activeBudget) return;
 
     await updateBudgetItem(activeBudget._id, itemId, updates);
@@ -104,7 +105,7 @@ export function useBudgetOverview() {
     };
   }, [budgets, activeBudget, totalAllocated]);
 
-  const handleAddBudgetItem = async (name: string, description: string, allocated: number, iconName?: string) => {
+  const handleAddBudgetItem = async (name: string, allocated: number, iconName?: string, matchingRules: BudgetItemMatchingRule[] = []) => {
     let budgetId = activeBudget?._id;
 
     if (!budgetId) {
@@ -112,8 +113,7 @@ export function useBudgetOverview() {
       const start = new Date(now.getFullYear(), now.getMonth(), 1);
       const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-      try {
-        const newBudget = await createBudget({
+      const newBudget = await createBudget({
           name: `Budget ${now.toLocaleString('default', { month: 'long', year: 'numeric' })}`,
           periodType: 'monthly',
           startDate: start.toISOString(),
@@ -129,23 +129,18 @@ export function useBudgetOverview() {
           if (activeOrFirst?._id) {
             budgetId = activeOrFirst._id;
           } else {
-            console.error("Failed to automatically initialize a budget.");
-            return;
+            throw new Error("Failed to automatically initialize a budget.");
           }
         }
-      } catch (err) {
-        console.error("Error auto-creating budget:", err);
-        return;
-      }
     }
 
     await addBudgetItem(budgetId, {
       name,
-      description,
       type: "expense",
       icon: iconName || "default",
       color: "#10b981",
       plannedAmount: allocated || 0,
+      matchingRules,
     });
 
     await fetchBudgets();

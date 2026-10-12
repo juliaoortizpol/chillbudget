@@ -1,4 +1,9 @@
 import * as React from "react"
+import type { BudgetItemMatchingRule, UpdateBudgetItemDto } from '../hooks/useBudget'
+import { BudgetItemMatchingKeywords } from './BudgetItemMatchingKeywords'
+import { BudgetItemKeywordsEditor } from './BudgetItemKeywordsEditor'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+import { useTransactions } from '@/features/transactions/hooks/useTransactions'
 import { cn, formatMoneyInput } from "@/lib/utils"
 import { type ColumnDef } from "@tanstack/react-table"
 import { DataTable } from "@/components/ui/data-table"
@@ -16,9 +21,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export type BudgetCategory = {
+  matchingRules?: BudgetItemMatchingRule[]
   id: string
   name: string
-  description: string
   allocated: number
   spent: number
   icon: React.ReactNode
@@ -57,38 +62,61 @@ function EditableCurrencyCell({ initialValue, onSave }: { initialValue: number, 
 }
 
 // Editable Text Cell Component
-function EditableTextCell({ initialValue, onSave, className }: { initialValue: string, onSave: (val: string) => void, className?: string }) {
-  const { isEditing, value, setValue, startEditing, saveEditing, handleKeyDown } = useTableEditor<string>(
-    initialValue,
-    onSave
-  )
+function EditableTextCell({ initialValue, onSave, className }: { initialValue: string, onSave: (val: string) => Promise<void>, className?: string }) {
+  const [isEditing, setIsEditing] = React.useState(false)
+  const [value, setValue] = React.useState(initialValue)
+  const [saving, setSaving] = React.useState(false)
+  const [error, setError] = React.useState('')
+  const pending = React.useRef(false)
+  const cancelled = React.useRef(false)
 
-  if (isEditing) {
-    return (
-      <Input
-        autoFocus
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onBlur={saveEditing}
-        className={cn("h-7 px-2 py-0", className)}
-      />
-    )
+  const save = async () => {
+    if (pending.current || cancelled.current) return
+    const name = value.trim()
+    if (!name) { setError('Enter an item name.'); return }
+    if (name === initialValue) { setIsEditing(false); return }
+    pending.current = true
+    setSaving(true)
+    setError('')
+    try {
+      await onSave(name)
+      setIsEditing(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update item name')
+    } finally {
+      pending.current = false
+      setSaving(false)
+    }
   }
 
-  return (
-    <div 
-      className={cn("cursor-pointer hover:bg-muted/30 px-1 rounded transition-colors truncate", className)}
-      onClick={startEditing}
-    >
-      {initialValue || <span className="italic opacity-30 italic">No description</span>}
-    </div>
-  )
+  return <div>
+    {isEditing ? <Input autoFocus aria-label="Item name" value={value} readOnly={saving}
+      aria-invalid={!!error} aria-busy={saving}
+      onChange={e => setValue(e.target.value)}
+      onBlur={() => void save()}
+      onKeyDown={e => {
+        if (e.nativeEvent.isComposing) return
+        if (e.key === 'Enter') { e.preventDefault(); void save() }
+        if (e.key === 'Escape' && !pending.current) {
+          cancelled.current = true
+          setIsEditing(false)
+          setError('')
+        }
+      }} className={cn('h-7 px-2 py-0', className)} />
+      : <button type="button" className={cn('cursor-pointer hover:bg-muted/30 px-1 rounded transition-colors truncate text-left', className)}
+          onClick={() => { cancelled.current = false; setValue(initialValue); setError(''); setIsEditing(true) }}>
+          {initialValue || 'Unnamed item'}
+        </button>}
+    {saving && <span className="text-xs text-muted-foreground">Saving?</span>}
+    {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
+  </div>
 }
 
 function getColumns(
-  onUpdateItem: (id: string, updates: any) => void,
-  onDeleteItem: (id: string) => void
+  onUpdateItem: (id: string, updates: UpdateBudgetItemDto) => Promise<void>,
+  onDeleteItem: (id: string) => void,
+  categories: BudgetCategory[],
+  suggestions: string[]
 ): ColumnDef<BudgetCategory>[] {
   return [
     {
@@ -111,11 +139,9 @@ function getColumns(
                 onSave={(val) => onUpdateItem(category.id, { name: val })}
                 className="text-[15px] font-bold text-foreground"
               />
-              <EditableTextCell 
-                initialValue={category.description} 
-                onSave={(val) => onUpdateItem(category.id, { description: val })}
-                className="text-[11px] font-medium text-muted-foreground mt-0.5"
-              />
+              <BudgetItemKeywordsEditor value={category.matchingRules || []} suggestions={suggestions}
+                otherItems={categories.filter(item => item.id !== category.id)}
+                onSave={matchingRules => onUpdateItem(category.id, { matchingRules })} />
             </div>
           </div>
         )
@@ -218,23 +244,32 @@ function getColumns(
 
 function AppendCategoryRow({ 
   onCreate, 
-  nameInputRef 
+  nameInputRef, categories, suggestions 
 }: { 
-  onCreate: (name: string, description: string, allocated: number, icon: string) => void,
+  onCreate: (name: string, allocated: number, icon: string, matchingRules?: BudgetItemMatchingRule[]) => Promise<void>,
+  categories: BudgetCategory[],
+  suggestions: string[],
   nameInputRef?: React.RefObject<HTMLInputElement | null>
 }) {
   const [name, setName] = React.useState("")
-  const [description, setDescription] = React.useState("")
   const [allocated, setAllocated] = React.useState("")
   const [iconName, setIconName] = React.useState("default")
 
+  const [matchingRules, setMatchingRules] = React.useState<BudgetItemMatchingRule[]>([])
+  const [saving, setSaving] = React.useState(false)
+  const [error, setError] = React.useState('')
+  const save = async () => {
+    if (!name.trim() || saving) return;
+    setSaving(true); setError('');
+    try {
+      await onCreate(name, Number(allocated.replace(/,/g, '')) || 0, iconName, matchingRules);
+      setName(''); setAllocated(''); setIconName('default'); setMatchingRules([]);
+    } catch (err) { setError(err instanceof Error ? err.message : 'Failed to create item'); }
+    finally { setSaving(false); }
+  }
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && name.trim()) {
-      onCreate(name, description, Number(allocated.replace(/,/g, '')) || 0, iconName)
-      setName("")
-      setDescription("")
-      setAllocated("")
-      setIconName("default")
+      void save()
     }
   }
 
@@ -272,13 +307,13 @@ function AppendCategoryRow({
               onKeyDown={handleKeyDown}
               className="h-7 text-[15px] font-bold border-transparent bg-muted/40 focus-visible:bg-muted/80 px-2 rounded-md shadow-none"
             />
-            <Input 
-              placeholder="Brief description..." 
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="h-5 text-[11px] font-medium text-muted-foreground border-transparent bg-transparent focus-visible:bg-muted/40 px-2 rounded-md shadow-none"
-            />
+            <Popover>
+              <PopoverTrigger className="text-left text-[11px] text-primary px-2">{matchingRules.length ? matchingRules.length + ' matching keywords' : 'Add matching keywords'}</PopoverTrigger>
+              <PopoverContent align="start" className="w-80 p-4">
+                <BudgetItemMatchingKeywords value={matchingRules} onChange={setMatchingRules} suggestions={suggestions} otherItems={categories} />
+              </PopoverContent>
+            </Popover>
+            {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
           </div>
         </div>
       </TableCell>
@@ -307,16 +342,8 @@ function AppendCategoryRow({
           <Button 
             size="icon" 
             className="h-8 w-8 bg-primary hover:bg-ds-primary-hover text-white rounded-lg shrink-0"
-            onClick={() => {
-              if (name.trim()) {
-                onCreate(name, description, Number(allocated.replace(/,/g, '')) || 0, iconName)
-                setName("")
-                setDescription("")
-                setAllocated("")
-                setIconName("default")
-              }
-            }}
-            disabled={!name.trim()}
+            onClick={() => void save()}
+            disabled={!name.trim() || saving}
           >
             <Plus className="w-4 h-4" strokeWidth={3} />
           </Button>
@@ -328,8 +355,8 @@ function AppendCategoryRow({
 
 interface CategoryTableProps {
   categories: BudgetCategory[]
-  onUpdateItem: (categoryId: string, updates: any) => void
-  onCreateItem: (name: string, description: string, allocated: number, icon: string) => void
+  onUpdateItem: (categoryId: string, updates: UpdateBudgetItemDto) => Promise<void>
+  onCreateItem: (name: string, allocated: number, icon: string, matchingRules?: BudgetItemMatchingRule[]) => Promise<void>
   onDeleteItem: (categoryId: string) => void
   isLoading?: boolean
 }
@@ -341,7 +368,10 @@ export function CategoryTable({
   onDeleteItem,
   isLoading 
 }: CategoryTableProps) {
-  const columns = React.useMemo(() => getColumns(onUpdateItem, onDeleteItem), [onUpdateItem, onDeleteItem]);
+  const { fetchTransactions, transactionsData } = useTransactions();
+  React.useEffect(() => { void fetchTransactions({ type: 'expense', limit: 100 }).catch(() => undefined); }, [fetchTransactions]);
+  const suggestions = React.useMemo(() => transactionsData?.data.map(transaction => transaction.name) || [], [transactionsData]);
+  const columns = React.useMemo(() => getColumns(onUpdateItem, onDeleteItem, categories, suggestions), [onUpdateItem, onDeleteItem, categories, suggestions]);
   const nameInputRef = React.useRef<HTMLInputElement>(null);
 
   return (
@@ -372,7 +402,7 @@ export function CategoryTable({
       <DataTable 
         columns={columns} 
         data={categories} 
-        appendRowComponent={<AppendCategoryRow onCreate={onCreateItem} nameInputRef={nameInputRef} />}
+        appendRowComponent={<AppendCategoryRow onCreate={onCreateItem} nameInputRef={nameInputRef} categories={categories} suggestions={suggestions} />}
       />
     </div>
   )

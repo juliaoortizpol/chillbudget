@@ -231,7 +231,7 @@ export function TransactionsPage() {
     await fetchBudgets();
   }
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-6 pb-20 md:pb-0">
+    <div className="flex flex-col gap-6 pb-20 md:pb-0">
       
       <PageHeader title="Transactions" />
       <AddTransactionDialog defaultOpen={searchParams.get("create") === "1"} categories={dynamicCategories} onAppend={handleAppendItem} />
