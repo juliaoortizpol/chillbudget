@@ -1,5 +1,14 @@
 import { useState, useCallback } from 'react';
 import { useFetch } from '../../../hooks/useFetch';
+import { serializeBudgetItem, deserializeBudgetItem, type StoredMatchingRule } from './matchingRules';
+
+export interface BudgetItemMatchingRule {
+  id: string;
+  keyword: string;
+  field?: 'merchant' | 'description';
+  operator?: 'contains' | 'equals';
+  source: 'user' | 'suggested' | 'learned';
+}
 
 export interface BudgetItem {
   _id?: string;
@@ -12,9 +21,8 @@ export interface BudgetItem {
   plannedAmount: number;
   alertEnabled?: boolean;
   spent?: number;
+  matchingRules?: BudgetItemMatchingRule[];
 }
-
-export type BudgetItemUpdates = UpdateBudgetItemDto & Partial<Pick<BudgetItem, 'name' | 'description'>>;
 
 export interface Budget {
   _id: string;
@@ -38,9 +46,17 @@ export interface CreateBudgetDto {
 }
 
 export interface UpdateBudgetItemDto {
+  name?: string;
+  description?: string;
+  matchingRules?: BudgetItemMatchingRule[];
   plannedAmount?: number;
   alertEnabled?: boolean;
 }
+
+type ApiBudgetItem = Omit<BudgetItem, 'matchingRules'> & { matchingRules?: StoredMatchingRule[] };
+type ApiBudget = Omit<Budget, 'items'> & { items: ApiBudgetItem[] };
+const deserializeBudget = (budget: ApiBudget): Budget => ({ ...budget, items: budget.items?.map(deserializeBudgetItem) ?? [] });
+const serializeBudget = (dto: CreateBudgetDto | UpdateBudgetDto) => ({ ...dto, ...(dto.items === undefined ? {} : { items: dto.items.map(serializeBudgetItem) }) });
 
 function useGetBudgets() {
   const { fetchApi } = useFetch();
@@ -52,7 +68,7 @@ function useGetBudgets() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetchApi<Budget[]>('/budgets', { method: 'GET' });
+      const response = (await fetchApi<ApiBudget[]>('/budgets', { method: 'GET' })).map(deserializeBudget);
       setData(response);
       return response;
     } catch (err) {
@@ -76,7 +92,7 @@ function useGetBudgetById() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetchApi<Budget>(`/budgets/${id}`, { method: 'GET' });
+      const response = deserializeBudget(await fetchApi<ApiBudget>(`/budgets/${id}`, { method: 'GET' }));
       setData(response);
       return response;
     } catch (err) {
@@ -99,11 +115,11 @@ function useUpdateBudgetItem() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetchApi<BudgetItem>(`/budgets/${budgetId}/items/${itemId}`, {
+      const response = await fetchApi<ApiBudgetItem>(`/budgets/${budgetId}/items/${itemId}`, {
         method: 'PATCH',
-        body: JSON.stringify(dto),
+        body: JSON.stringify(serializeBudgetItem(dto)),
       });
-      return response;
+      return deserializeBudgetItem(response);
     } catch (err) {
       setError((err instanceof Error && err.message) || 'Failed to update budget item');
       throw err;
@@ -124,11 +140,11 @@ function useAddBudgetItem() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetchApi<BudgetItem>(`/budgets/${budgetId}/items`, {
+      const response = await fetchApi<ApiBudgetItem>(`/budgets/${budgetId}/items`, {
         method: 'POST',
-        body: JSON.stringify(dto),
+        body: JSON.stringify(serializeBudgetItem(dto)),
       });
-      return response;
+      return deserializeBudgetItem(response);
     } catch (err) {
       setError((err instanceof Error && err.message) || 'Failed to add budget item');
       throw err;
@@ -149,11 +165,11 @@ function useCreateBudget() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetchApi<Budget>('/budgets', {
+      const response = await fetchApi<ApiBudget>('/budgets', {
         method: 'POST',
-        body: JSON.stringify(dto),
+        body: JSON.stringify(serializeBudget(dto)),
       });
-      return response;
+      return deserializeBudget(response);
     } catch (err) {
       setError((err instanceof Error && err.message) || 'Failed to create budget');
       throw err;
@@ -183,11 +199,11 @@ function useUpdateBudget() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetchApi<Budget>(`/budgets/${id}`, {
+      const response = await fetchApi<ApiBudget>(`/budgets/${id}`, {
         method: 'PATCH',
-        body: JSON.stringify(dto),
+        body: JSON.stringify(serializeBudget(dto)),
       });
-      return response;
+      return deserializeBudget(response);
     } catch (err) {
       setError((err instanceof Error && err.message) || 'Failed to update budget');
       throw err;

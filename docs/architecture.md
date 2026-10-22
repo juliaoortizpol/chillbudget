@@ -19,6 +19,7 @@ a static build preview and is not proof of production API connectivity.
 VITE_ configuration is embedded into client code and must contain no secrets.
 
 ## Current gaps
-No configured frontend unit/component/browser test suite exists.
+Vitest provides unit/component tests in jsdom; integrated browser/API coverage
+still requires separate verification.
 The route tree itself is not evidence of authorization enforcement.
 Mock data remains in the source; QA must record whether it used API data or mocks.

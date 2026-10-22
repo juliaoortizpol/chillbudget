@@ -104,7 +104,7 @@ export function DashboardLayout() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-6">
+    <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Overview</h1>
         <p className="mt-1 text-sm text-muted-foreground">A quick look at your budget and recent activity.</p>

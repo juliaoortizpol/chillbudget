@@ -18,10 +18,11 @@ VITE_ values are public build configuration, never secrets.
 Use Node 24 and npm ci (the initial CI baseline).
 Run lint: npm run lint
 Run types: npx --no-install tsc -b
+Run unit/component tests: npm test
 Run production build: npm run build
-There is no configured automated frontend test suite. Do not invent a passing
-test command or use --if-present to conceal that gap. Follow docs/testing.md
-for manual/integrated QA and attach UI evidence.
+Vitest runs the configured unit/component suite. Do not use --if-present to
+conceal missing checks. Follow docs/testing.md for manual/integrated QA and
+attach UI evidence; unit/component tests do not replace integrated QA.
 
 ## Workflow
 Read docs/product.md, docs/architecture.md and docs/testing.md before changing behavior.
