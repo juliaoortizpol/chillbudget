@@ -90,9 +90,14 @@ describe('matching keywords', () => {
     expect([name, amount, icon]).toEqual(['Travel', 250, 'default']);
     expect(rules.map((r: BudgetItemMatchingRule) => r.keyword)).toEqual(withKeywords ? ['Uber', 'DiDi', 'inDrive'] : []);
   });
-  it('displays a compact keyword count in the existing name column', () => {
-    render(<CategoryTable categories={[{ id: '1', name: 'Travel', allocated: 250, spent: 0, icon: null, iconBgClass: '', iconColor: '', matchingRules: [rule] }]} onCreateItem={vi.fn()} onUpdateItem={vi.fn()} onDeleteItem={vi.fn()} />);
-    expect(screen.getByText('1 matching keyword')).toBeTruthy();
+  it('displays keyword chips and the add/edit label in the existing name column', () => {
+    render(<CategoryTable categories={[{ id: '1', name: 'Travel', allocated: 250, spent: 0, icon: null, iconBgClass: '', iconColor: '', matchingRules: [rule, ...['DiDi', 'inDrive', 'Taxi'].map((keyword, i) => ({ id: String(i), keyword, source: 'user' as const }))] }]} onCreateItem={vi.fn()} onUpdateItem={vi.fn()} onDeleteItem={vi.fn()} />);
+    expect(screen.getByText('Uber')).toBeTruthy();
+    expect(screen.getByText('DiDi')).toBeTruthy();
+    expect(screen.getByText('inDrive')).toBeTruthy();
+    expect(screen.queryByText('Taxi')).toBeNull();
+    expect(screen.getByLabelText('1 more matching keywords').textContent).toBe('+1');
+    expect(screen.getByRole('button', { name: 'Edit matching keywords' }).textContent).toBe('Matching keywords - Add / edit');
     expect(screen.getAllByRole('columnheader')).toHaveLength(5);
   });
 });

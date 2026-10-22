@@ -10,9 +10,18 @@ export function BudgetItemKeywordsEditor({ value, onSave, suggestions, otherItem
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   return <Popover open={open} onOpenChange={next => { if (!saving) { setOpen(next); if (next) { setDraft(value); setError(''); } } }}>
-    <PopoverTrigger className="text-left text-[11px] text-primary hover:underline px-1" aria-label="Edit matching keywords">
-      {value.length ? `${value.length} matching keyword${value.length === 1 ? '' : 's'}` : 'Add matching keywords'}
-    </PopoverTrigger>
+    <div className="flex min-w-0 flex-col gap-1 px-1">
+      {value.length > 0 && <div className="flex min-w-0 items-center gap-1" aria-label="Matching keywords">
+        {value.slice(0, 3).map(rule => <span key={rule.id} title={rule.keyword}
+          className="min-w-0 max-w-20 truncate rounded bg-primary/10 px-1.5 py-0.5 text-[10px] leading-tight text-primary">
+          {rule.keyword}
+        </span>)}
+        {value.length > 3 && <span className="shrink-0 text-[10px] text-muted-foreground" aria-label={`${value.length - 3} more matching keywords`}>+{value.length - 3}</span>}
+      </div>}
+      <PopoverTrigger className="text-left text-[11px] text-primary hover:underline" aria-label="Edit matching keywords">
+        {value.length ? 'Matching keywords - Add / edit' : 'Add matching keywords'}
+      </PopoverTrigger>
+    </div>
     <PopoverContent align="start" className="w-80 p-4">
       <BudgetItemMatchingKeywords value={draft} onChange={setDraft} suggestions={suggestions} otherItems={otherItems} />
       {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
