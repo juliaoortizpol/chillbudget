@@ -2,10 +2,10 @@ import { useCallback } from 'react';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
-interface FetchOptions extends RequestInit {}
+type FetchOptions = RequestInit;
 
 export function useFetch() {
-  const fetchApi = useCallback(async <T = any>(endpoint: string, options: FetchOptions = {}): Promise<T> => {
+  const fetchApi = useCallback(async <T = unknown>(endpoint: string, options: FetchOptions = {}): Promise<T> => {
     const token = localStorage.getItem('jwt_token');
     
     const headers = new Headers(options.headers);

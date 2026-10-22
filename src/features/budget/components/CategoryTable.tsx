@@ -244,7 +244,7 @@ function getColumns(
 
 function AppendCategoryRow({ 
   onCreate, 
-  nameInputRef, categories, suggestions 
+  nameInputRef, categories, suggestions
 }: { 
   onCreate: (name: string, allocated: number, icon: string, matchingRules?: BudgetItemMatchingRule[]) => Promise<void>,
   categories: BudgetCategory[],

@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export function useTableEditor<T>(initialValue: T, onSave: (value: T) => void) {
   const [isEditing, setIsEditing] = useState(false);
   const [value, setValue] = useState<T>(initialValue);
+  const [previousInitialValue, setPreviousInitialValue] = useState(initialValue);
   const [isHovered, setIsHovered] = useState(false);
 
-  useEffect(() => {
+  // Reset a stale draft before React renders children with the new source value.
+  if (!Object.is(previousInitialValue, initialValue)) {
+    setPreviousInitialValue(initialValue);
     setValue(initialValue);
-  }, [initialValue]);
+  }
 
   const startEditing = () => setIsEditing(true);
   

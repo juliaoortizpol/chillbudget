@@ -6,10 +6,12 @@ import { Outlet, useLocation } from 'react-router-dom';
 export function MainLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
+  const [previousPathname, setPreviousPathname] = useState(location.pathname);
 
-  useEffect(() => {
+  if (previousPathname !== location.pathname) {
+    setPreviousPathname(location.pathname);
     setIsSidebarOpen(false);
-  }, [location.pathname]);
+  }
 
   useEffect(() => {
     if (!isSidebarOpen) return;

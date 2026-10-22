@@ -17,8 +17,8 @@ export function useProfile() {
       });
       setProfile(response);
       return response;
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch profile');
+    } catch (err) {
+      setError((err instanceof Error && err.message) || 'Failed to fetch profile');
       throw err;
     } finally {
       setIsLoading(false);

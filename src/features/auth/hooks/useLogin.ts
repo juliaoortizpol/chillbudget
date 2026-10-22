@@ -21,8 +21,8 @@ export function useLogin() {
       }
       
       return response;
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
+    } catch (err) {
+      setError((err instanceof Error && err.message) || 'Login failed');
       throw err;
     } finally {
       setIsLoading(false);

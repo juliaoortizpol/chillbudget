@@ -54,4 +54,3 @@ export function BudgetItemMatchingKeywords({ value, onChange, suggestions = [], 
     {conflicts.map((item, i) => <p key={i} role="status" className="text-xs text-amber-700">This keyword may also match expenses assigned to {item.name}.</p>)}
   </section>;
 }
-

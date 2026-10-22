@@ -16,8 +16,8 @@ export function useSignup() {
         body: JSON.stringify(data),
       });
       return response;
-    } catch (err: any) {
-      setError(err.message || 'Signup failed');
+    } catch (err) {
+      setError((err instanceof Error && err.message) || 'Signup failed');
       throw err;
     } finally {
       setIsLoading(false);

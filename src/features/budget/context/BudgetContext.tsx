@@ -1,24 +1,20 @@
-import React, { createContext, useContext, useEffect, useRef, useMemo } from 'react';
-import { useBudget, type Budget } from '../hooks/useBudget';
-
-type BudgetContextType = Omit<ReturnType<typeof useBudget>, 'activeBudget'> & {
-  activeBudget: Budget | undefined;
-};
-
-const BudgetContext = createContext<BudgetContextType | null>(null);
+import React, { useEffect, useRef, useMemo } from 'react';
+import { useBudget } from '../hooks/useBudget';
+import { BudgetContext } from './budget-context';
 
 export function BudgetProvider({ children }: { children: React.ReactNode }) {
   const budget = useBudget();
+  const { fetchBudgets } = budget;
   const hasFetched = useRef(false);
 
   useEffect(() => {
     // We can rely on the JWT token existence or let useFetch handle the error
     // We only want to fetch once when the provider mounts
     if (!hasFetched.current) {
-      void budget.fetchBudgets().catch(() => undefined);
+      void fetchBudgets().catch(() => undefined);
       hasFetched.current = true;
     }
-  }, [budget.fetchBudgets]);
+  }, [fetchBudgets]);
 
   const activeBudget = useMemo(() => {
     return budget.budgets?.find(b => b.status === 'active') || budget.budgets?.[0];
@@ -29,10 +25,4 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
       {children}
     </BudgetContext.Provider>
   );
-}
-
-export function useGlobalBudget() {
-  const ctx = useContext(BudgetContext);
-  if (!ctx) throw new Error('useGlobalBudget must be used within BudgetProvider');
-  return ctx;
 }

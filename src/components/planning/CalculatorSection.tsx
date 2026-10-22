@@ -15,4 +15,3 @@ export function CalculatorSection({ title, description, children, className, act
 export function CalculatorMetric({ label, value, emphasis = false }: { label: string; value: ReactNode; emphasis?: boolean }) {
   return <div className="min-w-0 space-y-1"><dt className="text-xs text-muted-foreground">{label}</dt><dd className={cn('break-words text-sm font-semibold tabular-nums', emphasis && 'text-primary')}>{value}</dd></div>;
 }
-

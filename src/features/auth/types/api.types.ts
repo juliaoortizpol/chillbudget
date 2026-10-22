@@ -17,5 +17,5 @@ export interface UserProfile {
   id: string;
   email: string;
   // We can expand this once we know what the profile endpoint returns exactly
-  [key: string]: any;
+  [key: string]: unknown;
 }

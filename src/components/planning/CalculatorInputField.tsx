@@ -21,4 +21,3 @@ export function CalculatorInputField({ id, label, suffix, hint, error, onChange,
     {(error || hint) && <p id={`${id}-help`} className={error ? 'text-xs text-destructive' : 'text-[11px] leading-relaxed text-muted-foreground'}>{error || hint}</p>}
   </div>;
 }
-

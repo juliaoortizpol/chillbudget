@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 
-import { useGlobalBudget } from "../context/BudgetContext"
+import { useGlobalBudget } from "./useGlobalBudget"
 import type { BudgetCategory } from "../components/CategoryTable"
 import type { BudgetItemMatchingRule, UpdateBudgetItemDto } from "./useBudget"
 import { getIcon } from "../utils/icons"
@@ -125,7 +125,7 @@ export function useBudgetOverview() {
           budgetId = newBudget._id;
         } else {
           const freshBudgets = await fetchBudgets();
-          const activeOrFirst = freshBudgets?.find((b: any) => b.status === 'active') || freshBudgets?.[0];
+          const activeOrFirst = freshBudgets?.find((b) => b.status === 'active') || freshBudgets?.[0];
           if (activeOrFirst?._id) {
             budgetId = activeOrFirst._id;
           } else {
