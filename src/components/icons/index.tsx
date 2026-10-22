@@ -20,6 +20,6 @@ export {
 }
 
 // --- 2. Custom SVG Icons ---
-export * from "./GoogleIcon"
-export * from "./AppleIcon"
-export * from "./LogoIcon"
+export { GoogleIcon } from "./GoogleIcon"
+export { AppleIcon } from "./AppleIcon"
+export { LogoIcon } from "./LogoIcon"

@@ -1,6 +1,7 @@
+import type { BudgetItemUpdates } from "./useBudget"
 import { useMemo } from "react"
 
-import { useGlobalBudget } from "../context/BudgetContext"
+import { useGlobalBudget } from "./useGlobalBudget"
 import type { BudgetCategory } from "../components/CategoryTable"
 import { getIcon } from "../utils/icons"
 
@@ -71,7 +72,7 @@ export function useBudgetOverview() {
     return tableData.reduce((sum, item) => sum + item.spent, 0);
   }, [tableData]);
 
-  const handleUpdateItem = async (itemId: string, updates: any) => {
+  const handleUpdateItem = async (itemId: string, updates: BudgetItemUpdates) => {
     if (!activeBudget) return;
 
     await updateBudgetItem(activeBudget._id, itemId, updates);
@@ -125,7 +126,7 @@ export function useBudgetOverview() {
           budgetId = newBudget._id;
         } else {
           const freshBudgets = await fetchBudgets();
-          const activeOrFirst = freshBudgets?.find((b: any) => b.status === 'active') || freshBudgets?.[0];
+          const activeOrFirst = freshBudgets?.find((b) => b.status === 'active') || freshBudgets?.[0];
           if (activeOrFirst?._id) {
             budgetId = activeOrFirst._id;
           } else {

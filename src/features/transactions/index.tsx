@@ -1,3 +1,5 @@
+import type { TransactionUpdates, AppendTransactionData } from "./types/table"
+import type { UpdateTransactionDto } from "./hooks/useTransactions"
 import { useSearchParams } from "react-router-dom"
 import React, { useEffect, useMemo } from "react"
 import { PageHeader } from "@/components/layout/PageHeader"
@@ -5,7 +7,7 @@ import { TransactionsFilterBar } from "./components/TransactionsFilterBar"
 import { AddTransactionDialog, TransactionsTable } from "./components/TransactionsTable"
 import { Pagination } from "./components/Pagination"
 import { TransactionsSummary } from "./components/TransactionsSummary"
-import { useGlobalBudget } from "../budget/context/BudgetContext"
+import { useGlobalBudget } from "../budget/hooks/useGlobalBudget"
 import { getIcon } from "../budget/utils/icons"
 import { Disclaimer } from "@/components/ui/disclaimer"
 import { useTransactions } from "./hooks/useTransactions"
@@ -70,7 +72,7 @@ export function TransactionsPage() {
       page: currentPage, 
       limit: pageSize,
       budgetItemId: categoryId || undefined,
-      type: type as any || undefined,
+      type: type === 'expense' || type === 'income' ? type : undefined,
       startDate,
       endDate
     }).then((res) => {
@@ -101,7 +103,7 @@ export function TransactionsPage() {
         budgetUsedPercentage: allocated > 0 ? (spent / allocated) * 100 : 0
       };
       return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, TransactionCategory>);
   }, [activeBudget]);
 
   const hasCategories = Object.keys(dynamicCategories).length > 0;
@@ -117,7 +119,7 @@ export function TransactionsPage() {
           icon: <span />,
           iconBgClass: 'bg-gray-500/10',
           iconColor: 'text-gray-500'
-        } as unknown as TransactionCategory;
+        };
       }
 
       return {
@@ -160,7 +162,7 @@ export function TransactionsPage() {
     };
   }, [activeBudget, categoryId, filteredUiTransactions]);
 
-  const filterCategories = useMemo(() => Object.values(dynamicCategories).map((c: any) => ({ id: c.id, name: c.name })), [dynamicCategories]);
+  const filterCategories = useMemo(() => Object.entries(dynamicCategories).map(([id, category]) => ({ id, name: category.name })), [dynamicCategories]);
 
   const emptyState = useMemo(() => {
     const hasSpecificFilters = Boolean(searchQuery.trim() || categoryId || type);
@@ -185,8 +187,8 @@ export function TransactionsPage() {
     };
   }, [categoryId, dateRange, searchQuery, type]);
 
-  const handleUpdateItem = async (id: string, updates: any) => {
-    const dto: any = {};
+  const handleUpdateItem = async (id: string, updates: TransactionUpdates) => {
+    const dto: UpdateTransactionDto = {};
     if (updates.description !== undefined) dto.name = updates.description;
     if (updates.amount !== undefined) {
       dto.amount = Math.abs(updates.amount);
@@ -210,7 +212,7 @@ export function TransactionsPage() {
     await fetchBudgets();
   }
 
-  const handleAppendItem = async (data: any) => {
+  const handleAppendItem = async (data: AppendTransactionData) => {
     const cleanAmount = (data.amount || "").replace(/,/g, "");
     const parsedAmount = parseFloat(cleanAmount) || 0;
     
@@ -218,7 +220,7 @@ export function TransactionsPage() {
       name: data.description,
       amount: Math.abs(parsedAmount),
       type: parsedAmount < 0 ? 'expense' : 'income' as 'expense' | 'income',
-      date: new Date(data.date).toISOString(),
+      date: new Date(data.date ?? new Date()).toISOString(),
       budgetItemId: data.categoryKey
     };
     await createTransaction(dto);
@@ -277,7 +279,7 @@ export function TransactionsPage() {
                 ) : (
                   <>
                     <TransactionsTable 
-                      data={filteredUiTransactions as any} 
+                      data={filteredUiTransactions}
                       onUpdateItem={handleUpdateItem} 
                       onDeleteItem={handleDeleteItem}
                       onAppendItem={handleAppendItem}

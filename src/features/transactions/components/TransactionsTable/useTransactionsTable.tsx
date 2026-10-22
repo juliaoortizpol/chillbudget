@@ -1,3 +1,4 @@
+import type { TransactionUpdates } from "../../types/table"
 import * as React from "react"
 import { format, parse } from "date-fns"
 import { type TransactionCategory, type Transaction } from "../../data/mock-transactions"
@@ -15,7 +16,9 @@ export function useEditableDateCell(initialValue: string, onSave: (val: string) 
     try {
       const parsed = parse(initialValue, "MMM d, yyyy", new Date())
       if (!isNaN(parsed.getTime())) return parsed
-    } catch(e) {}
+    } catch {
+      // Invalid input leaves the calendar unselected.
+    }
     return undefined
   })
   const [isOpen, setIsOpen] = React.useState(false)
@@ -37,12 +40,12 @@ export function useEditableDateCell(initialValue: string, onSave: (val: string) 
 export function useEditableCategoryCell(initialValue: TransactionCategory, onSave: (val: TransactionCategory) => void, categories: Record<string, TransactionCategory>) {
   const [isEditing, setIsEditing] = React.useState(false)
   const [value, setValue] = React.useState(initialValue)
+  const [previousInitialValue, setPreviousInitialValue] = React.useState(initialValue)
 
-  React.useEffect(() => {
-    // If the active budget changes, initialValue might not be valid anymore
-    // but for now we just sync it
+  if (previousInitialValue !== initialValue) {
+    setPreviousInitialValue(initialValue)
     setValue(initialValue)
-  }, [initialValue])
+  }
 
   const startEditing = () => setIsEditing(true)
 
@@ -128,9 +131,7 @@ export function useAppendTransactionRow() {
   }
 }
 
-export function useTransactionsTable(onUpdateItem?: (id: string, updates: any) => void, onDeleteItem?: (id: string) => void, categories: Record<string, TransactionCategory> = {}) {
-  const safeOnUpdateItem = onUpdateItem || (() => {})
-  const safeOnDeleteItem = onDeleteItem || (() => {})
+export function useTransactionsTable(onUpdateItem?: (id: string, updates: TransactionUpdates) => void, onDeleteItem?: (id: string) => void, categories: Record<string, TransactionCategory> = {}) {
 
   const columns = React.useMemo<ColumnDef<Transaction>[]>(() => [
     {
@@ -139,7 +140,7 @@ export function useTransactionsTable(onUpdateItem?: (id: string, updates: any) =
       cell: ({ row }) => (
         <EditableDateCell 
           initialValue={row.original.date}
-          onSave={(val) => safeOnUpdateItem(row.original.id, { date: val })}
+          onSave={(val) => onUpdateItem?.(row.original.id, { date: val })}
           className="font-medium text-muted-foreground"
         />
       ),
@@ -150,7 +151,7 @@ export function useTransactionsTable(onUpdateItem?: (id: string, updates: any) =
       cell: ({ row }) => (
         <EditableTextCell 
           initialValue={row.original.description}
-          onSave={(val) => safeOnUpdateItem(row.original.id, { description: val })}
+          onSave={(val) => onUpdateItem?.(row.original.id, { description: val })}
           className="font-bold text-foreground"
         />
       ),
@@ -161,7 +162,7 @@ export function useTransactionsTable(onUpdateItem?: (id: string, updates: any) =
       cell: ({ row }) => (
         <EditableCategoryCell 
           initialValue={row.original.category}
-          onSave={(val) => safeOnUpdateItem(row.original.id, { category: val })}
+          onSave={(val) => onUpdateItem?.(row.original.id, { category: val })}
           categories={categories}
         />
       ),
@@ -172,7 +173,7 @@ export function useTransactionsTable(onUpdateItem?: (id: string, updates: any) =
       cell: ({ row }) => (
         <EditableCurrencyCell 
           initialValue={row.original.amount}
-          onSave={(val) => safeOnUpdateItem(row.original.id, { amount: val })}
+          onSave={(val) => onUpdateItem?.(row.original.id, { amount: val })}
           className="font-bold"
         />
       ),
@@ -183,7 +184,7 @@ export function useTransactionsTable(onUpdateItem?: (id: string, updates: any) =
       cell: ({ row }) => (
         <div className="flex justify-end px-2">
           <button 
-            onClick={() => safeOnDeleteItem(row.original.id)}
+            onClick={() => onDeleteItem?.(row.original.id)}
             className="text-red-500 hover:text-red-700 p-1 rounded transition-colors"
             title="Delete transaction"
           >
@@ -192,7 +193,7 @@ export function useTransactionsTable(onUpdateItem?: (id: string, updates: any) =
         </div>
       ),
     },
-  ], [safeOnUpdateItem, safeOnDeleteItem, categories])
+  ], [onUpdateItem, onDeleteItem, categories])
 
   return {
     columns

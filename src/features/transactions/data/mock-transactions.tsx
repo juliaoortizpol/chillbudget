@@ -2,11 +2,12 @@ import React from "react"
 import { Laptop, TrendingUp, Utensils, Wallet, Zap, Home } from "lucide-react"
 
 export type TransactionCategory = {
+  id?: string
   name: string
   icon: React.ReactNode
   iconBgClass: string
   iconColor: string
-  budgetUsedPercentage: number
+  budgetUsedPercentage?: number
 }
 
 export type Transaction = {

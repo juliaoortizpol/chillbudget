@@ -82,8 +82,8 @@ function useGetTransactions() {
       const response = await fetchApi<PaginatedTransactions>(`/transactions${query}`, { method: 'GET' });
       setData(response);
       return response;
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch transactions');
+    } catch (err) {
+      setError((err instanceof Error && err.message) || 'Failed to fetch transactions');
       throw err;
     } finally {
       setIsLoading(false);
@@ -107,8 +107,8 @@ function useCreateTransaction() {
         body: JSON.stringify(dto),
       });
       return response;
-    } catch (err: any) {
-      setError(err.message || 'Failed to create transaction');
+    } catch (err) {
+      setError((err instanceof Error && err.message) || 'Failed to create transaction');
       throw err;
     } finally {
       setIsLoading(false);
@@ -132,8 +132,8 @@ function useUpdateTransaction() {
         body: JSON.stringify(dto),
       });
       return response;
-    } catch (err: any) {
-      setError(err.message || 'Failed to update transaction');
+    } catch (err) {
+      setError((err instanceof Error && err.message) || 'Failed to update transaction');
       throw err;
     } finally {
       setIsLoading(false);
@@ -152,12 +152,12 @@ function useDeleteTransaction() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetchApi<any>(`/transactions/${id}`, {
+      const response = await fetchApi<unknown>(`/transactions/${id}`, {
         method: 'DELETE',
       });
       return response;
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete transaction');
+    } catch (err) {
+      setError((err instanceof Error && err.message) || 'Failed to delete transaction');
       throw err;
     } finally {
       setIsLoading(false);

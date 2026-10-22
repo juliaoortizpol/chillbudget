@@ -73,8 +73,8 @@ export function useLoginForm() {
         await login(values)
         navigate("/dashboard")
       }
-    } catch (err: any) {
-      setErrors({ form: err.message || (mode === "login" ? "Invalid credentials. Please check your email and password." : "Signup failed.") })
+    } catch (err) {
+      setErrors({ form: (err instanceof Error && err.message) || (mode === "login" ? "Invalid credentials. Please check your email and password." : "Signup failed.") })
     }
   }
 

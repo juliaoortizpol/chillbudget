@@ -14,6 +14,8 @@ export interface BudgetItem {
   spent?: number;
 }
 
+export type BudgetItemUpdates = UpdateBudgetItemDto & Partial<Pick<BudgetItem, 'name' | 'description'>>;
+
 export interface Budget {
   _id: string;
   name: string;
@@ -53,8 +55,8 @@ function useGetBudgets() {
       const response = await fetchApi<Budget[]>('/budgets', { method: 'GET' });
       setData(response);
       return response;
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch budgets');
+    } catch (err) {
+      setError((err instanceof Error && err.message) || 'Failed to fetch budgets');
       throw err;
     } finally {
       setIsLoading(false);
@@ -77,8 +79,8 @@ function useGetBudgetById() {
       const response = await fetchApi<Budget>(`/budgets/${id}`, { method: 'GET' });
       setData(response);
       return response;
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch budget');
+    } catch (err) {
+      setError((err instanceof Error && err.message) || 'Failed to fetch budget');
       throw err;
     } finally {
       setIsLoading(false);
@@ -102,8 +104,8 @@ function useUpdateBudgetItem() {
         body: JSON.stringify(dto),
       });
       return response;
-    } catch (err: any) {
-      setError(err.message || 'Failed to update budget item');
+    } catch (err) {
+      setError((err instanceof Error && err.message) || 'Failed to update budget item');
       throw err;
     } finally {
       setIsLoading(false);
@@ -127,8 +129,8 @@ function useAddBudgetItem() {
         body: JSON.stringify(dto),
       });
       return response;
-    } catch (err: any) {
-      setError(err.message || 'Failed to add budget item');
+    } catch (err) {
+      setError((err instanceof Error && err.message) || 'Failed to add budget item');
       throw err;
     } finally {
       setIsLoading(false);
@@ -152,8 +154,8 @@ function useCreateBudget() {
         body: JSON.stringify(dto),
       });
       return response;
-    } catch (err: any) {
-      setError(err.message || 'Failed to create budget');
+    } catch (err) {
+      setError((err instanceof Error && err.message) || 'Failed to create budget');
       throw err;
     } finally {
       setIsLoading(false);
@@ -186,8 +188,8 @@ function useUpdateBudget() {
         body: JSON.stringify(dto),
       });
       return response;
-    } catch (err: any) {
-      setError(err.message || 'Failed to update budget');
+    } catch (err) {
+      setError((err instanceof Error && err.message) || 'Failed to update budget');
       throw err;
     } finally {
       setIsLoading(false);
@@ -206,12 +208,12 @@ function useDeleteBudgetItem() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetchApi<any>(`/budgets/${budgetId}/items/${itemId}`, {
+      const response = await fetchApi<unknown>(`/budgets/${budgetId}/items/${itemId}`, {
         method: 'DELETE',
       });
       return response;
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete budget item');
+    } catch (err) {
+      setError((err instanceof Error && err.message) || 'Failed to delete budget item');
       throw err;
     } finally {
       setIsLoading(false);

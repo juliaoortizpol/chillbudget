@@ -1,3 +1,4 @@
+import type { BudgetItemUpdates } from "../hooks/useBudget"
 import * as React from "react"
 import { cn, formatMoneyInput } from "@/lib/utils"
 import { type ColumnDef } from "@tanstack/react-table"
@@ -87,7 +88,7 @@ function EditableTextCell({ initialValue, onSave, className }: { initialValue: s
 }
 
 function getColumns(
-  onUpdateItem: (id: string, updates: any) => void,
+  onUpdateItem: (id: string, updates: BudgetItemUpdates) => void,
   onDeleteItem: (id: string) => void
 ): ColumnDef<BudgetCategory>[] {
   return [
@@ -328,7 +329,7 @@ function AppendCategoryRow({
 
 interface CategoryTableProps {
   categories: BudgetCategory[]
-  onUpdateItem: (categoryId: string, updates: any) => void
+  onUpdateItem: (categoryId: string, updates: BudgetItemUpdates) => void
   onCreateItem: (name: string, description: string, allocated: number, icon: string) => void
   onDeleteItem: (categoryId: string) => void
   isLoading?: boolean

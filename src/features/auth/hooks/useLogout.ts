@@ -16,8 +16,8 @@ export function useLogout() {
       // Clear token locally
       localStorage.removeItem('jwt_token');
       return response;
-    } catch (err: any) {
-      setError(err.message || 'Logout failed');
+    } catch (err) {
+      setError((err instanceof Error && err.message) || 'Logout failed');
       throw err;
     } finally {
       setIsLoading(false);

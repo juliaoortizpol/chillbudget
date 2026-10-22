@@ -1,3 +1,4 @@
+import type { TransactionUpdates, AppendTransactionData } from "../../types/table"
 import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -148,7 +149,7 @@ export function EditableCategoryCell({ initialValue, onSave, categories }: { ini
 
 
 
-function AppendTransactionForm({ categories, onAppend, onComplete, inline = false }: { categories: Record<string, TransactionCategory>, onAppend?: (data: any) => void | Promise<void>, onComplete?: () => void, inline?: boolean }) {
+function AppendTransactionForm({ categories, onAppend, onComplete, inline = false }: { categories: Record<string, TransactionCategory>, onAppend?: (data: AppendTransactionData) => void | Promise<void>, onComplete?: () => void, inline?: boolean }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const {
     date, setDate,
@@ -288,9 +289,9 @@ function AppendTransactionForm({ categories, onAppend, onComplete, inline = fals
 
 interface TransactionsTableProps {
   data: Transaction[]
-  onUpdateItem?: (id: string, updates: any) => void
+  onUpdateItem?: (id: string, updates: TransactionUpdates) => void
   onDeleteItem?: (id: string) => void
-  onAppendItem?: (data: any) => void | Promise<void>
+  onAppendItem?: (data: AppendTransactionData) => void | Promise<void>
   categories?: Record<string, TransactionCategory>
   emptyTitle?: string
   emptyDescription?: string
@@ -299,7 +300,7 @@ interface TransactionsTableProps {
 interface AddTransactionDialogProps {
   defaultOpen?: boolean
   categories: Record<string, TransactionCategory>
-  onAppend?: (data: any) => void | Promise<void>
+  onAppend?: (data: AppendTransactionData) => void | Promise<void>
 }
 
 export function AddTransactionDialog({ categories, onAppend, defaultOpen = false }: AddTransactionDialogProps) {
