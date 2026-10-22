@@ -1,3 +1,12 @@
+# ChillBudget frontend
+
+Repository context and contribution rules: [AGENTS.md](AGENTS.md).
+Start with [product context](docs/product.md), [architecture](docs/architecture.md),
+[testing and CI rollout](docs/testing.md), [QA reporting](docs/qa-reporting.md),
+and the [CI onboarding baseline](docs/ci-baseline.md).
+
+The original framework starter documentation follows.
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
