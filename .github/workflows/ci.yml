@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        check: [lint, types, build]
+        check: [lint, types, unit, build]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,6 +37,9 @@ jobs:
       - name: types
         if: matrix.check == 'types'
         run: npx --no-install tsc -b
+      - name: unit
+        if: matrix.check == 'unit'
+        run: npm test
       - name: build
         if: matrix.check == 'build'
         run: npm run build

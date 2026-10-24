@@ -16,8 +16,8 @@ Vitest runs the configured unit/component tests in jsdom, including budget
 matching rules, the loan calculator and retirement planning. test-api.cjs is a
 manual script, not a configured test runner or proof of integrated UI coverage.
 Browser/API verification still needs a deterministic synthetic-data environment.
-The initial CI workflow runs lint, types and build; npm test is a separate local
-verification command until the workflow explicitly includes it.
+CI runs lint, types, unit/component tests (npm test), and build. All four
+must pass for frontend-required to succeed.
 
 ## Required checks rollout
 .github/workflows/ci.yml runs on every PR, push to master and manual dispatch.
