@@ -25,15 +25,9 @@ conceal missing checks. Follow docs/testing.md for manual/integrated QA and
 attach UI evidence; unit/component tests do not replace integrated QA.
 
 ## Workflow
-Read docs/product.md, docs/architecture.md and docs/testing.md before changing behavior.
-Use the Trello ticket's acceptance criteria and execution mode; do not invent scope.
-Work on a ticket branch and open a PR to master. Link related changes in the other
-repository. Keep documentation current when behavior, API contracts or setup change.
-Use .github/pull_request_template.md and docs/qa-reporting.md for handoffs.
-Developer, Reviewer and QA use separate sessions; do not fill in another role's
-verdict or treat a developer summary as independent verification.
-Blocking defects return the original ticket to development. Minor defects need
-linked follow-up tickets and may pass QA. Julio approves; Done requires merge.
-Never merge, deploy, alter protection, or bypass failing checks as part of implementation.
-Report exact commands and failures; do not disable rules or delete tests to obtain green CI.
-Use synthetic data. Do not log or commit credentials, JWTs, Google tokens or real mail.
+The shared workflow/role policy is maintained in the BrainBudget orchestration directory.
+See docs/agent-workflow.md to locate the configured sibling checkout and controller.
+Use approved ticket scope and isolated branches. Developer, Reviewer and QA need fresh
+contexts; never claim another role passed. No merge, deployment, protection changes or
+production access during implementation. Do not weaken checks or remove tests for green CI.
+Use synthetic data; keep credentials, JWTs, real mail and private finances out of evidence.

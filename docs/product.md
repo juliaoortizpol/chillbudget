@@ -5,7 +5,8 @@ The npm package is currently named flowbudget; this does not identify a separate
 
 ## Current implementation
 src/App.tsx defines login at /, Google callback at /auth/callback, and dashboard,
-/budget, /transactions and /accounts under the shared layout and BudgetProvider.
+/budget, /transactions, /accounts and /planning under the shared layout and BudgetProvider.
+Planning includes /planning/loan-calculator and /planning/retirement-planner.
 Feature hooks contain API requests for authentication, budgets, transactions,
 accounts, institutions and Gmail connection behavior.
 The repository also contains mock data and display-only components. Route or
