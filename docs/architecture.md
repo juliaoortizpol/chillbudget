@@ -2,7 +2,9 @@
 
 React 19 + TypeScript, built with Vite; React Router owns navigation.
 Tailwind CSS and shared UI components provide styling. src/main.ts mounts App.
-src/features groups auth, dashboard, budget, accounts and transactions.
+src/features groups auth, dashboard, budget, accounts, transactions, planning,
+loan-calculator and retirement-planner. Calculator engines live in their feature utils;
+React hooks normalize input/state and components handle presentation.
 src/components contains shared layout/sidebar and UI. src/hooks contains shared
 hooks. @/ resolves to src in Vite and TypeScript.
 
