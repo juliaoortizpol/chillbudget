@@ -57,28 +57,12 @@ export function useEditableCategoryCell(initialValue: TransactionCategory, onSav
     }
   }
 
-  const isOverBudget = value.budgetUsedPercentage !== undefined && value.budgetUsedPercentage >= 100
-  const isUnderBudget = value.budgetUsedPercentage !== undefined && value.budgetUsedPercentage < 100
-
-  let bgClass = value.iconBgClass
-  let textClass = value.iconColor
-
-  if (isOverBudget) {
-    bgClass = "bg-red-500/10"
-    textClass = "text-red-700"
-  } else if (isUnderBudget) {
-    bgClass = "bg-emerald-500/10"
-    textClass = "text-emerald-700"
-  }
-
   return {
     isEditing,
     setIsEditing,
     value,
     startEditing,
-    handleChange,
-    bgClass,
-    textClass
+    handleChange
   }
 }
 
@@ -166,14 +150,12 @@ export function useTransactionsTable(onUpdateItem?: (id: string, updates: Transa
       accessorKey: "category",
       header: "CATEGORY",
       cell: ({ row }) => (
-        <div>
-        <EditableCategoryCell 
+        <EditableCategoryCell
           initialValue={row.original.category}
           onSave={(val) => onUpdateItem?.(row.original.id, { category: val })}
           categories={eligibleCategories(categories, row.original.timestamp, row.original.type)}
+          matchingStatus={row.original.matchingStatus}
         />
-        {row.original.matchingStatus && <span className="block text-xs">{row.original.matchingStatus}</span>}
-        </div>
       ),
     },
     {

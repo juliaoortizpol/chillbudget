@@ -92,7 +92,6 @@ export function TransactionsPage() {
       
       const allocated = item.plannedAmount || 0;
       const spent = item.spent || 0;
-      const baseColor = item.color || "#6b7280";
 
       acc[item._id] = {
         id: item._id,
@@ -101,8 +100,9 @@ export function TransactionsPage() {
         endDate: activeBudget.endDate,
         name: item.name,
         icon: getIcon(item.icon),
-        iconBgClass: `${baseColor}1A`,
-        iconColor: baseColor,
+        color: item.color,
+        iconBgClass: "bg-muted",
+        iconColor: "text-foreground",
         budgetUsedPercentage: allocated > 0 ? (spent / allocated) * 100 : 0
       };
       return acc;
@@ -119,9 +119,9 @@ export function TransactionsPage() {
         cat = {
           id: t.budgetItemId || '',
           name: 'Uncategorized',
-          icon: <span />,
-          iconBgClass: 'bg-gray-500/10',
-          iconColor: 'text-gray-500'
+          icon: null,
+          iconBgClass: 'bg-blue-500/10',
+          iconColor: 'text-foreground'
         };
       }
 

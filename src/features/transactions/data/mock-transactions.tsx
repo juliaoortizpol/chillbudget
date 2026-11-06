@@ -7,6 +7,7 @@ export type TransactionCategory = {
   icon: React.ReactNode
   iconBgClass: string
   iconColor: string
+  color?: string
   type?: string
   startDate?: string
   endDate?: string

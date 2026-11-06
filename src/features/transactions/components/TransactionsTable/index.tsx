@@ -3,7 +3,7 @@ import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useEffect, useState } from "react"
-import { Calendar as CalendarIcon, ChevronDown, Plus, Trash2, X } from "lucide-react"
+import { Calendar as CalendarIcon, ChevronDown, CircleHelp, ListChecks, Plus, RefreshCw, Trash2, TriangleAlert, X } from "lucide-react"
 import { useTableEditor } from "@/hooks/useTableEditor"
 import { cn, formatMoneyInput } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -104,49 +104,78 @@ export function EditableCurrencyCell({ initialValue, onSave, className }: { init
   )
 }
 
-export function EditableCategoryCell({ initialValue, onSave, categories }: { initialValue: TransactionCategory, onSave: (val: TransactionCategory) => void, categories: Record<string, TransactionCategory> }) {
-  const { 
-    isEditing, setIsEditing, value, startEditing, handleChange, bgClass, textClass 
-  } = useEditableCategoryCell(initialValue, onSave, categories)
+const matchingTags = new Map([
+  ["matched", { label: "Auto-matched", Icon: RefreshCw, tone: "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300" }],
+  ["manual", { label: "Manual", Icon: ListChecks, tone: "bg-blue-500/10 text-blue-800 dark:text-blue-300" }],
+  ["needs_review", { label: "Needs review", Icon: TriangleAlert, tone: "bg-rose-500/10 text-rose-800 dark:text-rose-300" }],
+])
 
-  if (isEditing) {
-    return (
-      <select 
-        autoFocus
-        aria-label="Assign category"
-        value={value.id || ""}
-        onChange={handleChange}
-        onBlur={() => setIsEditing(false)}
-        className="flex h-7 w-full max-w-[140px] items-center justify-between rounded-md border border-input bg-background px-2 py-0 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-      >
-        {value.id && !Object.hasOwn(categories, value.id) && (
-          <option value={value.id} disabled>{value.name} (unavailable)</option>
-        )}
-        <option value="">Uncategorized</option>
-        {Object.entries(categories).map(([key, cat]) => (
-          <option key={key} value={key}>{cat.name}</option>
-        ))}
-      </select>
-    )
-  }
+export function EditableCategoryCell({ initialValue, onSave, categories, matchingStatus }: {
+  initialValue: TransactionCategory
+  onSave: (val: TransactionCategory) => void
+  categories: Record<string, TransactionCategory>
+  matchingStatus?: string
+}) {
+  const {
+    isEditing, setIsEditing, value, startEditing, handleChange
+  } = useEditableCategoryCell(initialValue, onSave, categories)
+  const status = matchingStatus ? matchingTags.get(matchingStatus) : undefined
+  const usage = value.budgetUsedPercentage
+  const progress = usage === undefined ? undefined : Math.min(100, Math.max(0, usage))
 
   return (
-    <div 
-      className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold w-fit cursor-pointer hover:opacity-80 transition-opacity", bgClass)}
-      onClick={startEditing}
-    >
-      <span className={textClass}>{value.icon}</span>
-      <span className={textClass}>{value.name}</span>
-      {value.budgetUsedPercentage !== undefined && (
-        <svg className={cn("ml-1 w-3.5 h-3.5 transform -rotate-90", textClass)} viewBox="0 0 20 20">
-          <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="3" className="opacity-20" />
-          <circle 
-            cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="3" 
-            strokeDasharray={`${2 * Math.PI * 8}`} 
-            strokeDashoffset={`${2 * Math.PI * 8 * (1 - Math.min(value.budgetUsedPercentage, 100) / 100)}`} 
-            strokeLinecap="round" 
-          />
-        </svg>
+    <div className="flex min-w-0 max-w-full flex-col items-start gap-0.5">
+      {isEditing ? (
+        <select
+          autoFocus
+          aria-label="Assign category"
+          value={value.id || ""}
+          onChange={handleChange}
+          onBlur={() => setIsEditing(false)}
+          className="flex h-7 w-full max-w-[140px] items-center justify-between rounded-md border border-input bg-background px-2 py-0 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+          {value.id && !Object.hasOwn(categories, value.id) && (
+            <option value={value.id} disabled>{value.name} (unavailable)</option>
+          )}
+          <option value="">Uncategorized</option>
+          {Object.entries(categories).map(([key, cat]) => (
+            <option key={key} value={key}>{cat.name}</option>
+          ))}
+        </select>
+      ) : (
+        <button
+          type="button"
+          className={cn(
+            "inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-ring",
+            value.color ? "text-foreground" : [value.iconBgClass, value.iconColor],
+          )}
+          style={value.color ? { backgroundColor: `color-mix(in srgb, ${value.color} 26%, transparent)` } : undefined}
+          onClick={startEditing}
+        >
+          <span aria-hidden="true" className="shrink-0 [&_svg]:size-3">
+            {value.icon ?? <CircleHelp />}
+          </span>
+          <span className="truncate">{value.name}</span>
+          {progress !== undefined && (
+            <svg
+              aria-hidden="true"
+              className={cn("size-3.5 shrink-0 -rotate-90", progress >= 100 ? "text-rose-700 dark:text-rose-400" : "text-emerald-700 dark:text-emerald-400")}
+              viewBox="0 0 20 20"
+            >
+              <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+              {progress > 0 && (
+                <circle cx="10" cy="10" r="8" pathLength="100" fill="none" stroke="currentColor" strokeWidth="3"
+                  strokeDasharray={`${progress} 100`} strokeLinecap="round" />
+              )}
+            </svg>
+          )}
+        </button>
+      )}
+      {matchingStatus && (
+        <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium leading-none", status?.tone ?? "bg-muted text-muted-foreground")}>
+          {status && <status.Icon aria-hidden="true" className="size-2.5 shrink-0" />}
+          {status?.label ?? matchingStatus}
+        </span>
       )}
     </div>
   )
@@ -385,7 +414,6 @@ export function TransactionsTable({
           <div className="divide-y divide-border">
             {data.map((transaction) => (
               <article key={transaction.id} className="p-3">
-                {transaction.matchingStatus && <span className="text-xs">{transaction.matchingStatus}</span>}
                 <div className="flex min-w-0 items-start justify-between gap-3">
                   <div className="min-w-0 flex-1 space-y-1.5">
                     <EditableTextCell
@@ -401,12 +429,13 @@ export function TransactionsTable({
                         className="shrink-0 text-xs font-medium text-muted-foreground"
                       />
                       <span className="text-muted-foreground/40">•</span>
-                      <div className="min-w-0 overflow-hidden [&>div]:max-w-full [&>div]:truncate [&>div]:px-2 [&>div]:py-0.5">
-                    <EditableCategoryCell
-                      initialValue={transaction.category}
-                      onSave={(value) => onUpdateItem?.(transaction.id, { category: value })}
-                      categories={eligibleCategories(categories, transaction.timestamp, transaction.type)}
-                    />
+                      <div className="min-w-0">
+                        <EditableCategoryCell
+                          initialValue={transaction.category}
+                          onSave={(value) => onUpdateItem?.(transaction.id, { category: value })}
+                          categories={eligibleCategories(categories, transaction.timestamp, transaction.type)}
+                          matchingStatus={transaction.matchingStatus}
+                        />
                       </div>
                     </div>
                   </div>
