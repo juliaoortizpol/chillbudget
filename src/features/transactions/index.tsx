@@ -1,5 +1,5 @@
 import type { TransactionUpdates, AppendTransactionData } from "./types/table"
-import type { UpdateTransactionDto } from "./hooks/useTransactions"
+import type { GetTransactionsFilterDto, UpdateTransactionDto } from "./hooks/useTransactions"
 import { useSearchParams } from "react-router-dom"
 import React, { useEffect, useMemo } from "react"
 import { PageHeader } from "@/components/layout/PageHeader"
@@ -43,7 +43,7 @@ export function TransactionsPage() {
   const { activeBudget, isFetchingBudgets, fetchBudgets } = useGlobalBudget();
   const { 
     transactionsData, fetchTransactions, isFetchingTransactions, 
-    updateTransaction, createTransaction, deleteTransaction 
+    updateTransaction, createTransaction, deleteTransaction, fetchTransactionsError
   } = useTransactions();
   const [currentPage, setCurrentPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(() =>
@@ -65,22 +65,22 @@ export function TransactionsPage() {
     return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
-  useEffect(() => {
-    const { startDate, endDate } = getDateRangeFilter(dateRange);
+  const [feedback, setFeedback] = React.useState<string | null>(null);
+  const selectedFilter = React.useMemo<GetTransactionsFilterDto>(() => ({
+    page: currentPage, limit: pageSize, budgetItemId: categoryId || undefined,
+    type: type === "expense" || type === "income" ? type : undefined,
+  }), [currentPage, pageSize, categoryId, type]);
+  const getSelectedFilter = React.useCallback(() => ({
+    ...selectedFilter, ...getDateRangeFilter(dateRange),
+  }), [selectedFilter, dateRange]);
 
-    fetchTransactions({ 
-      page: currentPage, 
-      limit: pageSize,
-      budgetItemId: categoryId || undefined,
-      type: type === 'expense' || type === 'income' ? type : undefined,
-      startDate,
-      endDate
-    }).then((res) => {
+  useEffect(() => {
+    fetchTransactions(getSelectedFilter()).then((res) => {
       if (res && res.meta && res.meta.totalPages > 0 && currentPage > res.meta.totalPages) {
         setCurrentPage(res.meta.totalPages);
       }
-    });
-  }, [fetchTransactions, currentPage, dateRange, categoryId, type, pageSize]);
+    }).catch(() => {});
+  }, [fetchTransactions, currentPage, getSelectedFilter]);
 
   const isLoading = isFetchingBudgets || isFetchingTransactions;
   
@@ -92,14 +92,17 @@ export function TransactionsPage() {
       
       const allocated = item.plannedAmount || 0;
       const spent = item.spent || 0;
-      const baseColor = item.color || "#6b7280";
 
       acc[item._id] = {
         id: item._id,
+        type: activeBudget.status === "active" ? item.type : undefined,
+        startDate: activeBudget.startDate,
+        endDate: activeBudget.endDate,
         name: item.name,
         icon: getIcon(item.icon),
-        iconBgClass: `${baseColor}1A`,
-        iconColor: baseColor,
+        color: item.color,
+        iconBgClass: "bg-muted",
+        iconColor: "text-foreground",
         budgetUsedPercentage: allocated > 0 ? (spent / allocated) * 100 : 0
       };
       return acc;
@@ -116,14 +119,17 @@ export function TransactionsPage() {
         cat = {
           id: t.budgetItemId || '',
           name: 'Uncategorized',
-          icon: <span />,
-          iconBgClass: 'bg-gray-500/10',
-          iconColor: 'text-gray-500'
+          icon: null,
+          iconBgClass: 'bg-blue-500/10',
+          iconColor: 'text-foreground'
         };
       }
 
       return {
         id: t._id,
+        timestamp: t.date,
+        type: t.type,
+        matchingStatus: t.matchingStatus,
         date: format(new Date(t.date), "MMM d, yyyy"),
         description: t.name,
         category: cat,
@@ -195,16 +201,23 @@ export function TransactionsPage() {
       dto.type = updates.amount < 0 ? 'expense' : 'income';
     }
     if (updates.date !== undefined) dto.date = new Date(updates.date).toISOString();
-    if (updates.category !== undefined) dto.budgetItemId = updates.category.id;
+    if (updates.category !== undefined) dto.budgetItemId = updates.category.id || null;
     
-    await updateTransaction(id, dto);
-    await fetchTransactions({ page: currentPage, limit: pageSize });
-    await fetchBudgets();
+    setFeedback(null);
+    try {
+      const saved = await updateTransaction(id, dto);
+      setFeedback(`Saved. Matching status: ${saved.matchingStatus || "updated"}.`);
+      await Promise.all([fetchTransactions(getSelectedFilter()), fetchBudgets()]).catch(() => {
+        setFeedback("Transaction saved. Could not refresh transactions or budget actuals. Reload to try again.");
+      });
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "Unable to save transaction. Try again.");
+    }
   }
 
   const handleDeleteItem = async (id: string) => {
     await deleteTransaction(id);
-    await fetchTransactions({ page: currentPage, limit: pageSize }).then((res) => {
+    await fetchTransactions(getSelectedFilter()).then((res) => {
       if (res && res.meta && res.meta.totalPages > 0 && currentPage > res.meta.totalPages) {
         setCurrentPage(res.meta.totalPages);
       }
@@ -221,16 +234,15 @@ export function TransactionsPage() {
       amount: Math.abs(parsedAmount),
       type: parsedAmount < 0 ? 'expense' : 'income' as 'expense' | 'income',
       date: new Date(data.date ?? new Date()).toISOString(),
-      budgetItemId: data.categoryKey
+      ...(data.categoryKey ? { budgetItemId: data.categoryKey } : {})
     };
-    await createTransaction(dto);
-    
-    if (currentPage === 1) {
-      await fetchTransactions({ page: 1, limit: pageSize });
-    } else {
-      setCurrentPage(1);
+    const saved = await createTransaction(dto);
+    setFeedback(`Created. Matching status: ${saved.matchingStatus || "updated"}.`);
+    try {
+      await Promise.all([fetchTransactions(getSelectedFilter()), fetchBudgets()]);
+    } catch {
+      setFeedback("Transaction created. Could not refresh transactions or budget actuals. Reload to try again.");
     }
-    await fetchBudgets();
   }
   return (
     <div className="flex flex-col gap-6 pb-20 md:pb-0">
@@ -238,6 +250,7 @@ export function TransactionsPage() {
       <PageHeader title="Transactions" />
       <AddTransactionDialog defaultOpen={searchParams.get("create") === "1"} categories={dynamicCategories} onAppend={handleAppendItem} />
 
+      {(feedback || fetchTransactionsError) && <p role="status">{feedback || fetchTransactionsError}</p>}
       {/* Content Area */}
             <div className="flex flex-col gap-6">
               <TransactionsSummary {...transactionSummary} />
@@ -246,7 +259,7 @@ export function TransactionsPage() {
                 <Disclaimer 
                   type="warning"
                   title="No Categories Found"
-                  text="You need to create budget categories before adding or categorizing transactions."
+                  text="Create budget categories to assign transactions. You can add transactions without a category."
                 />
               )}
               

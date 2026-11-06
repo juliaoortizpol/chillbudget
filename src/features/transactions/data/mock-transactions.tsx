@@ -7,6 +7,10 @@ export type TransactionCategory = {
   icon: React.ReactNode
   iconBgClass: string
   iconColor: string
+  color?: string
+  type?: string
+  startDate?: string
+  endDate?: string
   budgetUsedPercentage?: number
 }
 
@@ -14,6 +18,9 @@ export type Transaction = {
   id: string
   date: string
   description: string
+  timestamp?: string
+  type?: string
+  matchingStatus?: string
   category: TransactionCategory
   amount: number
 }

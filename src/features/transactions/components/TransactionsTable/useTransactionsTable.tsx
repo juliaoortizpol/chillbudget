@@ -12,7 +12,7 @@ import {
 import { formatMoneyInput } from "@/lib/utils"
 
 export function useEditableDateCell(initialValue: string, onSave: (val: string) => void) {
-  const [date, setDate] = React.useState<Date | undefined>(() => {
+  const date = React.useMemo<Date | undefined>(() => {
     try {
       const parsed = parse(initialValue, "MMM d, yyyy", new Date())
       if (!isNaN(parsed.getTime())) return parsed
@@ -20,12 +20,11 @@ export function useEditableDateCell(initialValue: string, onSave: (val: string) 
       // Invalid input leaves the calendar unselected.
     }
     return undefined
-  })
+  }, [initialValue])
   const [isOpen, setIsOpen] = React.useState(false)
 
   const handleSelect = (newDate: Date | undefined) => {
     if (newDate) {
-      setDate(newDate)
       setIsOpen(false)
       const formattedStr = format(newDate, "MMM d, yyyy")
       if (formattedStr !== initialValue) {
@@ -51,26 +50,11 @@ export function useEditableCategoryCell(initialValue: TransactionCategory, onSav
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedKey = e.target.value
-    const selectedCategory = categories[selectedKey]
+    const selectedCategory = selectedKey === "" ? { id: "", name: "Uncategorized", icon: null, iconBgClass: "bg-gray-500/10", iconColor: "text-gray-500" } : categories[selectedKey]
     if (selectedCategory) {
-      setValue(selectedCategory)
       setIsEditing(false)
       onSave(selectedCategory)
     }
-  }
-
-  const isOverBudget = value.budgetUsedPercentage !== undefined && value.budgetUsedPercentage >= 100
-  const isUnderBudget = value.budgetUsedPercentage !== undefined && value.budgetUsedPercentage < 100
-
-  let bgClass = value.iconBgClass
-  let textClass = value.iconColor
-
-  if (isOverBudget) {
-    bgClass = "bg-red-500/10"
-    textClass = "text-red-700"
-  } else if (isUnderBudget) {
-    bgClass = "bg-emerald-500/10"
-    textClass = "text-emerald-700"
   }
 
   return {
@@ -78,9 +62,7 @@ export function useEditableCategoryCell(initialValue: TransactionCategory, onSav
     setIsEditing,
     value,
     startEditing,
-    handleChange,
-    bgClass,
-    textClass
+    handleChange
   }
 }
 
@@ -131,6 +113,14 @@ export function useAppendTransactionRow() {
   }
 }
 
+export function eligibleCategories(categories: Record<string, TransactionCategory>, timestamp?: string, type?: string) {
+  const time = Date.parse(timestamp || "");
+  return Object.fromEntries(Object.entries(categories).filter(([, category]) =>
+    Number.isFinite(time) && category.type === type &&
+    time >= Date.parse(category.startDate || "") && time <= Date.parse(category.endDate || "")
+  ));
+}
+
 export function useTransactionsTable(onUpdateItem?: (id: string, updates: TransactionUpdates) => void, onDeleteItem?: (id: string) => void, categories: Record<string, TransactionCategory> = {}) {
 
   const columns = React.useMemo<ColumnDef<Transaction>[]>(() => [
@@ -160,10 +150,11 @@ export function useTransactionsTable(onUpdateItem?: (id: string, updates: Transa
       accessorKey: "category",
       header: "CATEGORY",
       cell: ({ row }) => (
-        <EditableCategoryCell 
+        <EditableCategoryCell
           initialValue={row.original.category}
           onSave={(val) => onUpdateItem?.(row.original.id, { category: val })}
-          categories={categories}
+          categories={eligibleCategories(categories, row.original.timestamp, row.original.type)}
+          matchingStatus={row.original.matchingStatus}
         />
       ),
     },
