@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useFetch } from '@/hooks/useFetch';
 
 export interface Transaction {
@@ -47,6 +47,7 @@ export interface GetTransactionsFilterDto {
   endDate?: string;
   type?: 'expense' | 'income';
   page?: number;
+  matchingStatus?: 'needs_review';
   limit?: number;
 }
 
@@ -62,11 +63,13 @@ export interface PaginatedTransactions {
 
 function useGetTransactions() {
   const { fetchApi } = useFetch();
+  const requestId = useRef(0);
   const [data, setData] = useState<PaginatedTransactions | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchTransactions = useCallback(async (filter?: GetTransactionsFilterDto) => {
+    const id = ++requestId.current;
     setIsLoading(true);
     setError(null);
     try {
@@ -82,13 +85,13 @@ function useGetTransactions() {
       }
       
       const response = await fetchApi<PaginatedTransactions>(`/transactions${query}`, { method: 'GET' });
-      setData(response);
+      if (id === requestId.current) setData(response);
       return response;
     } catch (err) {
-      setError((err instanceof Error && err.message) || 'Failed to fetch transactions');
+      if (id === requestId.current) setError((err instanceof Error && err.message) || 'Failed to fetch transactions');
       throw err;
     } finally {
-      setIsLoading(false);
+      if (id === requestId.current) setIsLoading(false);
     }
   }, [fetchApi]);
 

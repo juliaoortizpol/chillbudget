@@ -23,6 +23,8 @@ interface TransactionsFilterBarProps {
   type: string | null;
   onTypeChange: (type: string | null) => void;
   categories: Category[];
+  needsReview: boolean;
+  onNeedsReviewChange: (value: boolean) => void;
   onClearFilters: () => void;
 }
 
@@ -31,12 +33,12 @@ export function TransactionsFilterBar({
   dateRange, onDateRangeChange,
   categoryId, onCategoryChange,
   type, onTypeChange,
-  categories, onClearFilters
+  categories, onClearFilters, needsReview, onNeedsReviewChange
 }: TransactionsFilterBarProps) {
   
   const selectedCategoryName = categoryId ? categories.find(c => c.id === categoryId)?.name || "Category" : "Category";
   const typeDisplay = type ? (type === 'expense' ? "Expense" : "Income") : "All";
-  const hasActiveFilters = Boolean(searchQuery.trim() || dateRange !== "All Time" || categoryId || type);
+  const hasActiveFilters = Boolean(searchQuery.trim() || dateRange !== "All Time" || categoryId || type || needsReview);
   
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3 shadow-sm sm:p-4 xl:flex-row xl:items-center xl:gap-4">
@@ -52,6 +54,10 @@ export function TransactionsFilterBar({
       </div>
       
       <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-wrap xl:w-auto xl:flex-nowrap">
+        <Button variant={needsReview ? "default" : "outline"} aria-pressed={needsReview}
+          onClick={() => onNeedsReviewChange(!needsReview)}>
+          Needs review
+        </Button>
         
         <DropdownMenu>
           <DropdownMenuTrigger render={

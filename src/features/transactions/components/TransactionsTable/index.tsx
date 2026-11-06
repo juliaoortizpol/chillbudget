@@ -105,6 +105,7 @@ export function EditableCurrencyCell({ initialValue, onSave, className }: { init
 }
 
 const matchingTags = new Map([
+  ["linked", { label: "Linked", Icon: ListChecks, tone: "bg-blue-500/10 text-blue-800 dark:text-blue-300" }],
   ["matched", { label: "Auto-matched", Icon: RefreshCw, tone: "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300" }],
   ["manual", { label: "Manual", Icon: ListChecks, tone: "bg-blue-500/10 text-blue-800 dark:text-blue-300" }],
   ["needs_review", { label: "Needs review", Icon: TriangleAlert, tone: "bg-rose-500/10 text-rose-800 dark:text-rose-300" }],
