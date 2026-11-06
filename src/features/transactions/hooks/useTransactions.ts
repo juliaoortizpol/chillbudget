@@ -4,8 +4,10 @@ import { useFetch } from '@/hooks/useFetch';
 export interface Transaction {
   _id: string;
   userId: string;
+  matchingStatus?: string;
+  matchingSource?: string;
   accountId?: string;
-  budgetItemId?: string;
+  budgetItemId?: string | null;
   name: string;
   amount: number;
   type: 'expense' | 'income';
@@ -29,7 +31,7 @@ export interface CreateTransactionDto {
 
 export interface UpdateTransactionDto {
   accountId?: string;
-  budgetItemId?: string;
+  budgetItemId?: string | null;
   name?: string;
   amount?: number;
   type?: 'expense' | 'income';
@@ -90,7 +92,10 @@ function useGetTransactions() {
     }
   }, [fetchApi]);
 
-  return { data, fetchTransactions, isLoading, error };
+  const applySavedTransaction = (saved: Transaction) => setData(current => current ? {
+    ...current, data: current.data.map(transaction => transaction._id === saved._id ? saved : transaction),
+  } : current);
+  return { data, fetchTransactions, applySavedTransaction, isLoading, error };
 }
 
 function useCreateTransaction() {
@@ -183,7 +188,11 @@ export function useTransactions() {
     isCreatingTransaction: createTransactionHook.isLoading,
     createTransactionError: createTransactionHook.error,
 
-    updateTransaction: updateTransactionHook.updateTransaction,
+    updateTransaction: async (id: string, dto: UpdateTransactionDto) => {
+      const saved = await updateTransactionHook.updateTransaction(id, dto);
+      getTransactions.applySavedTransaction(saved);
+      return saved;
+    },
     isUpdatingTransaction: updateTransactionHook.isLoading,
     updateTransactionError: updateTransactionHook.error,
 

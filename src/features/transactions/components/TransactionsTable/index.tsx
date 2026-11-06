@@ -11,6 +11,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
 import { type Transaction, type TransactionCategory } from "../../data/mock-transactions"
 import {
+  eligibleCategories,
   useEditableDateCell,
   useEditableCategoryCell,
   useAppendTransactionRow,
@@ -112,12 +113,13 @@ export function EditableCategoryCell({ initialValue, onSave, categories }: { ini
     return (
       <select 
         autoFocus
-        value={Object.keys(categories).find(key => categories[key].name === value.name) || ""}
+        aria-label="Assign category"
+        value={value.id || ""}
         onChange={handleChange}
         onBlur={() => setIsEditing(false)}
         className="flex h-7 w-full max-w-[140px] items-center justify-between rounded-md border border-input bg-background px-2 py-0 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
       >
-        <option value="" disabled hidden>Select Category</option>
+        <option value="">Uncategorized</option>
         {Object.entries(categories).map(([key, cat]) => (
           <option key={key} value={key}>{cat.name}</option>
         ))}
@@ -151,6 +153,7 @@ export function EditableCategoryCell({ initialValue, onSave, categories }: { ini
 
 function AppendTransactionForm({ categories, onAppend, onComplete, inline = false }: { categories: Record<string, TransactionCategory>, onAppend?: (data: AppendTransactionData) => void | Promise<void>, onComplete?: () => void, inline?: boolean }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const {
     date, setDate,
     isCalendarOpen, setIsCalendarOpen,
@@ -158,15 +161,14 @@ function AppendTransactionForm({ categories, onAppend, onComplete, inline = fals
     description, setDescription
   } = useAppendTransactionRow()
 
-  const hasCategories = Object.keys(categories).length > 0;
+  const availableCategories = eligibleCategories(categories, (date || new Date()).toISOString(), amount.startsWith("-") ? "expense" : "income");
+  const hasCategories = Object.keys(availableCategories).length > 0;
   const hasAmount = amount !== "" && amount !== "-";
   const showCurrencySymbol = /\d/.test(amount);
-  const canAppend = Boolean(description.trim() && hasAmount && categoryKey);
+  const canAppend = Boolean(description.trim() && hasAmount);
   const addButtonLabel = !description.trim()
     ? "Enter a description first"
-    : !categoryKey
-      ? "Select a category first"
-      : !hasAmount
+    : !hasAmount
         ? "Enter an amount first"
         : "Add transaction";
 
@@ -177,6 +179,7 @@ function AppendTransactionForm({ categories, onAppend, onComplete, inline = fals
         ? "border-t border-border lg:grid-cols-[120px_minmax(140px,1fr)_minmax(120px,0.8fr)_120px_36px] lg:items-center lg:gap-2 lg:py-2 lg:pl-4 lg:pr-3"
         : "rounded-xl"
     )}>
+      {error && <p role="alert">{error}</p>}
       <div className="min-w-0">
         <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
           <PopoverTrigger render={
@@ -224,11 +227,11 @@ function AppendTransactionForm({ categories, onAppend, onComplete, inline = fals
               handleInteraction();
               setCategoryKey(e.target.value);
             }}
-            value={categoryKey}
-            disabled={!hasCategories}
+            value={availableCategories[categoryKey] ? categoryKey : ""}
+            disabled={!hasCategories && !categoryKey}
           >
-            <option value="" disabled hidden>{hasCategories ? "Select Category" : "No categories"}</option>
-            {Object.entries(categories).map(([key, cat]) => (
+            <option value="">Uncategorized</option>
+            {Object.entries(availableCategories).map(([key, cat]) => (
               <option key={key} value={key}>{cat.name}</option>
             ))}
           </select>
@@ -264,14 +267,21 @@ function AppendTransactionForm({ categories, onAppend, onComplete, inline = fals
           aria-label={addButtonLabel}
           title={addButtonLabel}
           onClick={async () => {
-            if (onAppend && description && hasAmount && categoryKey) {
+            if (onAppend && description && hasAmount) {
+              if (categoryKey && !availableCategories[categoryKey]) {
+                setError("Choose a category compatible with this date and transaction type, or select Uncategorized.");
+                return;
+              }
               setIsSubmitting(true)
+              setError(null)
               try {
                 await onAppend({ date, description, categoryKey, amount });
                 setDescription("");
                 setAmount("");
                 setCategoryKey("");
                 onComplete?.()
+              } catch (error) {
+                setError(error instanceof Error ? error.message : "Unable to add transaction. Try again.")
               } finally {
                 setIsSubmitting(false)
               }
@@ -372,6 +382,7 @@ export function TransactionsTable({
           <div className="divide-y divide-border">
             {data.map((transaction) => (
               <article key={transaction.id} className="p-3">
+                {transaction.matchingStatus && <span className="text-xs">{transaction.matchingStatus}</span>}
                 <div className="flex min-w-0 items-start justify-between gap-3">
                   <div className="min-w-0 flex-1 space-y-1.5">
                     <EditableTextCell
@@ -391,7 +402,7 @@ export function TransactionsTable({
                     <EditableCategoryCell
                       initialValue={transaction.category}
                       onSave={(value) => onUpdateItem?.(transaction.id, { category: value })}
-                      categories={categories}
+                      categories={eligibleCategories(categories, transaction.timestamp, transaction.type)}
                     />
                       </div>
                     </div>
