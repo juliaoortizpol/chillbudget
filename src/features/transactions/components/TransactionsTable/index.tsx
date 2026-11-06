@@ -119,6 +119,9 @@ export function EditableCategoryCell({ initialValue, onSave, categories }: { ini
         onBlur={() => setIsEditing(false)}
         className="flex h-7 w-full max-w-[140px] items-center justify-between rounded-md border border-input bg-background px-2 py-0 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
       >
+        {value.id && !Object.hasOwn(categories, value.id) && (
+          <option value={value.id} disabled>{value.name} (unavailable)</option>
+        )}
         <option value="">Uncategorized</option>
         {Object.entries(categories).map(([key, cat]) => (
           <option key={key} value={key}>{cat.name}</option>
