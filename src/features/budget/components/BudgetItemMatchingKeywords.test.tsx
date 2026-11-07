@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { BudgetItemMatchingKeywords, type KeywordProps } from './BudgetItemMatchingKeywords';
 import { BudgetItemKeywordsEditor } from './BudgetItemKeywordsEditor';
 import { CategoryTable } from './CategoryTable';
@@ -15,6 +15,25 @@ function Harness(props: Partial<KeywordProps>) {
 }
 const rule: BudgetItemMatchingRule = { id: 'saved', keyword: 'Uber', source: 'learned' };
 describe('matching keywords', () => {
+  it('retains an in-flight keyword draft and API error through parent rerenders', async () => {
+    let reject!: (reason: Error) => void;
+    const pending = new Promise<void>((_, fail) => { reject = fail; });
+    const update = vi.fn<(id: string, updates: unknown) => Promise<void>>(() => pending);
+    const item = { id: '1', name: 'Travel', allocated: 250, spent: 0, icon: null, iconBgClass: '', iconColor: '', matchingRules: [rule] };
+    const props = { onCreateItem: vi.fn(), onUpdateItem: update, onDeleteItem: vi.fn() };
+    const { rerender } = render(<CategoryTable {...props} categories={[item]} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Edit matching keywords' }));
+    const input = await screen.findByRole('textbox', { name: 'Matching keywords' });
+    fireEvent.change(input, { target: { value: 'DiDi' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save keywords' }));
+    rerender(<CategoryTable {...props} categories={[{ ...item }]} onUpdateItem={(...args) => update(...args)} isLoading />);
+    expect((screen.getByRole('textbox', { name: 'Matching keywords' }) as HTMLInputElement).value).toBe('DiDi');
+    await act(async () => { reject(new Error('Synthetic API rejection')); });
+    expect((await screen.findByRole('alert')).textContent).toContain('Synthetic API rejection');
+    expect((screen.getByRole('textbox', { name: 'Matching keywords' }) as HTMLInputElement).value).toBe('DiDi');
+    expect(screen.getByRole('button', { name: 'Remove Uber' })).toBeTruthy();
+  });
+
   it('validates pending text on immediate Save and preserves it after validation and API rejection', async () => {
     const save = vi.fn().mockRejectedValue(new Error('Synthetic API rejection'));
     render(<BudgetItemKeywordsEditor value={[rule]} onSave={save} />);
