@@ -2,10 +2,11 @@ import * as React from "react"
 import type { BudgetItemMatchingRule, UpdateBudgetItemDto } from '../hooks/useBudget'
 import { BudgetItemMatchingKeywords } from './BudgetItemMatchingKeywords'
 import { BudgetItemKeywordsEditor } from './BudgetItemKeywordsEditor'
+import { appendKeywords } from '../hooks/matchingRules'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { useTransactions } from '@/features/transactions/hooks/useTransactions'
 import { cn, formatMoneyInput } from "@/lib/utils"
-import { type ColumnDef } from "@tanstack/react-table"
+import { type ColumnDef, type CellContext } from "@tanstack/react-table"
 import { DataTable } from "@/components/ui/data-table"
 import { useTableEditor } from "@/hooks/useTableEditor"
 import { Input } from "@/components/ui/input"
@@ -52,7 +53,7 @@ function EditableCurrencyCell({ initialValue, onSave }: { initialValue: number, 
   }
 
   return (
-    <div 
+    <div
       className="cursor-pointer hover:bg-muted/50 p-1.5 rounded-md border border-transparent hover:border-border transition-colors w-36 text-center font-bold mx-auto"
       onClick={startEditing}
     >
@@ -112,40 +113,46 @@ function EditableTextCell({ initialValue, onSave, className }: { initialValue: s
   </div>
 }
 
+const ItemEditorContext = React.createContext<(Pick<CategoryTableProps, 'onUpdateItem' | 'categories'> & { suggestions: string[] }) | null>(null)
+
+// A stable cell component keeps editor state when request status or callbacks change.
+function ItemNameCell({ row }: CellContext<BudgetCategory, unknown>) {
+  const context = React.useContext(ItemEditorContext)
+  if (!context) throw new Error('ItemNameCell requires CategoryTable')
+  const { onUpdateItem, categories, suggestions } = context
+  const category = row.original
+  const isZero = category.allocated === 0
+  return (
+    <div key={category.id} className={`flex items-center gap-4 py-1 pl-2 ${isZero ? 'opacity-50 grayscale transition-opacity hover:opacity-80' : ''}`}>
+      <div
+        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+        style={{ backgroundColor: category.iconBgClass, color: category.iconColor }}
+      >
+        {category.icon}
+      </div>
+      <div className="flex flex-col min-w-0 max-w-[240px]">
+        <EditableTextCell
+          initialValue={category.name}
+          onSave={(val) => onUpdateItem(category.id, { name: val })}
+          className="text-[15px] font-bold text-foreground"
+        />
+        <BudgetItemKeywordsEditor value={category.matchingRules || []} suggestions={suggestions}
+          otherItems={categories.filter(item => item.id !== category.id)}
+          onSave={matchingRules => onUpdateItem(category.id, { matchingRules })} />
+      </div>
+    </div>
+  )
+}
+
 function getColumns(
   onUpdateItem: (id: string, updates: UpdateBudgetItemDto) => Promise<void>,
   onDeleteItem: (id: string) => void,
-  categories: BudgetCategory[],
-  suggestions: string[]
-): ColumnDef<BudgetCategory>[] {
+ ): ColumnDef<BudgetCategory>[] {
   return [
     {
       accessorKey: "name",
       header: "Item Name",
-      cell: ({ row }) => {
-        const category = row.original
-        const isZero = category.allocated === 0
-        return (
-          <div className={`flex items-center gap-4 py-1 pl-2 ${isZero ? 'opacity-50 grayscale transition-opacity hover:opacity-80' : ''}`}>
-            <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: category.iconBgClass, color: category.iconColor }}
-            >
-              {category.icon}
-            </div>
-            <div className="flex flex-col min-w-0 max-w-[240px]">
-              <EditableTextCell 
-                initialValue={category.name} 
-                onSave={(val) => onUpdateItem(category.id, { name: val })}
-                className="text-[15px] font-bold text-foreground"
-              />
-              <BudgetItemKeywordsEditor value={category.matchingRules || []} suggestions={suggestions}
-                otherItems={categories.filter(item => item.id !== category.id)}
-                onSave={matchingRules => onUpdateItem(category.id, { matchingRules })} />
-            </div>
-          </div>
-        )
-      },
+      cell: ItemNameCell,
     },
     {
       accessorKey: "allocated",
@@ -154,9 +161,9 @@ function getColumns(
         const isZero = row.original.allocated === 0
         return (
           <div className={isZero ? 'opacity-60' : ''}>
-            <EditableCurrencyCell 
-              initialValue={row.original.allocated} 
-              onSave={(val) => onUpdateItem(row.original.id, { plannedAmount: val })} 
+            <EditableCurrencyCell
+              initialValue={row.original.allocated}
+              onSave={(val) => onUpdateItem(row.original.id, { plannedAmount: val })}
             />
           </div>
         )
@@ -186,13 +193,13 @@ function getColumns(
         const percent = allocated > 0 ? Math.min((spent / allocated) * 100, 100) : 0
         const isOverBudget = spent > allocated
         const isZero = allocated === 0
-        
+
         return (
           <div className={`flex justify-center w-full ${isZero ? 'opacity-30 grayscale' : ''}`}>
             <div className="w-full max-w-[140px] h-2 bg-muted/60 rounded-full overflow-hidden flex">
-              <div 
-                className={`h-full ${isOverBudget ? "bg-red-700" : "bg-emerald-700"}`} 
-                style={{ width: `${percent}%` }} 
+              <div
+                className={`h-full ${isOverBudget ? "bg-red-700" : "bg-emerald-700"}`}
+                style={{ width: `${percent}%` }}
               />
             </div>
           </div>
@@ -227,7 +234,7 @@ function getColumns(
                 }
               />
               <DropdownMenuContent align="end" className="w-56 font-medium">
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => onDeleteItem(category.id)}
                   className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50"
                 >
@@ -242,10 +249,10 @@ function getColumns(
   ]
 }
 
-function AppendCategoryRow({ 
-  onCreate, 
+function AppendCategoryRow({
+  onCreate,
   nameInputRef, categories, suggestions
-}: { 
+}: {
   onCreate: (name: string, allocated: number, icon: string, matchingRules?: BudgetItemMatchingRule[]) => Promise<void>,
   categories: BudgetCategory[],
   suggestions: string[],
@@ -256,19 +263,21 @@ function AppendCategoryRow({
   const [iconName, setIconName] = React.useState("default")
 
   const [matchingRules, setMatchingRules] = React.useState<BudgetItemMatchingRule[]>([])
+  const [pendingKeyword, setPendingKeyword] = React.useState('')
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState('')
   const save = async () => {
     if (!name.trim() || saving) return;
     setSaving(true); setError('');
     try {
-      await onCreate(name, Number(allocated.replace(/,/g, '')) || 0, iconName, matchingRules);
-      setName(''); setAllocated(''); setIconName('default'); setMatchingRules([]);
+      const payload = appendKeywords(matchingRules, pendingKeyword);
+      await onCreate(name, Number(allocated.replace(/,/g, '')) || 0, iconName, payload);
+      setName(''); setAllocated(''); setIconName('default'); setMatchingRules([]); setPendingKeyword('');
     } catch (err) { setError(err instanceof Error ? err.message : 'Failed to create item'); }
     finally { setSaving(false); }
   }
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && name.trim()) {
+    if (!e.nativeEvent.isComposing && e.keyCode !== 229 && e.key === 'Enter' && name.trim()) {
       void save()
     }
   }
@@ -286,8 +295,8 @@ function AppendCategoryRow({
             <DropdownMenuContent align="start" className="w-48 p-2">
               <div className="grid grid-cols-4 gap-2">
                 {Object.keys(iconMap).map(key => (
-                  <button 
-                    key={key} 
+                  <button
+                    key={key}
                     onClick={() => setIconName(key)}
                     className={`w-10 h-10 rounded-md flex items-center justify-center hover:bg-muted transition-colors ${iconName === key ? 'bg-muted ring-1 ring-border text-foreground' : 'text-muted-foreground'}`}
                     title={key}
@@ -299,9 +308,9 @@ function AppendCategoryRow({
             </DropdownMenuContent>
           </DropdownMenu>
           <div className="flex flex-col gap-1 w-full max-w-[200px]">
-            <Input 
+            <Input
               ref={nameInputRef}
-              placeholder="New Item Name" 
+              placeholder="New Item Name"
               value={name}
               onChange={e => setName(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -310,7 +319,7 @@ function AppendCategoryRow({
             <Popover>
               <PopoverTrigger className="text-left text-[11px] text-primary px-2">{matchingRules.length ? matchingRules.length + ' matching keywords' : 'Add matching keywords'}</PopoverTrigger>
               <PopoverContent align="start" className="w-80 p-4">
-                <BudgetItemMatchingKeywords value={matchingRules} onChange={setMatchingRules} suggestions={suggestions} otherItems={categories} />
+                <BudgetItemMatchingKeywords value={matchingRules} onChange={setMatchingRules} pendingText={pendingKeyword} onPendingTextChange={setPendingKeyword} disabled={saving} suggestions={suggestions} otherItems={categories} />
               </PopoverContent>
             </Popover>
             {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
@@ -320,8 +329,8 @@ function AppendCategoryRow({
       <TableCell className="text-center py-2">
         <div className="relative w-36 mx-auto">
           <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-bold">$</span>
-          <Input 
-            placeholder="0.00" 
+          <Input
+            placeholder="0.00"
             value={allocated}
             onChange={e => setAllocated(formatMoneyInput(e.target.value))}
             onKeyDown={handleKeyDown}
@@ -339,8 +348,8 @@ function AppendCategoryRow({
       </TableCell>
       <TableCell className="text-right py-2 pr-6">
         <div className="flex justify-end pr-2">
-          <Button 
-            size="icon" 
+          <Button
+            size="icon"
             className="h-8 w-8 bg-primary hover:bg-ds-primary-hover text-white rounded-lg shrink-0"
             onClick={() => void save()}
             disabled={!name.trim() || saving}
@@ -361,17 +370,17 @@ interface CategoryTableProps {
   isLoading?: boolean
 }
 
-export function CategoryTable({ 
-  categories, 
-  onUpdateItem, 
-  onCreateItem, 
+export function CategoryTable({
+  categories,
+  onUpdateItem,
+  onCreateItem,
   onDeleteItem,
-  isLoading 
+  isLoading
 }: CategoryTableProps) {
   const { fetchTransactions, transactionsData } = useTransactions();
   React.useEffect(() => { void fetchTransactions({ type: 'expense', limit: 100 }).catch(() => undefined); }, [fetchTransactions]);
   const suggestions = React.useMemo(() => transactionsData?.data.map(transaction => transaction.name) || [], [transactionsData]);
-  const columns = React.useMemo(() => getColumns(onUpdateItem, onDeleteItem, categories, suggestions), [onUpdateItem, onDeleteItem, categories, suggestions]);
+  const columns = React.useMemo(() => getColumns(onUpdateItem, onDeleteItem), [onUpdateItem, onDeleteItem]);
   const nameInputRef = React.useRef<HTMLInputElement>(null);
 
   return (
@@ -384,7 +393,7 @@ export function CategoryTable({
       <div className="flex justify-between items-center mb-4 px-4 pt-4">
         <h2 className="text-xl font-extrabold tracking-tight">Budget Items</h2>
         <div className="flex gap-2">
-          <Button 
+          <Button
             onClick={() => nameInputRef.current?.focus()}
             className="bg-primary hover:bg-ds-primary-hover text-white rounded-lg gap-2 h-9 px-4 font-bold tracking-wide"
           >
@@ -398,12 +407,14 @@ export function CategoryTable({
           </Button>
         </div>
       </div>
-      
-      <DataTable 
-        columns={columns} 
-        data={categories} 
+
+      <ItemEditorContext.Provider value={{ onUpdateItem, categories, suggestions }}>
+      <DataTable
+        columns={columns}
+        data={categories}
         appendRowComponent={<AppendCategoryRow onCreate={onCreateItem} nameInputRef={nameInputRef} categories={categories} suggestions={suggestions} />}
       />
+      </ItemEditorContext.Provider>
     </div>
   )
 }

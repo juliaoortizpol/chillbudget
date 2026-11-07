@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { BudgetItemMatchingKeywords, type KeywordProps } from './BudgetItemMatchingKeywords';
 import { BudgetItemKeywordsEditor } from './BudgetItemKeywordsEditor';
 import { CategoryTable } from './CategoryTable';
@@ -15,6 +15,83 @@ function Harness(props: Partial<KeywordProps>) {
 }
 const rule: BudgetItemMatchingRule = { id: 'saved', keyword: 'Uber', source: 'learned' };
 describe('matching keywords', () => {
+  it('discards the old item draft when a different item takes its row position', async () => {
+    const update = vi.fn().mockResolvedValue(undefined);
+    const first = { id: 'a', name: 'Travel', allocated: 250, spent: 0, icon: null, iconBgClass: '', iconColor: '', matchingRules: [rule] };
+    const second = { ...first, id: 'b', name: 'Food', matchingRules: [{ id: 'food-rule', keyword: 'Food', source: 'user' as const }] };
+    const props = { onCreateItem: vi.fn(), onUpdateItem: update, onDeleteItem: vi.fn() };
+    const { rerender } = render(<CategoryTable {...props} categories={[first, second]} />);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit matching keywords' })[0]);
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Matching keywords' }), { target: { value: 'Old unsaved draft' } });
+    rerender(<CategoryTable {...props} categories={[second]} />);
+    await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Matching keywords' })).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: 'Edit matching keywords' }));
+    expect((await screen.findByRole('textbox', { name: 'Matching keywords' }) as HTMLInputElement).value).toBe('');
+    expect(screen.queryByRole('button', { name: 'Remove Uber' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Save keywords' }));
+    await waitFor(() => expect(update).toHaveBeenCalledExactlyOnceWith('b', { matchingRules: second.matchingRules }));
+  });
+
+  it('retains an in-flight keyword draft and API error through parent rerenders', async () => {
+    let reject!: (reason: Error) => void;
+    const pending = new Promise<void>((_, fail) => { reject = fail; });
+    const update = vi.fn<(id: string, updates: unknown) => Promise<void>>(() => pending);
+    const item = { id: '1', name: 'Travel', allocated: 250, spent: 0, icon: null, iconBgClass: '', iconColor: '', matchingRules: [rule] };
+    const props = { onCreateItem: vi.fn(), onUpdateItem: update, onDeleteItem: vi.fn() };
+    const { rerender } = render(<CategoryTable {...props} categories={[item]} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Edit matching keywords' }));
+    const input = await screen.findByRole('textbox', { name: 'Matching keywords' });
+    fireEvent.change(input, { target: { value: 'DiDi' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save keywords' }));
+    rerender(<CategoryTable {...props} categories={[{ ...item }]} onUpdateItem={(...args) => update(...args)} isLoading />);
+    expect((screen.getByRole('textbox', { name: 'Matching keywords' }) as HTMLInputElement).value).toBe('DiDi');
+    await act(async () => { reject(new Error('Synthetic API rejection')); });
+    expect((await screen.findByRole('alert')).textContent).toContain('Synthetic API rejection');
+    expect((screen.getByRole('textbox', { name: 'Matching keywords' }) as HTMLInputElement).value).toBe('DiDi');
+    expect(screen.getByRole('button', { name: 'Remove Uber' })).toBeTruthy();
+  });
+
+  it('validates pending text on immediate Save and preserves it after validation and API rejection', async () => {
+    const save = vi.fn().mockRejectedValue(new Error('Synthetic API rejection'));
+    render(<BudgetItemKeywordsEditor value={[rule]} onSave={save} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Edit matching keywords' }));
+    const input = await screen.findByRole('textbox', { name: 'Matching keywords' });
+    fireEvent.change(input, { target: { value: 'ＵＢＥＲ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save keywords' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('ＵＢＥＲ');
+    expect(save).not.toHaveBeenCalled();
+    expect((input as HTMLInputElement).value).toBe('ＵＢＥＲ');
+    fireEvent.change(input, { target: { value: 'DiDi' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save keywords' }));
+    await waitFor(() => expect(save).toHaveBeenCalledOnce());
+    expect(save.mock.calls[0][0]).toEqual([rule, expect.objectContaining({ keyword: 'DiDi' })]);
+    expect((await screen.findByRole('alert')).textContent).toContain('Synthetic API rejection');
+    expect((input as HTMLInputElement).value).toBe('DiDi');
+    expect(screen.getByRole('button', { name: 'Remove Uber' })).toBeTruthy();
+  });
+  it('does not commit Enter or comma text during IME composition', () => {
+    render(<Harness />);
+    const input = screen.getByRole('textbox', { name: 'Matching keywords' });
+    fireEvent.compositionStart(input);
+    fireEvent.change(input, { target: { value: '東京,' } });
+    fireEvent.keyDown(input, { key: 'Enter', isComposing: true });
+    expect(screen.queryByRole('button', { name: /^Remove/ })).toBeNull();
+    fireEvent.compositionEnd(input);
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(screen.getByRole('button', { name: 'Remove 東京' })).toBeTruthy();
+  });
+  it('includes pending keywords on immediate create, even after the popover unmounts', async () => {
+    const create = vi.fn().mockResolvedValue(undefined);
+    render(<CategoryTable categories={[]} onCreateItem={create} onUpdateItem={vi.fn()} onDeleteItem={vi.fn()} />);
+    fireEvent.change(screen.getByPlaceholderText('New Item Name'), { target: { value: 'Synthetic' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add matching keywords' }));
+    const input = await screen.findByRole('textbox', { name: 'Matching keywords' });
+    fireEvent.change(input, { target: { value: 'DiDi' } });
+    fireEvent.keyDown(input, { key: 'Escape' });
+    fireEvent.keyDown(screen.getByPlaceholderText('New Item Name'), { key: 'Enter' });
+    await waitFor(() => expect(create).toHaveBeenCalledOnce());
+    expect(create.mock.calls[0][3]).toEqual([expect.objectContaining({ keyword: 'DiDi' })]);
+  });
   it.each(['Enter', 'blur'])('saves item names with %s and displays the refreshed name', async trigger => {
     const update = vi.fn().mockResolvedValue(undefined);
     const item = { id: '1', name: 'Travel', allocated: 250, spent: 0, icon: null, iconBgClass: '', iconColor: '' };
@@ -38,7 +115,7 @@ describe('matching keywords', () => {
     expect((await screen.findByRole('alert')).textContent).toBe('Name update rejected');
     expect((screen.getByRole('textbox', { name: 'Item name' }) as HTMLInputElement).value).toBe('Transport');
   });
-  it('adds with Enter and comma, trims, prevents case-insensitive duplicates, and removes', () => {
+  it('adds with Enter and comma, rejects duplicate batches atomically, and removes', () => {
     render(<Harness />);
     const input = screen.getByRole('textbox', { name: 'Matching keywords' });
     fireEvent.change(input, { target: { value: '  Uber  ' } });
@@ -46,6 +123,10 @@ describe('matching keywords', () => {
     fireEvent.change(input, { target: { value: 'DiDi' } });
     fireEvent.keyDown(input, { key: ',' });
     fireEvent.change(input, { target: { value: ' uber, ,inDrive,' } });
+    expect(screen.getByRole('alert').textContent).toContain('duplicates');
+    expect((input as HTMLInputElement).value).toBe(' uber, ,inDrive,');
+    expect(screen.getAllByRole('button', { name: /^Remove/ })).toHaveLength(2);
+    fireEvent.change(input, { target: { value: 'inDrive,' } });
     expect(screen.getAllByRole('button', { name: /^Remove/ })).toHaveLength(3);
     fireEvent.click(screen.getByRole('button', { name: 'Remove Uber' }));
     expect(screen.queryByRole('button', { name: 'Remove Uber' })).toBeNull();
