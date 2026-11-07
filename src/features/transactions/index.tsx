@@ -53,6 +53,7 @@ export function TransactionsPage() {
   const [dateRange, setDateRange] = React.useState("Last 30 Days");
   const [categoryId, setCategoryId] = React.useState<string | null>(null);
   const [type, setType] = React.useState<string | null>(null);
+  const [needsReview, setNeedsReview] = React.useState(false);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 767px)");
@@ -69,18 +70,31 @@ export function TransactionsPage() {
   const selectedFilter = React.useMemo<GetTransactionsFilterDto>(() => ({
     page: currentPage, limit: pageSize, budgetItemId: categoryId || undefined,
     type: type === "expense" || type === "income" ? type : undefined,
-  }), [currentPage, pageSize, categoryId, type]);
+    matchingStatus: needsReview ? 'needs_review' : undefined,
+  }), [currentPage, pageSize, categoryId, type, needsReview]);
   const getSelectedFilter = React.useCallback(() => ({
     ...selectedFilter, ...getDateRangeFilter(dateRange),
   }), [selectedFilter, dateRange]);
 
+  const latestFilter = React.useRef(getSelectedFilter);
+  React.useLayoutEffect(() => {
+    latestFilter.current = getSelectedFilter;
+  }, [getSelectedFilter]);
+
+  const refreshTransactions = React.useCallback(async () => {
+    const getFilter = latestFilter.current;
+    const filter = getFilter();
+    const res = await fetchTransactions(filter);
+    const lastPage = Math.max(1, res.meta.totalPages);
+    if (getFilter === latestFilter.current && (filter.page ?? 1) > lastPage) {
+      setCurrentPage(lastPage);
+    }
+    return res;
+  }, [fetchTransactions]);
+
   useEffect(() => {
-    fetchTransactions(getSelectedFilter()).then((res) => {
-      if (res && res.meta && res.meta.totalPages > 0 && currentPage > res.meta.totalPages) {
-        setCurrentPage(res.meta.totalPages);
-      }
-    }).catch(() => {});
-  }, [fetchTransactions, currentPage, getSelectedFilter]);
+    refreshTransactions().catch(() => {});
+  }, [getSelectedFilter, refreshTransactions]);
 
   const isLoading = isFetchingBudgets || isFetchingTransactions;
   
@@ -118,7 +132,7 @@ export function TransactionsPage() {
       if (!cat) {
         cat = {
           id: t.budgetItemId || '',
-          name: 'Uncategorized',
+          name: t.budgetItemId ? 'Saved category' : 'Uncategorized',
           icon: null,
           iconBgClass: 'bg-blue-500/10',
           iconColor: 'text-foreground'
@@ -129,7 +143,7 @@ export function TransactionsPage() {
         id: t._id,
         timestamp: t.date,
         type: t.type,
-        matchingStatus: t.matchingStatus,
+        matchingStatus: t.budgetItemId && (!t.matchingStatus || t.matchingStatus === 'needs_review') ? 'linked' : t.matchingStatus,
         date: format(new Date(t.date), "MMM d, yyyy"),
         description: t.name,
         category: cat,
@@ -171,6 +185,10 @@ export function TransactionsPage() {
   const filterCategories = useMemo(() => Object.entries(dynamicCategories).map(([id, category]) => ({ id, name: category.name })), [dynamicCategories]);
 
   const emptyState = useMemo(() => {
+    if (needsReview) return {
+      title: "No expenses need review",
+      description: "No expenses need review with the selected search, period and filters.",
+    };
     const hasSpecificFilters = Boolean(searchQuery.trim() || categoryId || type);
 
     if (hasSpecificFilters) {
@@ -191,7 +209,7 @@ export function TransactionsPage() {
       title: `No transactions in ${dateRange.toLowerCase()}`,
       description: "Choose a different period or add a new transaction.",
     };
-  }, [categoryId, dateRange, searchQuery, type]);
+  }, [categoryId, dateRange, searchQuery, type, needsReview]);
 
   const handleUpdateItem = async (id: string, updates: TransactionUpdates) => {
     const dto: UpdateTransactionDto = {};
@@ -207,7 +225,7 @@ export function TransactionsPage() {
     try {
       const saved = await updateTransaction(id, dto);
       setFeedback(`Saved. Matching status: ${saved.matchingStatus || "updated"}.`);
-      await Promise.all([fetchTransactions(getSelectedFilter()), fetchBudgets()]).catch(() => {
+      await Promise.all([refreshTransactions(), fetchBudgets()]).catch(() => {
         setFeedback("Transaction saved. Could not refresh transactions or budget actuals. Reload to try again.");
       });
     } catch (error) {
@@ -217,11 +235,7 @@ export function TransactionsPage() {
 
   const handleDeleteItem = async (id: string) => {
     await deleteTransaction(id);
-    await fetchTransactions(getSelectedFilter()).then((res) => {
-      if (res && res.meta && res.meta.totalPages > 0 && currentPage > res.meta.totalPages) {
-        setCurrentPage(res.meta.totalPages);
-      }
-    });
+    await refreshTransactions();
     await fetchBudgets();
   }
 
@@ -239,7 +253,7 @@ export function TransactionsPage() {
     const saved = await createTransaction(dto);
     setFeedback(`Created. Matching status: ${saved.matchingStatus || "updated"}.`);
     try {
-      await Promise.all([fetchTransactions(getSelectedFilter()), fetchBudgets()]);
+      await Promise.all([refreshTransactions(), fetchBudgets()]);
     } catch {
       setFeedback("Transaction created. Could not refresh transactions or budget actuals. Reload to try again.");
     }
@@ -250,7 +264,7 @@ export function TransactionsPage() {
       <PageHeader title="Transactions" />
       <AddTransactionDialog defaultOpen={searchParams.get("create") === "1"} categories={dynamicCategories} onAppend={handleAppendItem} />
 
-      {(feedback || fetchTransactionsError) && <p role="status">{feedback || fetchTransactionsError}</p>}
+      {feedback && <p role="status">{feedback}</p>}
       {/* Content Area */}
             <div className="flex flex-col gap-6">
               <TransactionsSummary {...transactionSummary} />
@@ -271,24 +285,33 @@ export function TransactionsPage() {
                   setCurrentPage(1);
                 }}
                 dateRange={dateRange}
-                onDateRangeChange={setDateRange}
+                onDateRangeChange={(value) => { setDateRange(value); setCurrentPage(1); }}
                 categoryId={categoryId}
-                onCategoryChange={setCategoryId}
+                onCategoryChange={(value) => { setCategoryId(value); setCurrentPage(1); }}
                 type={type}
-                onTypeChange={setType}
+                onTypeChange={(value) => { setType(value); setCurrentPage(1); }}
+                needsReview={needsReview}
+                onNeedsReviewChange={(value) => { setNeedsReview(value); setCurrentPage(1); }}
                 categories={filterCategories}
                 onClearFilters={() => {
                   setSearchQuery("");
                   setDateRange("All Time");
                   setCategoryId(null);
                   setType(null);
+                  setNeedsReview(false);
+                  setCurrentPage(1);
                 }}
               />
               </div>
               
               <div className="flex flex-col gap-2">
-                {isLoading && !uiTransactions.length ? (
-                  <div className="p-8 text-center text-muted-foreground">Loading transactions...</div>
+                {isLoading ? (
+                  <div role="status" className="p-8 text-center text-muted-foreground">Loading transactions...</div>
+                ) : fetchTransactionsError ? (
+                  <div role="alert" className="p-8 text-center">
+                    <p>Could not load transactions: {fetchTransactionsError}</p>
+                    <button type="button" onClick={() => { refreshTransactions().catch(() => {}); }}>Try again</button>
+                  </div>
                 ) : (
                   <>
                     <TransactionsTable 
