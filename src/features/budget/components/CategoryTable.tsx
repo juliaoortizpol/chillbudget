@@ -2,6 +2,7 @@ import * as React from "react"
 import type { BudgetItemMatchingRule, UpdateBudgetItemDto } from '../hooks/useBudget'
 import { BudgetItemMatchingKeywords } from './BudgetItemMatchingKeywords'
 import { BudgetItemKeywordsEditor } from './BudgetItemKeywordsEditor'
+import { appendKeywords } from '../hooks/matchingRules'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { useTransactions } from '@/features/transactions/hooks/useTransactions'
 import { cn, formatMoneyInput } from "@/lib/utils"
@@ -256,19 +257,21 @@ function AppendCategoryRow({
   const [iconName, setIconName] = React.useState("default")
 
   const [matchingRules, setMatchingRules] = React.useState<BudgetItemMatchingRule[]>([])
+  const [pendingKeyword, setPendingKeyword] = React.useState('')
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState('')
   const save = async () => {
     if (!name.trim() || saving) return;
     setSaving(true); setError('');
     try {
-      await onCreate(name, Number(allocated.replace(/,/g, '')) || 0, iconName, matchingRules);
-      setName(''); setAllocated(''); setIconName('default'); setMatchingRules([]);
+      const payload = appendKeywords(matchingRules, pendingKeyword);
+      await onCreate(name, Number(allocated.replace(/,/g, '')) || 0, iconName, payload);
+      setName(''); setAllocated(''); setIconName('default'); setMatchingRules([]); setPendingKeyword('');
     } catch (err) { setError(err instanceof Error ? err.message : 'Failed to create item'); }
     finally { setSaving(false); }
   }
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && name.trim()) {
+    if (!e.nativeEvent.isComposing && e.keyCode !== 229 && e.key === 'Enter' && name.trim()) {
       void save()
     }
   }
@@ -310,7 +313,7 @@ function AppendCategoryRow({
             <Popover>
               <PopoverTrigger className="text-left text-[11px] text-primary px-2">{matchingRules.length ? matchingRules.length + ' matching keywords' : 'Add matching keywords'}</PopoverTrigger>
               <PopoverContent align="start" className="w-80 p-4">
-                <BudgetItemMatchingKeywords value={matchingRules} onChange={setMatchingRules} suggestions={suggestions} otherItems={categories} />
+                <BudgetItemMatchingKeywords value={matchingRules} onChange={setMatchingRules} pendingText={pendingKeyword} onPendingTextChange={setPendingKeyword} disabled={saving} suggestions={suggestions} otherItems={categories} />
               </PopoverContent>
             </Popover>
             {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
