@@ -123,7 +123,7 @@ function ItemNameCell({ row }: CellContext<BudgetCategory, unknown>) {
   const category = row.original
   const isZero = category.allocated === 0
   return (
-    <div className={`flex items-center gap-4 py-1 pl-2 ${isZero ? 'opacity-50 grayscale transition-opacity hover:opacity-80' : ''}`}>
+    <div key={category.id} className={`flex items-center gap-4 py-1 pl-2 ${isZero ? 'opacity-50 grayscale transition-opacity hover:opacity-80' : ''}`}>
       <div
         className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
         style={{ backgroundColor: category.iconBgClass, color: category.iconColor }}

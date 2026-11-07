@@ -15,6 +15,23 @@ function Harness(props: Partial<KeywordProps>) {
 }
 const rule: BudgetItemMatchingRule = { id: 'saved', keyword: 'Uber', source: 'learned' };
 describe('matching keywords', () => {
+  it('discards the old item draft when a different item takes its row position', async () => {
+    const update = vi.fn().mockResolvedValue(undefined);
+    const first = { id: 'a', name: 'Travel', allocated: 250, spent: 0, icon: null, iconBgClass: '', iconColor: '', matchingRules: [rule] };
+    const second = { ...first, id: 'b', name: 'Food', matchingRules: [{ id: 'food-rule', keyword: 'Food', source: 'user' as const }] };
+    const props = { onCreateItem: vi.fn(), onUpdateItem: update, onDeleteItem: vi.fn() };
+    const { rerender } = render(<CategoryTable {...props} categories={[first, second]} />);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit matching keywords' })[0]);
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Matching keywords' }), { target: { value: 'Old unsaved draft' } });
+    rerender(<CategoryTable {...props} categories={[second]} />);
+    await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Matching keywords' })).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: 'Edit matching keywords' }));
+    expect((await screen.findByRole('textbox', { name: 'Matching keywords' }) as HTMLInputElement).value).toBe('');
+    expect(screen.queryByRole('button', { name: 'Remove Uber' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Save keywords' }));
+    await waitFor(() => expect(update).toHaveBeenCalledExactlyOnceWith('b', { matchingRules: second.matchingRules }));
+  });
+
   it('retains an in-flight keyword draft and API error through parent rerenders', async () => {
     let reject!: (reason: Error) => void;
     const pending = new Promise<void>((_, fail) => { reject = fail; });
