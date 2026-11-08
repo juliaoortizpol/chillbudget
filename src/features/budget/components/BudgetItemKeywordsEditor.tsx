@@ -5,7 +5,7 @@ import { BudgetItemMatchingKeywords, type KeywordProps } from './BudgetItemMatch
 import type { BudgetItemMatchingRule } from '../hooks/useBudget';
 import { appendKeywords } from '../hooks/matchingRules';
 
-export function BudgetItemKeywordsEditor({ value, onSave, suggestions, otherItems }: Omit<KeywordProps, 'onChange'> & { onSave: (rules: BudgetItemMatchingRule[]) => Promise<void> }) {
+export function BudgetItemKeywordsEditor({ value, onSave, suggestions, suggestionsUnavailable, otherItems }: Omit<KeywordProps, 'onChange'> & { onSave: (rules: BudgetItemMatchingRule[]) => Promise<void> }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value);
   const [saving, setSaving] = useState(false);
@@ -25,7 +25,7 @@ export function BudgetItemKeywordsEditor({ value, onSave, suggestions, otherItem
       </PopoverTrigger>
     </div>
     <PopoverContent align="start" className="w-80 p-4">
-      <BudgetItemMatchingKeywords value={draft} onChange={setDraft} pendingText={pendingText} onPendingTextChange={setPendingText} disabled={saving} suggestions={suggestions} otherItems={otherItems} />
+      <BudgetItemMatchingKeywords value={draft} onChange={setDraft} pendingText={pendingText} onPendingTextChange={setPendingText} disabled={saving} suggestions={suggestions} suggestionsUnavailable={suggestionsUnavailable} otherItems={otherItems} />
       {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
       <Button disabled={saving} onClick={async () => {
         setSaving(true); setError('');

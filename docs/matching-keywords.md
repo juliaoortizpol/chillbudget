@@ -1,5 +1,19 @@
 # Matching keyword editing
 
+AEM-FE7 uses the existing `/transactions?type=expense&limit=100` history hook.
+Merchant suggestions prefer usable `normalizedMerchant`, then `rawDescription`,
+then `name` from the existing transaction response, normalized with the same BE7
+helper used for duplicate validation. Each field falls back when absent, non-string,
+normalization-empty, numeric-only or longer than the rule limit after normalization.
+Notes and relation codes are never used. Phone/domain/descriptor noise is removed;
+equivalent merchant text is deduplicated in history order. Suggestions cover the returned page,
+not all historical transactions. Selected equivalent merchant/contains rules are
+excluded; advanced rules remain intact. Choosing a suggestion adds a `suggested`
+rule, while typed text remains `user` input. Suggestions are optional and history
+loading never disables editing, removal, Save or creation. Failed history shows
+“Suggestions unavailable” in both editors; successful empty history shows no
+suggestions or error. No matching/ranking behavior changes.
+
 AEM-FE6 follows the merged BE7 contract at backend
 6a3abf744d9c0cbfd87fb5edb3b32c3723f0c36d. The frontend mirrors server NFKC,
 case, descriptor/phone/domain and punctuation normalization for duplicate checks.

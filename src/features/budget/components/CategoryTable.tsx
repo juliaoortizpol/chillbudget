@@ -2,6 +2,7 @@ import * as React from "react"
 import type { BudgetItemMatchingRule, UpdateBudgetItemDto } from '../hooks/useBudget'
 import { BudgetItemMatchingKeywords } from './BudgetItemMatchingKeywords'
 import { BudgetItemKeywordsEditor } from './BudgetItemKeywordsEditor'
+import { merchantSuggestions } from '../hooks/merchantSuggestions'
 import { appendKeywords } from '../hooks/matchingRules'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { useTransactions } from '@/features/transactions/hooks/useTransactions'
@@ -113,13 +114,13 @@ function EditableTextCell({ initialValue, onSave, className }: { initialValue: s
   </div>
 }
 
-const ItemEditorContext = React.createContext<(Pick<CategoryTableProps, 'onUpdateItem' | 'categories'> & { suggestions: string[] }) | null>(null)
+const ItemEditorContext = React.createContext<(Pick<CategoryTableProps, 'onUpdateItem' | 'categories'> & { suggestions: string[]; suggestionsUnavailable: boolean }) | null>(null)
 
 // A stable cell component keeps editor state when request status or callbacks change.
 function ItemNameCell({ row }: CellContext<BudgetCategory, unknown>) {
   const context = React.useContext(ItemEditorContext)
   if (!context) throw new Error('ItemNameCell requires CategoryTable')
-  const { onUpdateItem, categories, suggestions } = context
+  const { onUpdateItem, categories, suggestions, suggestionsUnavailable } = context
   const category = row.original
   const isZero = category.allocated === 0
   return (
@@ -136,7 +137,7 @@ function ItemNameCell({ row }: CellContext<BudgetCategory, unknown>) {
           onSave={(val) => onUpdateItem(category.id, { name: val })}
           className="text-[15px] font-bold text-foreground"
         />
-        <BudgetItemKeywordsEditor value={category.matchingRules || []} suggestions={suggestions}
+        <BudgetItemKeywordsEditor value={category.matchingRules || []} suggestions={suggestions} suggestionsUnavailable={suggestionsUnavailable}
           otherItems={categories.filter(item => item.id !== category.id)}
           onSave={matchingRules => onUpdateItem(category.id, { matchingRules })} />
       </div>
@@ -251,11 +252,12 @@ function getColumns(
 
 function AppendCategoryRow({
   onCreate,
-  nameInputRef, categories, suggestions
+  nameInputRef, categories, suggestions, suggestionsUnavailable
 }: {
   onCreate: (name: string, allocated: number, icon: string, matchingRules?: BudgetItemMatchingRule[]) => Promise<void>,
   categories: BudgetCategory[],
   suggestions: string[],
+  suggestionsUnavailable: boolean,
   nameInputRef?: React.RefObject<HTMLInputElement | null>
 }) {
   const [name, setName] = React.useState("")
@@ -319,7 +321,7 @@ function AppendCategoryRow({
             <Popover>
               <PopoverTrigger className="text-left text-[11px] text-primary px-2">{matchingRules.length ? matchingRules.length + ' matching keywords' : 'Add matching keywords'}</PopoverTrigger>
               <PopoverContent align="start" className="w-80 p-4">
-                <BudgetItemMatchingKeywords value={matchingRules} onChange={setMatchingRules} pendingText={pendingKeyword} onPendingTextChange={setPendingKeyword} disabled={saving} suggestions={suggestions} otherItems={categories} />
+                <BudgetItemMatchingKeywords value={matchingRules} onChange={setMatchingRules} pendingText={pendingKeyword} onPendingTextChange={setPendingKeyword} disabled={saving} suggestions={suggestions} suggestionsUnavailable={suggestionsUnavailable} otherItems={categories} />
               </PopoverContent>
             </Popover>
             {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
@@ -377,9 +379,10 @@ export function CategoryTable({
   onDeleteItem,
   isLoading
 }: CategoryTableProps) {
-  const { fetchTransactions, transactionsData } = useTransactions();
+  const { fetchTransactions, transactionsData, fetchTransactionsError } = useTransactions();
   React.useEffect(() => { void fetchTransactions({ type: 'expense', limit: 100 }).catch(() => undefined); }, [fetchTransactions]);
-  const suggestions = React.useMemo(() => transactionsData?.data.map(transaction => transaction.name) || [], [transactionsData]);
+  const suggestions = React.useMemo(() => fetchTransactionsError ? [] : merchantSuggestions(transactionsData?.data || []), [transactionsData, fetchTransactionsError]);
+  const suggestionsUnavailable = !!fetchTransactionsError;
   const columns = React.useMemo(() => getColumns(onUpdateItem, onDeleteItem), [onUpdateItem, onDeleteItem]);
   const nameInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -408,11 +411,11 @@ export function CategoryTable({
         </div>
       </div>
 
-      <ItemEditorContext.Provider value={{ onUpdateItem, categories, suggestions }}>
+      <ItemEditorContext.Provider value={{ onUpdateItem, categories, suggestions, suggestionsUnavailable }}>
       <DataTable
         columns={columns}
         data={categories}
-        appendRowComponent={<AppendCategoryRow onCreate={onCreateItem} nameInputRef={nameInputRef} categories={categories} suggestions={suggestions} />}
+        appendRowComponent={<AppendCategoryRow onCreate={onCreateItem} nameInputRef={nameInputRef} categories={categories} suggestions={suggestions} suggestionsUnavailable={suggestionsUnavailable} />}
       />
       </ItemEditorContext.Provider>
     </div>

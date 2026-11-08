@@ -8,13 +8,14 @@ export interface KeywordProps {
   value: BudgetItemMatchingRule[];
   onChange: (rules: BudgetItemMatchingRule[]) => void;
   suggestions?: string[];
+  suggestionsUnavailable?: boolean;
   otherItems?: { name: string; matchingRules?: BudgetItemMatchingRule[] }[];
   pendingText?: string;
   onPendingTextChange?: (text: string) => void;
   disabled?: boolean;
 }
 
-export function BudgetItemMatchingKeywords({ value, onChange, suggestions = [], otherItems = [], pendingText, onPendingTextChange, disabled }: KeywordProps) {
+export function BudgetItemMatchingKeywords({ value, onChange, suggestions = [], suggestionsUnavailable, otherItems = [], pendingText, onPendingTextChange, disabled }: KeywordProps) {
   const id = useId();
   const [localDraft, setLocalDraft] = useState('');
   const [error, setError] = useState('');
@@ -24,7 +25,7 @@ export function BudgetItemMatchingKeywords({ value, onChange, suggestions = [], 
   const selected = new Set(value.filter(rule => (rule.field ?? 'merchant') === 'merchant' && (rule.operator ?? 'contains') === 'contains').map(rule => normalizeKeyword(rule.keyword)));
   const available = [...new Set(suggestions.map(s => s.trim()).filter(Boolean))]
     .filter((s, index, all) => normalizeKeyword(s) && !selected.has(normalizeKeyword(s)) && all.findIndex(v => normalizeKeyword(v) === normalizeKeyword(s)) === index)
-    .filter(s => !draft.trim() || s.toLowerCase().includes(draft.trim().toLowerCase())).slice(0, 6);
+    .filter(s => !draft.trim() || normalizeKeyword(s).includes(normalizeKeyword(draft))).slice(0, 6);
   const conflicts = otherItems.filter(item => item.matchingRules?.some(rule => value.some(current => {
     return hasMatchingTie(current, rule);
   })));
@@ -50,6 +51,7 @@ export function BudgetItemMatchingKeywords({ value, onChange, suggestions = [], 
       onBlur={() => { if (!onPendingTextChange && draft.trim() && !composing.current) commit(draft); }}
       onKeyDown={e => { if (!composing.current && !e.nativeEvent.isComposing && e.keyCode !== 229 && (e.key === 'Enter' || e.key === ',')) { e.preventDefault(); e.stopPropagation(); commit(draft); } }} />
     {error && <p id={`${id}-error`} role="alert" className="text-xs text-red-600">{error}</p>}
+    {suggestionsUnavailable && <p role="status" className="text-xs text-muted-foreground">Suggestions unavailable. You can still add keywords.</p>}
     {available.length > 0 && <div className="space-y-1"><p className="text-xs text-muted-foreground">Suggested keywords</p><div className="flex flex-wrap gap-1">
       {available.map(s => <button disabled={disabled} type="button" key={s} className="rounded border border-border px-2 py-0.5 text-xs hover:bg-muted" onClick={() => commit(s, 'suggested')}>{s}</button>)}
     </div></div>}

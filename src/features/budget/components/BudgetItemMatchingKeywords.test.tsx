@@ -6,15 +6,62 @@ import { BudgetItemKeywordsEditor } from './BudgetItemKeywordsEditor';
 import { CategoryTable } from './CategoryTable';
 import type { BudgetItemMatchingRule } from '../hooks/useBudget';
 
-vi.mock('@/features/transactions/hooks/useTransactions', () => ({ useTransactions: () => ({ fetchTransactions: fetchTransactions, transactionsData: null }) }));
+vi.mock('@/features/transactions/hooks/useTransactions', () => ({ useTransactions: () => ({ fetchTransactions, ...history }) }));
+let history: { transactionsData: { data: import('@/features/transactions/hooks/useTransactions').Transaction[] } | null; fetchTransactionsError?: string; isFetchingTransactions?: boolean } = { transactionsData: null };
 const fetchTransactions = vi.fn().mockResolvedValue({ data: [] });
-afterEach(cleanup);
+afterEach(() => { cleanup(); history = { transactionsData: null }; });
 function Harness(props: Partial<KeywordProps>) {
   const [value, onChange] = useState(props.value || []);
   return <BudgetItemMatchingKeywords {...props} value={value} onChange={onChange} />;
 }
 const rule: BudgetItemMatchingRule = { id: 'saved', keyword: 'Uber', source: 'learned' };
 describe('matching keywords', () => {
+  it.each(['loading', 'empty', 'failure'])('keeps removal, typing, Save and creation available with %s history', async state => {
+    history = { transactionsData: state === 'empty' ? { data: [] } : null, isFetchingTransactions: state === 'loading', fetchTransactionsError: state === 'failure' ? 'Synthetic history failure' : undefined };
+    const update = vi.fn().mockResolvedValue(undefined);
+    const create = vi.fn().mockResolvedValue(undefined);
+    render(<CategoryTable categories={[{ id: '1', name: 'Travel', allocated: 250, spent: 0, icon: null, iconBgClass: '', iconColor: '', matchingRules: [rule] }]} onUpdateItem={update} onCreateItem={create} onDeleteItem={vi.fn()} />);
+    expect(fetchTransactions).toHaveBeenCalledWith({ type: 'expense', limit: 100 });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit matching keywords' }));
+    const input = await screen.findByRole('textbox', { name: 'Matching keywords' });
+    expect(!!screen.queryByText('Suggestions unavailable. You can still add keywords.')).toBe(state === 'failure');
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Uber' }));
+    fireEvent.change(input, { target: { value: 'Synthetic cafe' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save keywords' }));
+    await waitFor(() => expect(update).toHaveBeenCalledWith('1', { matchingRules: [expect.objectContaining({ keyword: 'Synthetic cafe', source: 'user' })] }));
+    fireEvent.change(screen.getByPlaceholderText('New Item Name'), { target: { value: 'Food' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add matching keywords' }));
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Matching keywords' }), { target: { value: 'Synthetic market' } });
+    fireEvent.keyDown(screen.getByRole('textbox', { name: 'Matching keywords' }), { key: 'Escape' });
+    fireEvent.keyDown(screen.getByPlaceholderText('New Item Name'), { key: 'Enter' });
+    await waitFor(() => expect(create).toHaveBeenCalledWith('Food', 0, 'default', [expect.objectContaining({ keyword: 'Synthetic market' })]));
+  });
+
+  it('filters normalized equivalent merchant suggestions while retaining advanced rules and suggested source', () => {
+    const advanced: BudgetItemMatchingRule = { id: 'description', keyword: 'DiDi', field: 'description', operator: 'equals', source: 'learned' };
+    const onChange = vi.fn();
+    render(<BudgetItemMatchingKeywords value={[rule, advanced]} onChange={onChange} suggestions={['ＵＢＥＲ', 'Uber Trip 123', 'DiDi', 'didi']} />);
+    expect(screen.queryByRole('button', { name: 'ＵＢＥＲ' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Uber Trip 123' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'didi' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'DiDi' }));
+    expect(onChange).toHaveBeenCalledWith([rule, advanced, expect.objectContaining({ keyword: 'DiDi', source: 'suggested' })]);
+  });
+
+  it('offers cleaned history names after loading without resetting pending edits', async () => {
+    const item = { id: '1', name: 'Travel', allocated: 250, spent: 0, icon: null, iconBgClass: '', iconColor: '', matchingRules: [rule] };
+    const update = vi.fn().mockResolvedValue(undefined);
+    const props = { categories: [item], onUpdateItem: update, onCreateItem: vi.fn(), onDeleteItem: vi.fn() };
+    const { rerender } = render(<CategoryTable {...props} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Edit matching keywords' }));
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Matching keywords' }), { target: { value: 'cafe' } });
+    history = { transactionsData: { data: [{ name: 'SyntheticCafe.com 800-555-1234', type: 'expense' }, { name: 'Uber Trip 123', type: 'expense' }] as import('@/features/transactions/hooks/useTransactions').Transaction[] } };
+    rerender(<CategoryTable {...props} />);
+    expect((screen.getByRole('textbox', { name: 'Matching keywords' }) as HTMLInputElement).value).toBe('cafe');
+    fireEvent.click(screen.getByRole('button', { name: 'syntheticcafe' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save keywords' }));
+    await waitFor(() => expect(update).toHaveBeenCalledWith('1', { matchingRules: [rule, expect.objectContaining({ keyword: 'syntheticcafe', source: 'suggested' }), expect.objectContaining({ keyword: 'cafe', source: 'user' })] }));
+  });
   it('discards the old item draft when a different item takes its row position', async () => {
     const update = vi.fn().mockResolvedValue(undefined);
     const first = { id: 'a', name: 'Travel', allocated: 250, spent: 0, icon: null, iconBgClass: '', iconColor: '', matchingRules: [rule] };
