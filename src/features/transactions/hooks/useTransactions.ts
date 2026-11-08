@@ -9,6 +9,8 @@ export interface Transaction {
   accountId?: string;
   budgetItemId?: string | null;
   name: string;
+  normalizedMerchant?: string;
+  rawDescription?: string;
   amount: number;
   type: 'expense' | 'income';
   relationCode?: string;
