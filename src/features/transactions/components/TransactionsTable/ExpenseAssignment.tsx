@@ -30,7 +30,7 @@ export function ExpenseAssignment({ initialValue, categories, merchant, onSave, 
     return other && (other.includes(normalized) || normalized.includes(other));
   })).map(([, category]) => category.name) : [];
 
-  return <form className="w-64 max-w-full space-y-2 rounded-md border bg-background p-2 text-sm" onSubmit={async event => {
+  return <form className="w-64 max-w-full whitespace-normal break-words space-y-2 rounded-md border bg-background p-2 text-sm" onSubmit={async event => {
     event.preventDefault();
     if (saving.current || invalid || (item && !selected)) return;
     saving.current = true;
