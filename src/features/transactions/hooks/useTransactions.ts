@@ -32,6 +32,8 @@ export interface CreateTransactionDto {
 }
 
 export interface UpdateTransactionDto {
+  rememberMerchant?: true;
+  merchantKeyword?: string;
   accountId?: string;
   budgetItemId?: string | null;
   name?: string;

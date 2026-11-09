@@ -113,6 +113,7 @@ export function TransactionsPage() {
         startDate: activeBudget.startDate,
         endDate: activeBudget.endDate,
         name: item.name,
+        matchingRules: item.matchingRules,
         icon: getIcon(item.icon),
         color: item.color,
         iconBgClass: "bg-muted",
@@ -220,16 +221,21 @@ export function TransactionsPage() {
     }
     if (updates.date !== undefined) dto.date = new Date(updates.date).toISOString();
     if (updates.category !== undefined) dto.budgetItemId = updates.category.id || null;
+    if (updates.rememberMerchant && updates.category?.id && transactionsData?.data.find(t => t._id === id)?.type === 'expense') {
+      dto.rememberMerchant = true;
+      dto.merchantKeyword = updates.merchantKeyword;
+    }
     
     setFeedback(null);
     try {
       const saved = await updateTransaction(id, dto);
-      setFeedback(`Saved. Matching status: ${saved.matchingStatus || "updated"}.`);
+      setFeedback(`Saved${dto.rememberMerchant ? ' and merchant remembered' : ''}. Matching status: ${saved.matchingStatus || "updated"}.`);
       await Promise.all([refreshTransactions(), fetchBudgets()]).catch(() => {
         setFeedback("Transaction saved. Could not refresh transactions or budget actuals. Reload to try again.");
       });
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "Unable to save transaction. Try again.");
+      if (updates.category !== undefined && transactionsData?.data.find(t => t._id === id)?.type === 'expense') throw error;
     }
   }
 
