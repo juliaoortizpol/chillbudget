@@ -64,6 +64,6 @@ export function ExpenseAssignment({ initialValue, categories, merchant, onSave, 
     </>}
     {error && <p role="alert">{error}</p>}
     {pending && <p role="status">Saving assignment…</p>}
-    <div className="flex gap-2"><Button type="submit" disabled={pending || invalid || Boolean(item && !selected)}>{error ? 'Retry save' : 'Save assignment'}</Button><Button type="button" variant="outline" disabled={pending} onClick={onCancel}>Cancel</Button></div>
+    <div className="flex flex-wrap gap-2"><Button type="submit" disabled={pending || invalid || Boolean(item && !selected)}>{error ? 'Retry save' : 'Save assignment'}</Button><Button type="button" variant="outline" disabled={pending} onClick={onCancel}>Cancel</Button></div>
   </form>;
 }

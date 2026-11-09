@@ -426,14 +426,14 @@ export function TransactionsTable({
                       className="text-sm font-bold leading-tight text-foreground"
                     />
 
-                    <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+                    <div className="flex min-w-0 items-center gap-2 overflow-hidden has-[form]:flex-wrap has-[form]:overflow-visible">
                       <EditableDateCell
                         initialValue={transaction.date}
                         onSave={(value) => onUpdateItem?.(transaction.id, { date: value })}
                         className="shrink-0 text-xs font-medium text-muted-foreground"
                       />
                       <span className="text-muted-foreground/40">•</span>
-                      <div className="min-w-0">
+                      <div className="min-w-0 has-[form]:basis-full">
                         <EditableCategoryCell
                           initialValue={transaction.category}
                           onSave={(value, learning) => onUpdateItem?.(transaction.id, { category: value, ...learning })}
