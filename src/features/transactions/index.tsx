@@ -212,7 +212,7 @@ export function TransactionsPage() {
     };
   }, [categoryId, dateRange, searchQuery, type, needsReview]);
 
-  const handleUpdateItem = async (id: string, updates: TransactionUpdates) => {
+  const handleUpdateItem = React.useCallback(async (id: string, updates: TransactionUpdates) => {
     const dto: UpdateTransactionDto = {};
     if (updates.description !== undefined) dto.name = updates.description;
     if (updates.amount !== undefined) {
@@ -237,13 +237,13 @@ export function TransactionsPage() {
       setFeedback(error instanceof Error ? error.message : "Unable to save transaction. Try again.");
       if (updates.category !== undefined && transactionsData?.data.find(t => t._id === id)?.type === 'expense') throw error;
     }
-  }
+  }, [transactionsData, updateTransaction, refreshTransactions, fetchBudgets]);
 
-  const handleDeleteItem = async (id: string) => {
+  const handleDeleteItem = React.useCallback(async (id: string) => {
     await deleteTransaction(id);
     await refreshTransactions();
     await fetchBudgets();
-  }
+  }, [deleteTransaction, refreshTransactions, fetchBudgets]);
 
   const handleAppendItem = async (data: AppendTransactionData) => {
     const cleanAmount = (data.amount || "").replace(/,/g, "");

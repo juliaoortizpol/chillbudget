@@ -43,7 +43,13 @@ is a separate admin step and is not claimed as active by this PR.
 FE4 expense assignment adds explicit opt-in merchant learning through the atomic
 BE9 PATCH contract. Component tests cover opt-out, clear, edited consent, overlap
 feedback, keyword validation, pending duplicate prevention and failure/opt-out retry.
-They use controlled synthetic objects, not HTTP or MongoDB. After checkpointing,
+They use controlled synthetic objects, not HTTP or MongoDB.
+The page-level `assignment-retry.test.tsx` uses the real transaction hook and
+responsive table/card editors with controlled requests. It checks that pending
+and rejected saves preserve the selected item, consent and edited keyword,
+prevent duplicate submission and retry the same payload only on user action.
+These checks do not establish browser layout or persisted API behavior.
+After checkpointing,
 verify desktop/mobile assignment, equivalent rule reuse/promotion, reload, synthetic
 import matching/idempotency and unchanged historical assignments against
 brainbudget_qa_synthetic. Capture normal, validation, overlap, pending, failure/retry
