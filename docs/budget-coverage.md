@@ -1,5 +1,15 @@
 # Budget coverage (FE2)
 
+The compact overview header uses the actual active budget name, the shared status
+badge and a saved-timezone “Past planned end” reminder after the target's local
+calendar day. The reminder never changes coverage or spending. Legacy active
+headers instead explain the saved inclusive limit. Exact start, target/legacy end,
+cutoff, confirmation and timezone remain in the native keyboard-accessible date
+disclosure. “History and drafts” expands existing read-only summaries and explicit
+activation controls, with an honest empty message. Unsupported Close/Edit Targets
+actions from the illustrative reference are omitted. Layout uses existing theme,
+Inter/Roboto hierarchy, Lucide icons and wrapping flex rows.
+
 The overview selects only `status=active`. It retains API spending and never
 expires, replaces or initializes a budget on calendar changes. Creation and draft
 activation are explicit actions. Closed records show read-only coverage summaries,

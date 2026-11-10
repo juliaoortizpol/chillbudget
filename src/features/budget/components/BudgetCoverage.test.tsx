@@ -86,6 +86,7 @@ it('activates only explicitly, locks duplicate clicks and surfaces migration err
   state.updateBudget.mockReturnValue(new Promise((_, rejectPromise) => { reject = rejectPromise; }));
   render(<BudgetLifecycle />);
   expect(state.updateBudget).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByText('History and drafts'));
   const button = screen.getByRole('button', { name: 'Activate Synthetic November' });
   fireEvent.click(button); fireEvent.click(button);
   expect(state.updateBudget).toHaveBeenCalledTimes(1);
@@ -93,4 +94,38 @@ it('activates only explicitly, locks duplicate clicks and surfaces migration err
   reject(new Error('Legacy migration required'));
   expect((await screen.findByRole('alert')).textContent).toContain('Legacy migration required');
   expect(screen.getAllByRole('button', { name: /Activate/ })).toHaveLength(1);
+});
+
+it('uses the actual name as the page heading and treats an elapsed plan as informational', () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2024-12-01T03:59:00Z'));
+  const { rerender, container } = render(<BudgetCoverage heading budget={{ ...draft, status: 'active' }} />);
+  expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Synthetic November');
+  expect(screen.queryByText('Past planned end')).toBeNull();
+  vi.setSystemTime(new Date('2024-12-01T04:00:00Z'));
+  rerender(<BudgetCoverage heading budget={{ ...draft, status: 'active' }} />);
+  expect(screen.getByText('Past planned end')).toBeTruthy();
+  expect(screen.getByText('Active')).toBeTruthy();
+  expect(container.querySelector('details')?.open).toBe(false);
+  expect(screen.queryByText(/Actual cutoff/)).toBeNull();
+  vi.useRealTimers();
+});
+
+it('never claims an open-ended legacy lifetime or infers its missing timezone', () => {
+  render(<BudgetCoverage heading budget={{ ...draft, status: 'active', coverageVersion: undefined, timezone: undefined }} />);
+  expect(screen.getByText('Legacy coverage uses the saved inclusive end.')).toBeTruthy();
+  expect(screen.queryByText('Past planned end')).toBeNull();
+  expect(screen.queryByText(/Still active until/)).toBeNull();
+  expect(screen.getByText(/^Timezone:/).textContent).toContain('saved timezone unavailable');
+});
+
+it('provides an honest keyboard-native history disclosure without unsupported actions', () => {
+  state.activeBudget = { ...draft, status: 'active' };
+  const { container } = render(<BudgetLifecycle />);
+  const details = container.querySelector('details')!;
+  expect(details.open).toBe(false);
+  fireEvent.click(screen.getByText('History and drafts'));
+  expect(details.open).toBe(true);
+  expect(screen.getByText('No closed budgets or drafts yet.')).toBeTruthy();
+  expect(screen.queryByRole('button', { name: /Close|Edit targets/i })).toBeNull();
 });

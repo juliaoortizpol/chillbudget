@@ -40,6 +40,15 @@ Workflow files alone do NOT enable branch protection. Protection configuration
 is a separate admin step and is not claimed as active by this PR.
 
 ## QA
+Header refinement regressions check the actual heading, saved-zone target-day
+boundary, active status beyond the plan, legacy timezone/lifetime guidance and
+native history disclosure/empty state. They are controlled jsdom checks. After
+checkpointing, independently inspect long titles and wrapping at desktop/mobile,
+keyboard disclosure focus, saved-zone month/year/leap/DST targets, closed arbitrary
+cutoffs, history activation failures and retained drafts during background refresh.
+Capture the changed header in the downstream portable QA report; no current
+browser or real HTTP/Mongo result is established by these component tests.
+
 FE2 coverage behavior and downstream integration boundaries are documented in
 [budget coverage](budget-coverage.md). Controlled tests cover active-only selection,
 extended API spending, open/exclusive/legacy purchase boundaries, saved-zone date

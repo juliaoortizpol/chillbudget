@@ -24,10 +24,10 @@ export function BudgetOverview() {
   return (
     <div className="flex flex-col gap-6">
 
-      <PageHeader 
+      {!activeBudget && <PageHeader
         title="Budget Overview" 
-        subtitle={activeBudget ? `Status for ${activeBudget.name}` : "Budget coverage and history"}
-      />
+        subtitle="Budget coverage and history"
+      />}
 
       {/* Content */}
             {saveFeedback && <p role="status">{saveFeedback}</p>}
@@ -35,7 +35,7 @@ export function BudgetOverview() {
             {isLoading && !hasLoaded ? <p role="status">Loading budgets…</p> : !hasLoaded && error ? null : <div className="flex flex-col gap-6">
               {isLoading && <p role="status">Refreshing budgets…</p>}
               {activeBudget && <>
-              <BudgetCoverage budget={activeBudget} />
+              <BudgetCoverage budget={activeBudget} heading />
               <BudgetSummaryCard 
                 totalAllocated={totalAllocated} 
                 totalSpent={totalSpent} 
