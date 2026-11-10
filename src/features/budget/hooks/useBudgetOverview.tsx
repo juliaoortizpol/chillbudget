@@ -20,6 +20,15 @@ export function useBudgetOverview() {
   } = useGlobalBudget();
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
 
+  const retry = async () => {
+    const feedbackAtRetry = saveFeedback;
+    await fetchBudgets();
+    // Only a successful read resolves refresh advice; the confirmed write remains saved.
+    setSaveFeedback(feedback => feedback === feedbackAtRetry
+      ? feedback?.split(' Refresh failed;')[0] ?? null
+      : feedback);
+  };
+
   // Active budget is now provided by useGlobalBudget
   const tableData: BudgetCategory[] = useMemo(() => {
     if (!activeBudget || !activeBudget.items) return [];
@@ -137,7 +146,7 @@ export function useBudgetOverview() {
     hasLoaded: hasLoadedBudgets || Boolean(activeBudget),
     saveFeedback,
     error: fetchBudgetsError,
-    retry: fetchBudgets,
+    retry,
     handleUpdateItem,
     handleAddBudgetItem,
     handleRemoveFromBudget,

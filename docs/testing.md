@@ -50,6 +50,9 @@ transaction components with controlled synthetic requests. Deferred revalidation
 checks DOM/input retention, saved keyword retention after GET failure, explicit GET
 retry without duplicate PATCH, and category request failure/recovery after planned
 end. Hook coverage also checks stale GET ordering and loaded-category retention.
+Deferred provider regressions cover both update and create feedback through a
+failed retry followed by successful recovery, retaining confirmation without stale
+failure advice or another PATCH/POST.
 These are controlled component checks, not real HTTP/Mongo or browser evidence.
 
 FE4 expense assignment adds explicit opt-in merchant learning through the atomic

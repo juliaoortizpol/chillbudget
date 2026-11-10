@@ -41,6 +41,9 @@ replaces those actuals with the server calculation. If that
 GET fails, the UI says the category was saved and asks for refresh rather than
 encouraging another write. Older overlapping GET responses cannot replace newer
 results or a confirmed item write.
+After a successful explicit GET retry, the saved/created confirmation remains and
+stale refresh-failure advice clears. A pending or failed retry retains that advice
+and never repeats the item PATCH/POST.
 
 Transactions distinguish a category request failure (with Retry categories), a
 genuine empty category list, no active budget, and no choices eligible for the
