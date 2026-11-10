@@ -98,7 +98,9 @@ function useGetBudgets() {
     setIsLoading(false);
     setData(previous => previous.map(budget => budget._id === budgetId
       ? { ...budget, items: budget.items.some(existing => existing._id === item._id)
-        ? budget.items.map(existing => existing._id === item._id ? item : existing)
+        // PATCH omits GET-computed actuals such as spent. Keep those until GET
+        // refreshes them, while honoring explicit response values (including zero).
+        ? budget.items.map(existing => existing._id === item._id ? { ...existing, ...item } : existing)
         : [...budget.items, item] }
       : budget));
   }, []);

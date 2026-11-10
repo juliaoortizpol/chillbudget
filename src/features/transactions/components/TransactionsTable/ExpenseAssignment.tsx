@@ -53,7 +53,7 @@ export function ExpenseAssignment({ initialValue, categories, merchant, onSave, 
         {Object.entries(categories).map(([id, category]) => <option key={id} value={id}>{category.name}</option>)}
       </select>
     </label>
-    {Object.keys(categories).length === 0 && <p>No categories eligible for this purchase date and type. Check the active budget coverage and category type on the Budget page, or leave Uncategorized.</p>}
+    {Object.keys(categories).length === 0 && <p>No categories eligible for this purchase date and type. Check the active budget coverage and category type on the Budget page, or leave Uncategorized. Legacy coverage includes purchases from its saved start through its exact saved end (inclusive); purchases after that end cannot use its categories. A v1 planned target does not end coverage. Legacy migration requires a separate supported process; this screen cannot extend it.</p>}
     <p>Selected item: {selected?.name || (item ? initialValue.name : 'Uncategorized')}</p>
     {item && selected && <>
       <label className="flex gap-2"><input type="checkbox" checked={remember} disabled={pending} onChange={event => setRemember(event.target.checked)} />Remember this match for future expenses</label>

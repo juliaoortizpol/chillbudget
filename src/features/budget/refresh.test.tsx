@@ -83,6 +83,7 @@ it.each([
   render(<EditableCategoryCell initialValue={saved} categories={eligibleCategories({ food: saved }, purchase, 'expense')} expenseMerchant="Synthetic merchant" onSave={onSave} />);
   fireEvent.click(screen.getByRole('button', { name: saved.name }));
   expect(screen.getByText(/No categories eligible for this purchase date and type/)).toBeTruthy();
+  expect(screen.getByText(/Legacy coverage includes purchases from its saved start through its exact saved end/)).toBeTruthy();
   expect((screen.getByRole('option', { name: `${saved.name} (unavailable)` }) as HTMLOptionElement).disabled).toBe(true);
   expect((screen.getByRole('button', { name: 'Save assignment' }) as HTMLButtonElement).disabled).toBe(true);
   expect(onSave).not.toHaveBeenCalled();

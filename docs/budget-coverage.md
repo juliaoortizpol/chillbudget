@@ -35,6 +35,9 @@ Loaded overview content remains mounted during background budget refreshes, incl
 category editor drafts. Initial loading still waits for the first successful GET;
 a refresh error keeps useful loaded content and offers an explicit GET retry.
 Successful item PATCH responses are retained locally before revalidation. If that
+response omits GET-computed spending, the cache preserves the last known actuals;
+explicit response values (including zero) take precedence. A successful GET then
+replaces those actuals with the server calculation. If that
 GET fails, the UI says the category was saved and asks for refresh rather than
 encouraging another write. Older overlapping GET responses cannot replace newer
 results or a confirmed item write.
@@ -43,7 +46,11 @@ Transactions distinguish a category request failure (with Retry categories), a
 genuine empty category list, no active budget, and no choices eligible for the
 purchase date/type. Loaded categories and historical labels remain available on
 refresh failure; eligibility is never relaxed to populate an empty dropdown.
-The cause of the personally reported missing expense categories is unconfirmed.
+Julio confirmed that his active budget uses legacy coverage. Assignment guidance
+explains that its exact saved inclusive end still limits eligibility, unlike a v1
+planned target. The specific purchase/date mismatch is unconfirmed; no personal
+dates were accessed. There is no released original-data migration action here,
+and the UI neither extends legacy coverage nor bypasses server validation.
 
 The existing Gmail frontend connects a mailbox through `/gmail-reader/auth-url`,
 reads `/gmail-reader/status`, and requests import with an empty POST to

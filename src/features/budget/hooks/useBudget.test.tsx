@@ -8,6 +8,30 @@ vi.mock('@/hooks/useFetch', () => ({ useFetch: () => ({ fetchApi }) }));
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 const item: BudgetItem = { name: 'Travel', description: 'Commute', type: 'expense', icon: 'car', color: '#10b981', plannedAmount: 250, alertEnabled: true,
   matchingRules: [{ id: 'existing', keyword: 'Uber', source: 'learned' }, { id: 'new', keyword: 'DiDi', source: 'user' }] };
+it('retains computed actuals across a confirmed PATCH and pending/failed GET, then accepts refreshed actuals', async () => {
+  const saved = { ...item, _id: 'travel', spent: 12.34 };
+  const rules = [{ id: 'new-rule', keyword: 'CAFE', source: 'user' as const }];
+  let rejectRefresh!: (error: Error) => void;
+  fetchApi.mockResolvedValueOnce([{ _id: 'budget', items: [serializeBudgetItem(saved)] }])
+    .mockResolvedValueOnce(serializeBudgetItem({ ...item, _id: 'travel', matchingRules: rules }))
+    .mockReturnValueOnce(new Promise((_, reject) => { rejectRefresh = reject; }));
+  const { result } = renderHook(useBudget);
+  await act(async () => { await result.current.fetchBudgets(); });
+  await act(async () => {
+    const response = await result.current.updateBudgetItem('budget', 'travel', { matchingRules: rules });
+    result.current.retainSavedBudgetItem('budget', response);
+  });
+  let refresh!: Promise<unknown>;
+  act(() => { refresh = result.current.fetchBudgets().catch(() => undefined); });
+  expect(result.current.budgets[0].items[0]).toMatchObject({ spent: 12.34, matchingRules: rules });
+  await act(async () => { rejectRefresh(new Error('Synthetic outage')); await refresh; });
+  expect(result.current.budgets[0].items[0]).toMatchObject({ spent: 12.34, matchingRules: rules });
+  fetchApi.mockResolvedValueOnce([{ _id: 'budget', items: [serializeBudgetItem({ ...saved, spent: 18.5, matchingRules: rules })] }]);
+  await act(async () => { await result.current.fetchBudgets(); });
+  expect(result.current.budgets[0].items[0].spent).toBe(18.5);
+  act(() => { result.current.retainSavedBudgetItem('budget', { ...saved, spent: 0, matchingRules: [] }); });
+  expect(result.current.budgets[0].items[0]).toMatchObject({ spent: 0, matchingRules: [] });
+});
 it('includes keywords and unrelated fields in create and budget copy payloads', async () => {
   const { result } = renderHook(useBudget);
   await act(async () => { await result.current.addBudgetItem('budget', item); });
