@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import type { Ref } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -42,13 +43,12 @@ export function BudgetCoverage({ budget, heading = false }: { budget: Budget; he
       : budget.status !== 'active' && <p>Coverage start (inclusive): {display(budget.startDate)}</p>}
     {budget.status === 'closed' && budget.coverageVersion === 1 && !lastDay && <p>Coverage ends before: {display(budget.actualCutoffDate, true)}</p>}
     {plan && budget.status !== 'active' && <p>{budget.coverageVersion === 1 ? 'Planned end (target / reminder)' : 'Coverage end (inclusive, legacy)'}: {display(plan)}</p>}
-    {budget.coverageVersion === 1 ? <>
-      {budget.status === 'draft' && <p>Planning only. Activate explicitly to use this budget.</p>}
-    </> : <p>Legacy coverage: saved end is inclusive. Lifecycle/timezone migration may be required before activation.</p>}
+    {budget.coverageVersion === 1 && budget.status === 'draft' && <p>Planning only. Activate explicitly to use this budget.</p>}
     {budget.status === 'closed' && <p>Read-only coverage summary.</p>}
     <details>
       <summary className="w-fit cursor-pointer rounded-sm py-2 text-primary focus-visible:outline-2 focus-visible:outline-ring">Exact coverage dates</summary>
       <div className="space-y-1 pt-1">
+        {budget.coverageVersion !== 1 && <p>Legacy coverage: saved end is inclusive. Lifecycle/timezone migration may be required before activation.</p>}
         <p className="text-muted-foreground">Timezone: {budget.timezone || 'Unavailable — saved timezone unavailable'}</p>
         {budget.status === 'active' && budget.coverageVersion === 1 && <p>Remains active until manually closed. A planned end is only a target.</p>}
         <p>Coverage start (inclusive), exact: {exactDate(budget.startDate)}</p>
@@ -70,7 +70,11 @@ function inputInstant(value: string) {
   return date.toISOString();
 }
 
-export function BudgetLifecycle() {
+export function BudgetLifecycle({ historyId, historyRef, onHistoryToggle }: {
+  historyId?: string;
+  historyRef?: Ref<HTMLDetailsElement>;
+  onHistoryToggle?: (open: boolean) => void;
+} = {}) {
   const { budgets, activeBudget, createBudget, updateBudget, fetchBudgets } = useGlobalBudget();
   const [name, setName] = useState('New budget');
   const [start, setStart] = useState(() => localInput(new Date()));
@@ -118,7 +122,7 @@ export function BudgetLifecycle() {
     </>}
     {pending && <p role="status">Saving budget…</p>}
     {error && <p role="alert">{error}</p>}
-    <details>
+    <details id={historyId} ref={historyRef} onToggle={event => onHistoryToggle?.(event.currentTarget.open)} className="scroll-mt-6">
     <summary className="w-fit cursor-pointer rounded-sm py-2 text-primary focus-visible:outline-2 focus-visible:outline-ring"><History aria-hidden="true" className="mr-2 inline size-4" />History and drafts</summary>
     <div className="space-y-3 pt-3">
     {!budgets.some(b => b.status !== 'active') && <p className="text-sm text-muted-foreground">No closed budgets or drafts yet.</p>}

@@ -6,7 +6,13 @@ calendar day. The reminder never changes coverage or spending. Legacy active
 headers instead explain the saved inclusive limit. Exact start, target/legacy end,
 cutoff, confirmation and timezone remain in the native keyboard-accessible date
 disclosure. “History and drafts” expands existing read-only summaries and explicit
-activation controls, with an honest empty message. Unsupported Close/Edit Targets
+activation controls, with an honest empty message. The active header groups a
+shared History button at the right on desktop and wraps on narrow screens. It
+opens the existing disclosure, scrolls to it and focuses its native summary;
+aria-controls/aria-expanded connect the action and reflect disclosure changes.
+History navigation does not create or activate a budget. Repeated legacy migration
+guidance lives in exact coverage details; the inclusive limit stays visible.
+Unsupported Close/Edit Targets
 actions from the illustrative reference are omitted. Layout uses existing theme,
 Inter/Roboto hierarchy, Lucide icons and wrapping flex rows.
 

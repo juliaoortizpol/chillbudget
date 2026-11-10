@@ -42,7 +42,11 @@ is a separate admin step and is not claimed as active by this PR.
 ## QA
 Header refinement regressions check the actual heading, saved-zone target-day
 boundary, active status beyond the plan, legacy timezone/lifetime guidance and
-native history disclosure/empty state. They are controlled jsdom checks. After
+native history disclosure/empty state. Header History regressions check its target,
+expanded state after open/close/reopen, focus and scroll request, empty/history
+content and absence of mutations or activation alongside an active budget.
+They are controlled jsdom checks; native Enter/Space and actual scrolling/wrapping
+remain browser checks. After
 checkpointing, independently inspect long titles and wrapping at desktop/mobile,
 keyboard disclosure focus, saved-zone month/year/leap/DST targets, closed arbitrary
 cutoffs, history activation failures and retained drafts during background refresh.
