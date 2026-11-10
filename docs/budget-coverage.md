@@ -31,6 +31,27 @@ and filters. New assignments require an active parent, compatible type and purch
 coverage. Saved unavailable categories remain visible; remembered-match controls,
 rule serialization and manual metadata are unchanged.
 
+Loaded overview content remains mounted during background budget refreshes, including
+category editor drafts. Initial loading still waits for the first successful GET;
+a refresh error keeps useful loaded content and offers an explicit GET retry.
+Successful item PATCH responses are retained locally before revalidation. If that
+GET fails, the UI says the category was saved and asks for refresh rather than
+encouraging another write. Older overlapping GET responses cannot replace newer
+results or a confirmed item write.
+
+Transactions distinguish a category request failure (with Retry categories), a
+genuine empty category list, no active budget, and no choices eligible for the
+purchase date/type. Loaded categories and historical labels remain available on
+refresh failure; eligibility is never relaxed to populate an empty dropdown.
+The cause of the personally reported missing expense categories is unconfirmed.
+
+The existing Gmail frontend connects a mailbox through `/gmail-reader/auth-url`,
+reads `/gmail-reader/status`, and requests import with an empty POST to
+`/transaction-mail-import/sync`. It sends no financial account selection in those
+requests. Account resolution belongs to the backend import pipeline; this frontend
+inspection does not establish how any particular email maps to an account.
+No Gmail, bank connection, account matching or original-data changes are included.
+
 Verification uses controlled synthetic unit/component data. Real desktop/mobile
 HTTP/Mongo behavior against merged BE3 `43454f73fd64b2057d6079908d797398f1d1ae55`,
 database `brainbudget_qa_synthetic`, captioned screenshots, exact-head CI and fresh

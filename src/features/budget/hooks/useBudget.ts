@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useFetch } from '../../../hooks/useFetch';
 import { serializeBudgetItem, deserializeBudgetItem, type StoredMatchingRule } from './matchingRules';
 
@@ -70,23 +70,39 @@ function useGetBudgets() {
   const [data, setData] = useState<Budget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const request = useRef(0);
 
   const fetchBudgets = useCallback(async () => {
+    const current = ++request.current;
     setIsLoading(true);
     setError(null);
     try {
       const response = (await fetchApi<ApiBudget[]>('/budgets', { method: 'GET' })).map(deserializeBudget);
-      setData(response);
+      if (current === request.current) {
+        setData(response);
+        setHasLoaded(true);
+      }
       return response;
     } catch (err) {
-      setError((err instanceof Error && err.message) || 'Failed to fetch budgets');
+      if (current === request.current) setError((err instanceof Error && err.message) || 'Failed to fetch budgets');
       throw err;
     } finally {
-      setIsLoading(false);
+      if (current === request.current) setIsLoading(false);
     }
   }, [fetchApi]);
 
-  return { data, fetchBudgets, isLoading, error };
+  const retainSavedItem = useCallback((budgetId: string, item: BudgetItem) => {
+    // Invalidate any GET started before this successful write.
+    ++request.current;
+    setIsLoading(false);
+    setData(previous => previous.map(budget => budget._id === budgetId
+      ? { ...budget, items: budget.items.some(existing => existing._id === item._id)
+        ? budget.items.map(existing => existing._id === item._id ? item : existing)
+        : [...budget.items, item] }
+      : budget));
+  }, []);
+  return { data, fetchBudgets, isLoading, error, hasLoaded, retainSavedItem };
 }
 
 function useGetBudgetById() {
@@ -259,6 +275,8 @@ export function useBudget() {
 
   return {
     budgets: getBudgets.data,
+    hasLoadedBudgets: getBudgets.hasLoaded,
+    retainSavedBudgetItem: getBudgets.retainSavedItem,
     isFetchingBudgets: getBudgets.isLoading,
     fetchBudgetsError: getBudgets.error,
     fetchBudgets: getBudgets.fetchBudgets,

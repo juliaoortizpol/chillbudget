@@ -52,3 +52,25 @@ it('retains coverage metadata and saved timezone through reads and ordinary upda
   expect(JSON.parse(fetchApi.mock.calls[1][1].body)).toEqual({ name: 'Renamed' });
   expect(result.current.budgets[0].timezone).toBe('America/New_York');
 });
+
+it('ignores stale GET success/failure and retains loaded categories on a current refresh failure', async () => {
+  let resolveOld!: (value: unknown) => void;
+  let rejectCurrent!: (error: Error) => void;
+  fetchApi.mockReturnValueOnce(new Promise(resolve => { resolveOld = resolve; }))
+    .mockResolvedValueOnce([{ _id: 'latest', items: [{ ...item, _id: 'travel' }] }]);
+  const { result } = renderHook(useBudget);
+  let old!: Promise<unknown>;
+  act(() => { old = result.current.fetchBudgets(); });
+  await act(async () => { await result.current.fetchBudgets(); });
+  await act(async () => { resolveOld([{ _id: 'stale', items: [] }]); await old; });
+  expect(result.current.budgets[0]._id).toBe('latest');
+  expect(result.current.hasLoadedBudgets).toBe(true);
+  fetchApi.mockReturnValueOnce(new Promise((_, reject) => { rejectCurrent = reject; }));
+  let refresh!: Promise<unknown>;
+  act(() => { refresh = result.current.fetchBudgets().catch(() => undefined); });
+  expect(result.current.budgets[0].items[0].name).toBe('Travel');
+  await act(async () => { rejectCurrent(new Error('Synthetic unavailable')); await refresh; });
+  expect(result.current.fetchBudgetsError).toBe('Synthetic unavailable');
+  expect(result.current.budgets[0].items[0].name).toBe('Travel');
+  expect(result.current.isFetchingBudgets).toBe(false);
+});

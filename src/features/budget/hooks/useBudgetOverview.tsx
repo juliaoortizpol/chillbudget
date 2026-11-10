@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 
 import { useGlobalBudget } from "./useGlobalBudget"
 import type { BudgetCategory } from "../components/CategoryTable"
@@ -15,7 +15,10 @@ export function useBudgetOverview() {
     isFetchingBudgets,
     fetchBudgetsError,
     activeBudget,
+    hasLoadedBudgets,
+    retainSavedBudgetItem,
   } = useGlobalBudget();
+  const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
 
   // Active budget is now provided by useGlobalBudget
   const tableData: BudgetCategory[] = useMemo(() => {
@@ -60,8 +63,13 @@ export function useBudgetOverview() {
   const handleUpdateItem = async (itemId: string, updates: UpdateBudgetItemDto) => {
     if (!activeBudget) return;
 
-    await updateBudgetItem(activeBudget._id, itemId, updates);
-    await fetchBudgets(); // Refresh to get updated data
+    setSaveFeedback(null);
+    const saved = await updateBudgetItem(activeBudget._id, itemId, updates);
+    retainSavedBudgetItem(activeBudget._id, saved);
+    setSaveFeedback('Category saved.');
+    await fetchBudgets().catch(() => {
+      setSaveFeedback('Category saved. Refresh failed; retry loading to update budget actuals. Do not save again.');
+    });
   };
 
   const comparison = useMemo(() => {
@@ -96,7 +104,8 @@ export function useBudgetOverview() {
     const budgetId = activeBudget?._id;
     if (!budgetId) throw new Error('Create or activate a budget before adding categories.');
 
-    await addBudgetItem(budgetId, {
+    setSaveFeedback(null);
+    const saved = await addBudgetItem(budgetId, {
       name,
       type: "expense",
       icon: iconName || "default",
@@ -105,7 +114,11 @@ export function useBudgetOverview() {
       matchingRules,
     });
 
-    await fetchBudgets();
+    retainSavedBudgetItem(budgetId, saved);
+    setSaveFeedback('Category created.');
+    await fetchBudgets().catch(() => {
+      setSaveFeedback('Category created. Refresh failed; retry loading to update budget actuals. Do not create it again.');
+    });
   };
 
   const handleRemoveFromBudget = async (itemId: string) => {
@@ -121,6 +134,8 @@ export function useBudgetOverview() {
     totalSpent,
     comparison,
     isLoading: isFetchingBudgets,
+    hasLoaded: hasLoadedBudgets || Boolean(activeBudget),
+    saveFeedback,
     error: fetchBudgetsError,
     retry: fetchBudgets,
     handleUpdateItem,

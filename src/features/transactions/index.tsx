@@ -40,7 +40,7 @@ function getDateRangeFilter(dateRange: string): { startDate?: string, endDate?: 
 
 export function TransactionsPage() {
   const [searchParams] = useSearchParams();
-  const { activeBudget, budgets, isFetchingBudgets, fetchBudgets } = useGlobalBudget();
+  const { activeBudget, budgets, isFetchingBudgets, fetchBudgets, fetchBudgetsError } = useGlobalBudget();
   const { 
     transactionsData, fetchTransactions, isFetchingTransactions, 
     updateTransaction, createTransaction, deleteTransaction, fetchTransactionsError
@@ -96,7 +96,7 @@ export function TransactionsPage() {
     refreshTransactions().catch(() => {});
   }, [getSelectedFilter, refreshTransactions]);
 
-  const isLoading = isFetchingBudgets || isFetchingTransactions;
+  const isLoading = isFetchingTransactions;
   
   const dynamicCategories = React.useMemo(() => {
     return (budgets ?? (activeBudget ? [activeBudget] : [])).reduce((all, budget) => {
@@ -280,7 +280,13 @@ export function TransactionsPage() {
             <div className="flex flex-col gap-6">
               <TransactionsSummary {...transactionSummary} />
 
-              {!hasCategories && !isLoading && (
+              {fetchBudgetsError && <div role="alert">
+                <p>Could not load categories: {fetchBudgetsError}. Previously loaded categories remain available.</p>
+                <button type="button" disabled={isFetchingBudgets} onClick={() => { void fetchBudgets().catch(() => undefined); }}>Retry categories</button>
+              </div>}
+              {isFetchingBudgets && <p role="status">Loading categories…</p>}
+              {!activeBudget && !isFetchingBudgets && !fetchBudgetsError && <p>No active budget. Create or activate a budget on the Budget page to assign categories.</p>}
+              {!hasCategories && !isFetchingBudgets && !fetchBudgetsError && (
                 <Disclaimer 
                   type="warning"
                   title="No Categories Found"

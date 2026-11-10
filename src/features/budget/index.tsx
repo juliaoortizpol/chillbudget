@@ -12,6 +12,8 @@ export function BudgetOverview() {
     totalSpent,
     comparison,
     isLoading,
+    hasLoaded,
+    saveFeedback,
     error,
     retry,
     handleUpdateItem,
@@ -28,7 +30,10 @@ export function BudgetOverview() {
       />
 
       {/* Content */}
-            {isLoading ? <p role="status">Loading budgets…</p> : error ? <div role="alert"><p>Could not load budgets: {error}</p><button onClick={() => { void retry().catch(() => undefined); }}>Retry loading</button></div> : <div className="flex flex-col gap-6">
+            {saveFeedback && <p role="status">{saveFeedback}</p>}
+            {error && <div role="alert"><p>Could not load budgets: {error}</p><button disabled={isLoading} onClick={() => { void retry().catch(() => undefined); }}>Retry loading</button></div>}
+            {isLoading && !hasLoaded ? <p role="status">Loading budgets…</p> : !hasLoaded && error ? null : <div className="flex flex-col gap-6">
+              {isLoading && <p role="status">Refreshing budgets…</p>}
               {activeBudget && <>
               <BudgetCoverage budget={activeBudget} />
               <BudgetSummaryCard 
@@ -41,7 +46,7 @@ export function BudgetOverview() {
                 onUpdateItem={handleUpdateItem}
                 onCreateItem={handleAddBudgetItem}
                 onDeleteItem={handleRemoveFromBudget}
-                isLoading={isLoading}
+                isLoading={false}
               />
               </>}
               <BudgetLifecycle />

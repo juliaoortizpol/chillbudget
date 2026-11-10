@@ -45,6 +45,12 @@ FE2 coverage behavior and downstream integration boundaries are documented in
 extended API spending, open/exclusive/legacy purchase boundaries, saved-zone date
 display, timezone creation, explicit activation, duplicate prevention, retained
 failure input, loading/error/retry, metadata round trips and historical labels.
+`budget/refresh.test.tsx` uses the real BudgetProvider, budget hooks and overview/
+transaction components with controlled synthetic requests. Deferred revalidation
+checks DOM/input retention, saved keyword retention after GET failure, explicit GET
+retry without duplicate PATCH, and category request failure/recovery after planned
+end. Hook coverage also checks stale GET ordering and loaded-category retention.
+These are controlled component checks, not real HTTP/Mongo or browser evidence.
 
 FE4 expense assignment adds explicit opt-in merchant learning through the atomic
 BE9 PATCH contract. Component tests cover opt-out, clear, edited consent, overlap
