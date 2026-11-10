@@ -11,9 +11,11 @@ errors appear on the page; failed creation retains form input and shows the API 
 Successful writes refresh transactions with the selected category/date/type filters
 and reload budget actuals. Search text remains selected.
 
-Assignment choices use the original transaction timestamp, the budget's inclusive
-start/end timestamps and matching item type. Current budget items outside an old
-transaction's period are unavailable. These choices are hints: the API validates
+FE2 assignment choices use the original purchase timestamp, an active parent and
+matching item type. Version 1 coverage has an inclusive start and optional exclusive
+actual cutoff; planned end never expires it. Unmigrated legacy coverage retains
+the exact inclusive end timestamp. Items outside purchase coverage are unavailable.
+See [budget coverage](budget-coverage.md). These choices are hints: the API validates
 ownership, live parent and eligibility and can reject stale choices.
 
 ## Verification
@@ -27,8 +29,9 @@ when needed. Rejected assignments retain the saved row and show the API error.
 Loading, filtered empty results and load/refresh failures have separate states;
 failed loads offer a retry rather than displaying an empty queue.
 
-Historical category IDs remain editable and clearable. When the current budget
-does not supply a name, the row says Saved category. Legacy assigned rows without
+Historical category IDs remain visible and clearable. Names from all returned
+budgets remain available to saved rows and filters, including closed history.
+When no returned budget supplies a name, the row says Saved category. Legacy assigned rows without
 an unambiguous matching status show Linked, without inventing an automatic or
 manual assignment source. No historical-name request or rematching is performed.
 Real synthetic API desktop/mobile evidence must be captured by the trusted host

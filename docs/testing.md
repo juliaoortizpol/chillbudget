@@ -40,6 +40,12 @@ Workflow files alone do NOT enable branch protection. Protection configuration
 is a separate admin step and is not claimed as active by this PR.
 
 ## QA
+FE2 coverage behavior and downstream integration boundaries are documented in
+[budget coverage](budget-coverage.md). Controlled tests cover active-only selection,
+extended API spending, open/exclusive/legacy purchase boundaries, saved-zone date
+display, timezone creation, explicit activation, duplicate prevention, retained
+failure input, loading/error/retry, metadata round trips and historical labels.
+
 FE4 expense assignment adds explicit opt-in merchant learning through the atomic
 BE9 PATCH contract. Component tests cover opt-out, clear, edited consent, overlap
 feedback, keyword validation, pending duplicate prevention and failure/opt-out retry.

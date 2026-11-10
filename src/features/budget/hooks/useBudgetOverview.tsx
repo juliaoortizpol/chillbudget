@@ -10,27 +10,12 @@ export function useBudgetOverview() {
     budgets,
     fetchBudgets,
     updateBudgetItem,
-    createBudget,
     deleteBudgetItem,
     addBudgetItem,
     isFetchingBudgets,
     fetchBudgetsError,
     activeBudget,
   } = useGlobalBudget();
-  const handleCreateBudget = async () => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-    await createBudget({
-      name: `Budget ${now.toLocaleString('default', { month: 'long', year: 'numeric' })}`,
-      periodType: 'monthly',
-      startDate: start.toISOString(),
-      endDate: end.toISOString(),
-      status: 'active'
-    });
-    await fetchBudgets();
-  };
 
   // Active budget is now provided by useGlobalBudget
   const tableData: BudgetCategory[] = useMemo(() => {
@@ -83,7 +68,7 @@ export function useBudgetOverview() {
     if (!budgets || budgets.length < 2 || !activeBudget) return null;
     
     // Sort budgets by start date descending to find the one immediately before active
-    const sortedBudgets = [...budgets].sort((a, b) => 
+    const sortedBudgets = budgets.filter(b => b.status !== 'draft').sort((a, b) =>
       new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
     );
     
@@ -96,7 +81,9 @@ export function useBudgetOverview() {
     if (prevAllocated === 0) return null;
     
     const percentChange = ((totalAllocated - prevAllocated) / prevAllocated) * 100;
-    const monthName = new Date(prevBudget.startDate).toLocaleString('default', { month: 'long' });
+    const monthName = prevBudget.timezone
+      ? new Date(prevBudget.startDate).toLocaleString('default', { month: 'long', timeZone: prevBudget.timezone })
+      : prevBudget.name;
     
     return {
       percent: Math.abs(percentChange).toFixed(1),
@@ -106,33 +93,8 @@ export function useBudgetOverview() {
   }, [budgets, activeBudget, totalAllocated]);
 
   const handleAddBudgetItem = async (name: string, allocated: number, iconName?: string, matchingRules: BudgetItemMatchingRule[] = []) => {
-    let budgetId = activeBudget?._id;
-
-    if (!budgetId) {
-      const now = new Date();
-      const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-      const newBudget = await createBudget({
-          name: `Budget ${now.toLocaleString('default', { month: 'long', year: 'numeric' })}`,
-          periodType: 'monthly',
-          startDate: start.toISOString(),
-          endDate: end.toISOString(),
-          status: 'active'
-        });
-
-        if (newBudget && newBudget._id) {
-          budgetId = newBudget._id;
-        } else {
-          const freshBudgets = await fetchBudgets();
-          const activeOrFirst = freshBudgets?.find((b) => b.status === 'active') || freshBudgets?.[0];
-          if (activeOrFirst?._id) {
-            budgetId = activeOrFirst._id;
-          } else {
-            throw new Error("Failed to automatically initialize a budget.");
-          }
-        }
-    }
+    const budgetId = activeBudget?._id;
+    if (!budgetId) throw new Error('Create or activate a budget before adding categories.');
 
     await addBudgetItem(budgetId, {
       name,
@@ -163,7 +125,6 @@ export function useBudgetOverview() {
     retry: fetchBudgets,
     handleUpdateItem,
     handleAddBudgetItem,
-    handleCreateBudget,
     handleRemoveFromBudget,
   };
 }

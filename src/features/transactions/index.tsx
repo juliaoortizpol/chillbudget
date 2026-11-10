@@ -40,7 +40,7 @@ function getDateRangeFilter(dateRange: string): { startDate?: string, endDate?: 
 
 export function TransactionsPage() {
   const [searchParams] = useSearchParams();
-  const { activeBudget, isFetchingBudgets, fetchBudgets } = useGlobalBudget();
+  const { activeBudget, budgets, isFetchingBudgets, fetchBudgets } = useGlobalBudget();
   const { 
     transactionsData, fetchTransactions, isFetchingTransactions, 
     updateTransaction, createTransaction, deleteTransaction, fetchTransactionsError
@@ -99,9 +99,10 @@ export function TransactionsPage() {
   const isLoading = isFetchingBudgets || isFetchingTransactions;
   
   const dynamicCategories = React.useMemo(() => {
-    if (!activeBudget || !activeBudget.items) return {};
+    return (budgets ?? (activeBudget ? [activeBudget] : [])).reduce((all, budget) => {
+    if (!budget.items) return all;
 
-    return activeBudget.items.reduce((acc, item) => {
+    return budget.items.reduce((acc, item) => {
       if (!item._id) return acc;
       
       const allocated = item.plannedAmount || 0;
@@ -109,9 +110,12 @@ export function TransactionsPage() {
 
       acc[item._id] = {
         id: item._id,
-        type: activeBudget.status === "active" ? item.type : undefined,
-        startDate: activeBudget.startDate,
-        endDate: activeBudget.endDate,
+        type: item.type,
+        status: budget.status,
+        coverageVersion: budget.coverageVersion,
+        actualCutoffDate: budget.actualCutoffDate,
+        startDate: budget.startDate,
+        endDate: budget.endDate,
         name: item.name,
         matchingRules: item.matchingRules,
         icon: getIcon(item.icon),
@@ -121,8 +125,9 @@ export function TransactionsPage() {
         budgetUsedPercentage: allocated > 0 ? (spent / allocated) * 100 : 0
       };
       return acc;
+    }, all);
     }, {} as Record<string, TransactionCategory>);
-  }, [activeBudget]);
+  }, [budgets, activeBudget]);
 
   const hasCategories = Object.keys(dynamicCategories).length > 0;
 

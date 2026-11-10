@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/layout/PageHeader"
 import { BudgetSummaryCard } from "./components/BudgetSummaryCard"
 import { CategoryTable } from "./components/CategoryTable"
 import { useBudgetOverview } from "./hooks/useBudgetOverview"
+import { BudgetCoverage, BudgetLifecycle } from './components/BudgetCoverage'
 
 export function BudgetOverview() {
   const {
@@ -11,6 +12,8 @@ export function BudgetOverview() {
     totalSpent,
     comparison,
     isLoading,
+    error,
+    retry,
     handleUpdateItem,
     handleAddBudgetItem,
     handleRemoveFromBudget,
@@ -21,11 +24,13 @@ export function BudgetOverview() {
 
       <PageHeader 
         title="Budget Overview" 
-        subtitle={activeBudget ? `Status for ${activeBudget.name}` : "Status for current billing cycle"} 
+        subtitle={activeBudget ? `Status for ${activeBudget.name}` : "Budget coverage and history"}
       />
 
       {/* Content */}
-            <div className="flex flex-col gap-6">
+            {isLoading ? <p role="status">Loading budgets…</p> : error ? <div role="alert"><p>Could not load budgets: {error}</p><button onClick={() => { void retry().catch(() => undefined); }}>Retry loading</button></div> : <div className="flex flex-col gap-6">
+              {activeBudget && <>
+              <BudgetCoverage budget={activeBudget} />
               <BudgetSummaryCard 
                 totalAllocated={totalAllocated} 
                 totalSpent={totalSpent} 
@@ -38,7 +43,9 @@ export function BudgetOverview() {
                 onDeleteItem={handleRemoveFromBudget}
                 isLoading={isLoading}
               />
-            </div>
+              </>}
+              <BudgetLifecycle />
+            </div>}
 
     </div>
   )

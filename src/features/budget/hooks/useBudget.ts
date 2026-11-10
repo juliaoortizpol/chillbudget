@@ -29,7 +29,12 @@ export interface Budget {
   name: string;
   periodType: 'monthly' | 'weekly' | 'custom';
   startDate: string;
-  endDate: string;
+  endDate?: string;
+  plannedEndDate?: string;
+  actualCutoffDate?: string;
+  closedAt?: string;
+  timezone?: string;
+  coverageVersion?: number;
   status: 'draft' | 'active' | 'closed';
   items: BudgetItem[];
   createdAt: string;
@@ -40,7 +45,9 @@ export interface CreateBudgetDto {
   name: string;
   periodType: string;
   startDate: string;
-  endDate: string;
+  endDate?: string;
+  plannedEndDate?: string;
+  timezone: string;
   status: string;
   items?: Omit<BudgetItem, '_id' | 'budgetId'>[];
 }
@@ -182,6 +189,8 @@ function useCreateBudget() {
 }
 
 export interface UpdateBudgetDto {
+  plannedEndDate?: string;
+  timezone?: string;
   name?: string;
   periodType?: string;
   startDate?: string;
