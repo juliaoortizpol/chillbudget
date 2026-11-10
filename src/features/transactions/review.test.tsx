@@ -2,10 +2,12 @@ import { act, fireEvent, render, screen, waitFor, cleanup } from '@testing-libra
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { TransactionsPage } from './index';
+import type { Budget } from '../budget/hooks/useBudget';
 
 const { fetchApi, fetchBudgets } = vi.hoisted(() => ({ fetchApi: vi.fn(), fetchBudgets: vi.fn().mockResolvedValue(undefined) }));
+const history = vi.hoisted(() => ({ budgets: [] as Budget[] }));
 vi.mock('@/hooks/useFetch', () => ({ useFetch: () => ({ fetchApi }) }));
-vi.mock('../budget/hooks/useGlobalBudget', () => ({ useGlobalBudget: () => ({ activeBudget: null, isFetchingBudgets: false, fetchBudgets }) }));
+vi.mock('../budget/hooks/useGlobalBudget', () => ({ useGlobalBudget: () => ({ budgets: history.budgets, activeBudget: null, isFetchingBudgets: false, fetchBudgets }) }));
 vi.mock('./components/TransactionsSummary', () => ({ TransactionsSummary: () => null }));
 vi.mock('./components/TransactionsTable', () => ({
   AddTransactionDialog: () => null,
@@ -16,6 +18,7 @@ vi.mock('./components/TransactionsTable', () => ({
 const row = { _id: 'synthetic', date: '2026-11-01T12:00:00Z', name: 'Synthetic expense', amount: 10, type: 'expense', matchingStatus: 'needs_review' };
 const page = (data: object[], totalPages = 1, total = data.length) => ({ data, meta: { page: 1, limit: 10, totalPages, total } });
 beforeEach(() => {
+  history.budgets = [];
   fetchApi.mockReset();
   Object.defineProperty(window, 'matchMedia', { configurable: true, value: () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) });
 });
@@ -55,6 +58,14 @@ it('shows historical assigned legacy rows as linked with a saved category fallba
   fetchApi.mockResolvedValue(page([{ ...row, budgetItemId: 'historical', matchingStatus: 'needs_review' }]));
   mount();
   await screen.findByText('Saved category linked');
+});
+
+it('retains the historical category name when no active budget exists', async () => {
+  history.budgets = [{ _id: 'closed', name: 'November', status: 'closed', periodType: 'custom', startDate: '2026-11-01', createdAt: '', updatedAt: '', items: [{ _id: 'historical', name: 'Saved travel', type: 'expense', plannedAmount: 50 }] }];
+  fetchApi.mockResolvedValue(page([{ ...row, budgetItemId: 'historical', matchingStatus: 'manual' }]));
+  mount();
+  await screen.findByText('Saved travel manual');
+  expect(screen.queryByText('Saved category manual')).toBeNull();
 });
 
 it('returns to page one when assigning the final row on page two', async () => {

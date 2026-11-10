@@ -53,6 +53,7 @@ export function ExpenseAssignment({ initialValue, categories, merchant, onSave, 
         {Object.entries(categories).map(([id, category]) => <option key={id} value={id}>{category.name}</option>)}
       </select>
     </label>
+    {Object.keys(categories).length === 0 && <p>No categories eligible for this purchase date and type. Check active budget dates and category type. Older budgets stop at their saved end date (inclusive); extending them requires an explicit coverage upgrade.</p>}
     <p>Selected item: {selected?.name || (item ? initialValue.name : 'Uncategorized')}</p>
     {item && selected && <>
       <label className="flex gap-2"><input type="checkbox" checked={remember} disabled={pending} onChange={event => setRemember(event.target.checked)} />Remember this match for future expenses</label>

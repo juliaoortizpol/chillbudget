@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { BudgetItemMatchingKeywords, type KeywordProps } from './BudgetItemMatchingKeywords';
@@ -9,6 +9,7 @@ export function BudgetItemKeywordsEditor({ value, onSave, suggestions, suggestio
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value);
   const [saving, setSaving] = useState(false);
+  const pending = useRef(false);
   const [error, setError] = useState('');
   const [pendingText, setPendingText] = useState('');
   return <Popover open={open} onOpenChange={next => { if (!saving) { setOpen(next); if (next) { setDraft(value); setPendingText(''); setError(''); } } }}>
@@ -28,10 +29,12 @@ export function BudgetItemKeywordsEditor({ value, onSave, suggestions, suggestio
       <BudgetItemMatchingKeywords value={draft} onChange={setDraft} pendingText={pendingText} onPendingTextChange={setPendingText} disabled={saving} suggestions={suggestions} suggestionsUnavailable={suggestionsUnavailable} otherItems={otherItems} />
       {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
       <Button disabled={saving} onClick={async () => {
+        if (pending.current) return;
+        pending.current = true;
         setSaving(true); setError('');
         try { const payload = appendKeywords(draft, pendingText); await onSave(payload); setOpen(false); }
         catch (err) { setError(err instanceof Error ? err.message : 'Failed to save keywords'); }
-        finally { setSaving(false); }
+        finally { pending.current = false; setSaving(false); }
       }}>{saving ? 'Saving…' : 'Save keywords'}</Button>
     </PopoverContent>
   </Popover>;

@@ -175,6 +175,7 @@ export function EditableCategoryCell({ initialValue, onSave, categories, matchin
           )}
         </button>
       )}
+      {isEditing && expenseMerchant === undefined && Object.keys(categories).length === 0 && <p className="text-xs">No categories eligible for this purchase date and type. Check active budget coverage and category type, or leave Uncategorized.</p>}
       {matchingStatus && (
         <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium leading-none", status?.tone ?? "bg-muted text-muted-foreground")}>
           {status && <status.Icon aria-hidden="true" className="size-2.5 shrink-0" />}
@@ -273,6 +274,7 @@ function AppendTransactionForm({ categories, onAppend, onComplete, inline = fals
           </select>
           <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         </div>
+        {!hasCategories && <p className="text-xs text-muted-foreground">No categories eligible for this date and type. Check active budget coverage and category type, or leave Uncategorized.</p>}
       </div>
       <div className="min-w-0">
         <div className="relative">

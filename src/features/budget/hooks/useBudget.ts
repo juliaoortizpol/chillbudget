@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useFetch } from '../../../hooks/useFetch';
 import { serializeBudgetItem, deserializeBudgetItem, type StoredMatchingRule } from './matchingRules';
 
@@ -29,7 +29,12 @@ export interface Budget {
   name: string;
   periodType: 'monthly' | 'weekly' | 'custom';
   startDate: string;
-  endDate: string;
+  endDate?: string;
+  plannedEndDate?: string;
+  actualCutoffDate?: string;
+  closedAt?: string;
+  timezone?: string;
+  coverageVersion?: number;
   status: 'draft' | 'active' | 'closed';
   items: BudgetItem[];
   createdAt: string;
@@ -40,7 +45,9 @@ export interface CreateBudgetDto {
   name: string;
   periodType: string;
   startDate: string;
-  endDate: string;
+  endDate?: string;
+  plannedEndDate?: string;
+  timezone: string;
   status: string;
   items?: Omit<BudgetItem, '_id' | 'budgetId'>[];
 }
@@ -63,23 +70,41 @@ function useGetBudgets() {
   const [data, setData] = useState<Budget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const request = useRef(0);
 
   const fetchBudgets = useCallback(async () => {
+    const current = ++request.current;
     setIsLoading(true);
     setError(null);
     try {
       const response = (await fetchApi<ApiBudget[]>('/budgets', { method: 'GET' })).map(deserializeBudget);
-      setData(response);
+      if (current === request.current) {
+        setData(response);
+        setHasLoaded(true);
+      }
       return response;
     } catch (err) {
-      setError((err instanceof Error && err.message) || 'Failed to fetch budgets');
+      if (current === request.current) setError((err instanceof Error && err.message) || 'Failed to fetch budgets');
       throw err;
     } finally {
-      setIsLoading(false);
+      if (current === request.current) setIsLoading(false);
     }
   }, [fetchApi]);
 
-  return { data, fetchBudgets, isLoading, error };
+  const retainSavedItem = useCallback((budgetId: string, item: BudgetItem) => {
+    // Invalidate any GET started before this successful write.
+    ++request.current;
+    setIsLoading(false);
+    setData(previous => previous.map(budget => budget._id === budgetId
+      ? { ...budget, items: budget.items.some(existing => existing._id === item._id)
+        // PATCH omits GET-computed actuals such as spent. Keep those until GET
+        // refreshes them, while honoring explicit response values (including zero).
+        ? budget.items.map(existing => existing._id === item._id ? { ...existing, ...item } : existing)
+        : [...budget.items, item] }
+      : budget));
+  }, []);
+  return { data, fetchBudgets, isLoading, error, hasLoaded, retainSavedItem };
 }
 
 function useGetBudgetById() {
@@ -182,6 +207,8 @@ function useCreateBudget() {
 }
 
 export interface UpdateBudgetDto {
+  plannedEndDate?: string;
+  timezone?: string;
   name?: string;
   periodType?: string;
   startDate?: string;
@@ -250,6 +277,8 @@ export function useBudget() {
 
   return {
     budgets: getBudgets.data,
+    hasLoadedBudgets: getBudgets.hasLoaded,
+    retainSavedBudgetItem: getBudgets.retainSavedItem,
     isFetchingBudgets: getBudgets.isLoading,
     fetchBudgetsError: getBudgets.error,
     fetchBudgets: getBudgets.fetchBudgets,
