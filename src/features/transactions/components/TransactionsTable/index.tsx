@@ -1,5 +1,6 @@
 import type { TransactionUpdates, AppendTransactionData } from "../../types/table"
 import { DataTable } from "@/components/ui/data-table"
+import { ExpenseAssignment, type Learning } from './ExpenseAssignment'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useEffect, useState } from "react"
@@ -111,11 +112,12 @@ const matchingTags = new Map([
   ["needs_review", { label: "Needs review", Icon: TriangleAlert, tone: "bg-rose-500/10 text-rose-800 dark:text-rose-300" }],
 ])
 
-export function EditableCategoryCell({ initialValue, onSave, categories, matchingStatus }: {
+export function EditableCategoryCell({ initialValue, onSave, categories, matchingStatus, expenseMerchant }: {
   initialValue: TransactionCategory
-  onSave: (val: TransactionCategory) => void
+  onSave: (val: TransactionCategory, learning?: Learning) => void | Promise<void>
   categories: Record<string, TransactionCategory>
   matchingStatus?: string
+  expenseMerchant?: string
 }) {
   const {
     isEditing, setIsEditing, value, startEditing, handleChange
@@ -127,6 +129,7 @@ export function EditableCategoryCell({ initialValue, onSave, categories, matchin
   return (
     <div className="flex min-w-0 max-w-full flex-col items-start gap-0.5">
       {isEditing ? (
+        expenseMerchant !== undefined ? <ExpenseAssignment initialValue={initialValue} categories={categories} merchant={expenseMerchant} onSave={onSave} onCancel={() => setIsEditing(false)} /> :
         <select
           autoFocus
           aria-label="Assign category"
@@ -332,7 +335,7 @@ function AppendTransactionForm({ categories, onAppend, onComplete, inline = fals
 
 interface TransactionsTableProps {
   data: Transaction[]
-  onUpdateItem?: (id: string, updates: TransactionUpdates) => void
+  onUpdateItem?: (id: string, updates: TransactionUpdates) => void | Promise<void>
   onDeleteItem?: (id: string) => void
   onAppendItem?: (data: AppendTransactionData) => void | Promise<void>
   categories?: Record<string, TransactionCategory>
@@ -423,17 +426,18 @@ export function TransactionsTable({
                       className="text-sm font-bold leading-tight text-foreground"
                     />
 
-                    <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+                    <div className="flex min-w-0 items-center gap-2 overflow-hidden has-[form]:flex-wrap has-[form]:overflow-visible">
                       <EditableDateCell
                         initialValue={transaction.date}
                         onSave={(value) => onUpdateItem?.(transaction.id, { date: value })}
                         className="shrink-0 text-xs font-medium text-muted-foreground"
                       />
                       <span className="text-muted-foreground/40">•</span>
-                      <div className="min-w-0">
+                      <div className="min-w-0 has-[form]:basis-full">
                         <EditableCategoryCell
                           initialValue={transaction.category}
-                          onSave={(value) => onUpdateItem?.(transaction.id, { category: value })}
+                          onSave={(value, learning) => onUpdateItem?.(transaction.id, { category: value, ...learning })}
+                          expenseMerchant={transaction.type === 'expense' ? transaction.description : undefined}
                           categories={eligibleCategories(categories, transaction.timestamp, transaction.type)}
                           matchingStatus={transaction.matchingStatus}
                         />

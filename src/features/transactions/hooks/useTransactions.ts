@@ -32,6 +32,8 @@ export interface CreateTransactionDto {
 }
 
 export interface UpdateTransactionDto {
+  rememberMerchant?: true;
+  merchantKeyword?: string;
   accountId?: string;
   budgetItemId?: string | null;
   name?: string;
@@ -97,9 +99,9 @@ function useGetTransactions() {
     }
   }, [fetchApi]);
 
-  const applySavedTransaction = (saved: Transaction) => setData(current => current ? {
+  const applySavedTransaction = useCallback((saved: Transaction) => setData(current => current ? {
     ...current, data: current.data.map(transaction => transaction._id === saved._id ? saved : transaction),
-  } : current);
+  } : current), []);
   return { data, fetchTransactions, applySavedTransaction, isLoading, error };
 }
 
@@ -182,6 +184,13 @@ export function useTransactions() {
   const createTransactionHook = useCreateTransaction();
   const updateTransactionHook = useUpdateTransaction();
   const deleteTransactionHook = useDeleteTransaction();
+  const update = updateTransactionHook.updateTransaction;
+  const applySaved = getTransactions.applySavedTransaction;
+  const updateTransaction = useCallback(async (id: string, dto: UpdateTransactionDto) => {
+    const saved = await update(id, dto);
+    applySaved(saved);
+    return saved;
+  }, [update, applySaved]);
 
   return {
     transactionsData: getTransactions.data,
@@ -193,11 +202,7 @@ export function useTransactions() {
     isCreatingTransaction: createTransactionHook.isLoading,
     createTransactionError: createTransactionHook.error,
 
-    updateTransaction: async (id: string, dto: UpdateTransactionDto) => {
-      const saved = await updateTransactionHook.updateTransaction(id, dto);
-      getTransactions.applySavedTransaction(saved);
-      return saved;
-    },
+    updateTransaction,
     isUpdatingTransaction: updateTransactionHook.isLoading,
     updateTransactionError: updateTransactionHook.error,
 

@@ -40,6 +40,21 @@ Workflow files alone do NOT enable branch protection. Protection configuration
 is a separate admin step and is not claimed as active by this PR.
 
 ## QA
+FE4 expense assignment adds explicit opt-in merchant learning through the atomic
+BE9 PATCH contract. Component tests cover opt-out, clear, edited consent, overlap
+feedback, keyword validation, pending duplicate prevention and failure/opt-out retry.
+They use controlled synthetic objects, not HTTP or MongoDB.
+The page-level `assignment-retry.test.tsx` uses the real transaction hook and
+responsive table/card editors with controlled requests. It checks that pending
+and rejected saves preserve the selected item, consent and edited keyword,
+prevent duplicate submission and retry the same payload only on user action.
+These checks do not establish browser layout or persisted API behavior.
+After checkpointing,
+verify desktop/mobile assignment, equivalent rule reuse/promotion, reload, synthetic
+import matching/idempotency and unchanged historical assignments against
+brainbudget_qa_synthetic. Capture normal, validation, overlap, pending, failure/retry
+and opt-out states in the portable captioned QA report. No live mail is required.
+
 Use docs/qa-reporting.md. For integrated testing, record both repositories' exact
 commits, isolated environment and synthetic data. Unit/build checks do not replace
 independent review, browser QA, authorization checks or financial correctness tests.

@@ -9,8 +9,8 @@ vi.mock('../budget/hooks/useGlobalBudget', () => ({ useGlobalBudget: () => ({ ac
 vi.mock('./components/TransactionsSummary', () => ({ TransactionsSummary: () => null }));
 vi.mock('./components/TransactionsTable', () => ({
   AddTransactionDialog: () => null,
-  TransactionsTable: ({ data, onUpdateItem, emptyTitle }: { data: { id: string; category: { name: string }; matchingStatus?: string }[]; onUpdateItem: (id: string, updates: object) => void; emptyTitle: string }) => (
-    <div>{data.length ? data.map(row => <div key={row.id}>{row.category.name} {row.matchingStatus}<button onClick={() => onUpdateItem(row.id, { category: { id: 'new' } })}>Assign {row.id}</button></div>) : emptyTitle}</div>
+  TransactionsTable: ({ data, onUpdateItem, emptyTitle }: { data: { id: string; category: { name: string }; matchingStatus?: string }[]; onUpdateItem: (id: string, updates: object) => void | Promise<void>; emptyTitle: string }) => (
+    <div>{data.length ? data.map(row => <div key={row.id}>{row.category.name} {row.matchingStatus}<button onClick={() => { void Promise.resolve(onUpdateItem(row.id, { category: { id: 'new' } })).catch(() => {}); }}>Assign {row.id}</button></div>) : emptyTitle}</div>
   ),
 }));
 const row = { _id: 'synthetic', date: '2026-11-01T12:00:00Z', name: 'Synthetic expense', amount: 10, type: 'expense', matchingStatus: 'needs_review' };

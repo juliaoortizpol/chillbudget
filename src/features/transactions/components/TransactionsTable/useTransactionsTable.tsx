@@ -121,7 +121,7 @@ export function eligibleCategories(categories: Record<string, TransactionCategor
   ));
 }
 
-export function useTransactionsTable(onUpdateItem?: (id: string, updates: TransactionUpdates) => void, onDeleteItem?: (id: string) => void, categories: Record<string, TransactionCategory> = {}) {
+export function useTransactionsTable(onUpdateItem?: (id: string, updates: TransactionUpdates) => void | Promise<void>, onDeleteItem?: (id: string) => void, categories: Record<string, TransactionCategory> = {}) {
 
   const columns = React.useMemo<ColumnDef<Transaction>[]>(() => [
     {
@@ -152,7 +152,8 @@ export function useTransactionsTable(onUpdateItem?: (id: string, updates: Transa
       cell: ({ row }) => (
         <EditableCategoryCell
           initialValue={row.original.category}
-          onSave={(val) => onUpdateItem?.(row.original.id, { category: val })}
+          onSave={(val, learning) => onUpdateItem?.(row.original.id, { category: val, ...learning })}
+          expenseMerchant={row.original.type === 'expense' ? row.original.description : undefined}
           categories={eligibleCategories(categories, row.original.timestamp, row.original.type)}
           matchingStatus={row.original.matchingStatus}
         />
