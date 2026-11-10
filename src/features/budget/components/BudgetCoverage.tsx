@@ -2,20 +2,37 @@ import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useGlobalBudget } from '../hooks/useGlobalBudget';
-import { browserTimezone, coverageDate } from '../coverage';
+import { browserTimezone, coverageDisplayDate, lastIncludedCoverageDay } from '../coverage';
 import type { Budget } from '../hooks/useBudget';
 
 export function BudgetCoverage({ budget }: { budget: Budget }) {
   const plan = budget.plannedEndDate ?? budget.endDate;
+  const display = (value: string | undefined, withTime = false) => coverageDisplayDate(value, budget.timezone, withTime);
+  const lastDay = budget.coverageVersion === 1 && budget.status === 'closed'
+    ? lastIncludedCoverageDay(budget.actualCutoffDate, budget.timezone) : undefined;
+  const exactDate = (value: string | undefined) => value && Number.isFinite(Date.parse(value))
+    ? <>{display(value, true)} · <time dateTime={value}>{new Date(value).toISOString()}</time></> : 'Unavailable';
   return <div className="space-y-1 break-words text-sm">
     <p className="font-semibold">{budget.name} · {budget.status === 'active' ? 'Active' : budget.status === 'closed' ? 'Closed' : 'Draft'}</p>
-    <p>Coverage start (inclusive): {coverageDate(budget.startDate, budget.timezone)}</p>
-    {plan && <p>{budget.coverageVersion === 1 ? 'Planned end (target / reminder)' : 'Coverage end (inclusive, legacy)'}: {coverageDate(plan, budget.timezone)}</p>}
+    {lastDay ? <p>Coverage: {display(budget.startDate)} through {lastDay} (inclusive).</p>
+      : <p>Coverage start (inclusive): {display(budget.startDate)}</p>}
+    {budget.status === 'closed' && budget.coverageVersion === 1 && !lastDay && <p>Coverage ends before: {display(budget.actualCutoffDate, true)}</p>}
+    {plan && <p>{budget.coverageVersion === 1 ? 'Planned end (target / reminder)' : 'Coverage end (inclusive, legacy)'}: {display(plan)}</p>}
     {budget.coverageVersion === 1 ? <>
-      <p>Actual cutoff (exclusive): {budget.actualCutoffDate ? coverageDate(budget.actualCutoffDate, budget.timezone) : budget.status === 'active' ? 'Open — continues beyond the planned end' : 'Not finalized'}</p>
+      {budget.status === 'active' && <p>Remains active until manually closed. A planned end is only a target.</p>}
+      {budget.status === 'draft' && <p>Planning only. Activate explicitly to use this budget.</p>}
     </> : <p>Legacy coverage: saved end is inclusive. Lifecycle/timezone migration may be required before activation.</p>}
-    {budget.status === 'closed' && <p>Closed at (confirmation): {coverageDate(budget.closedAt, budget.timezone)}</p>}
+    <p className="text-muted-foreground">Timezone: {budget.timezone || 'Unavailable — saved timezone unavailable'}</p>
     {budget.status === 'closed' && <p>Read-only coverage summary.</p>}
+    <details>
+      <summary className="cursor-pointer text-primary">Exact coverage dates</summary>
+      <div className="space-y-1 pt-1">
+        <p>Coverage start (inclusive), exact: {exactDate(budget.startDate)}</p>
+        {plan && <p>{budget.coverageVersion === 1 ? 'Planned target' : 'Legacy inclusive end'}, exact: {exactDate(plan)}</p>}
+        {budget.coverageVersion === 1 && budget.actualCutoffDate && <p>Actual cutoff (exclusive): {exactDate(budget.actualCutoffDate)}</p>}
+        {budget.status === 'closed' && <p>Closed at (confirmation): {exactDate(budget.closedAt)}</p>}
+      </div>
+    </details>
   </div>;
 }
 

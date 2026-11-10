@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { coversPurchase, coverageDate } from './coverage';
+import { coversPurchase, coverageDate, coverageDisplayDate, lastIncludedCoverageDay } from './coverage';
 
 describe('purchase coverage', () => {
   const open = { coverageVersion: 1, startDate: '2024-02-29T05:00:00Z', plannedEndDate: '2024-03-01T05:00:00Z' };
@@ -25,5 +25,17 @@ describe('purchase coverage', () => {
     expect(shown).toContain('America/New_York');
     expect(coverageDate('2024-03-01T00:30:00Z', undefined)).toContain('saved timezone unavailable');
     expect(coverageDate('invalid', 'UTC')).toBe('Unavailable');
+  });
+  it('finds the last included local day across leap, year and DST boundaries', () => {
+    expect(lastIncludedCoverageDay('2024-03-01T05:00:00Z', 'America/New_York')).toBe('Feb 29, 2024');
+    expect(lastIncludedCoverageDay('2025-01-01T04:00:00Z', 'America/La_Paz')).toBe('Dec 31, 2024');
+    expect(lastIncludedCoverageDay('2024-03-11T04:00:00Z', 'America/New_York')).toBe('Mar 10, 2024');
+    expect(lastIncludedCoverageDay('2024-11-04T05:00:00Z', 'America/New_York')).toBe('Nov 3, 2024');
+    expect(lastIncludedCoverageDay('2024-03-11T04:00:00.001Z', 'America/New_York')).toBeUndefined();
+    expect(lastIncludedCoverageDay('2024-03-11T05:00:00Z', 'America/New_York')).toBeUndefined();
+    expect(lastIncludedCoverageDay('2024-03-11T04:00:00Z', undefined)).toBeUndefined();
+    expect(lastIncludedCoverageDay('2024-03-11T04:00:00Z', 'invalid')).toBeUndefined();
+    expect(coverageDisplayDate('2024-03-01T00:30:00Z', 'America/New_York')).toBe('Feb 29, 2024');
+    expect(coverageDisplayDate('2024-03-01T00:30:00Z', undefined)).toContain('saved timezone unavailable');
   });
 });

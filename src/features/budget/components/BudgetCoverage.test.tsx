@@ -16,6 +16,38 @@ it('distinguishes a November cutoff from December closure confirmation', () => {
   expect(screen.queryByRole('button')).toBeNull();
 });
 
+it('shows a completed-day range through December 8 and keeps exact instants in a disclosure', () => {
+  const { container } = render(<BudgetCoverage budget={{ ...draft, startDate: '2023-11-01T04:00:00Z', status: 'closed', actualCutoffDate: '2023-12-09T04:00:00Z', closedAt: '2023-12-09T18:00:00Z' }} />);
+  expect(screen.getByText(/^Coverage:/).textContent).toBe('Coverage: Nov 1, 2023 through Dec 8, 2023 (inclusive).');
+  const details = container.querySelector('details')!;
+  expect(details.open).toBe(false);
+  expect(details.querySelector('summary')?.textContent).toBe('Exact coverage dates');
+  expect(details.textContent).toContain('Actual cutoff (exclusive):');
+  expect(details.textContent).toContain('2023-12-09T04:00:00.000Z');
+  expect(details.textContent).toContain('Closed at (confirmation):');
+  expect(details.textContent).toContain('2023-12-09T18:00:00.000Z');
+  expect(container.textContent?.match(/America\/La_Paz/g)).toHaveLength(1);
+  expect(screen.queryByText(/Coverage ends before:/)).toBeNull();
+});
+
+it('does not round an arbitrary cutoff to a completed day', () => {
+  const { container } = render(<BudgetCoverage budget={{ ...draft, status: 'closed', actualCutoffDate: '2024-12-09T04:00:00.001Z' }} />);
+  expect(screen.getByText(/Coverage ends before:/).textContent).toContain('Dec 9, 2024');
+  expect(screen.queryByText(/^Coverage:/)).toBeNull();
+  expect(container.querySelector('details')?.textContent).toContain('2024-12-09T04:00:00.001Z');
+});
+
+it('keeps active and draft summaries concise without invented cutoff lines', () => {
+  const { rerender, container } = render(<BudgetCoverage budget={{ ...draft, status: 'active' }} />);
+  expect(screen.getByText(/Remains active until manually closed/)).toBeTruthy();
+  expect(screen.getByText(/Planned end \(target \/ reminder\)/).textContent).toBe('Planned end (target / reminder): Nov 30, 2024');
+  expect(screen.queryByText(/Actual cutoff/)).toBeNull();
+  rerender(<BudgetCoverage budget={draft} />);
+  expect(screen.getByText(/Planning only/)).toBeTruthy();
+  expect(container.textContent).not.toContain('Not finalized');
+  expect(screen.queryByText(/Remains active/)).toBeNull();
+});
+
 it('identifies legacy inclusive ends without inventing timezone or closure', () => {
   render(<BudgetCoverage budget={{ ...draft, coverageVersion: undefined, timezone: undefined, status: 'closed' }} />);
   expect(screen.getByText(/Coverage end \(inclusive, legacy\)/).textContent).toContain('saved timezone unavailable');

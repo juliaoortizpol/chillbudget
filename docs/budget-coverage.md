@@ -8,8 +8,14 @@ not immutable financial reports. Closing and rollover remain FE5 work.
 Version 1 uses inclusive start and an optional exclusive actual cutoff. Planned
 end (`plannedEndDate`, with `endDate` as a compatibility alias) is a reminder,
 never an assignment boundary. Closure confirmation (`closedAt`) is separate.
-Coverage displays saved-zone local date/time plus the exact ISO instant; missing
-legacy zones are identified as unavailable, never inferred. Legacy assignment
+Coverage summaries use concise saved-zone dates and show the timezone once per
+budget. The native “Exact coverage dates” disclosure preserves local time (including
+milliseconds and offset), exact ISO instants, exclusive cutoff and separate closure
+confirmation. A closed cutoff at exactly local midnight shows coverage through the
+preceding local day; arbitrary cutoffs retain their actual local time. This display
+does not change any API boundary. Active summaries explain manual closure and the
+optional planning target; drafts show planning context without an invented cutoff.
+Missing legacy zones are identified as unavailable, never inferred. Legacy assignment
 eligibility retains the exact inclusive saved end instant.
 
 New budgets send the validated browser IANA timezone with explicit ISO instants.
