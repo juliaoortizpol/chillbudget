@@ -17,7 +17,7 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
   }, [fetchBudgets]);
 
   const activeBudget = useMemo(() => {
-    return budget.budgets?.find(b => b.status === 'active') || budget.budgets?.[0];
+    return budget.budgets?.find(b => b.status === 'active');
   }, [budget.budgets]);
 
   return (

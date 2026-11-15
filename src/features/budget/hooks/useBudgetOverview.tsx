@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 
 import { useGlobalBudget } from "./useGlobalBudget"
 import type { BudgetCategory } from "../components/CategoryTable"
@@ -10,26 +10,23 @@ export function useBudgetOverview() {
     budgets,
     fetchBudgets,
     updateBudgetItem,
-    createBudget,
     deleteBudgetItem,
     addBudgetItem,
     isFetchingBudgets,
     fetchBudgetsError,
     activeBudget,
+    hasLoadedBudgets,
+    retainSavedBudgetItem,
   } = useGlobalBudget();
-  const handleCreateBudget = async () => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
 
-    await createBudget({
-      name: `Budget ${now.toLocaleString('default', { month: 'long', year: 'numeric' })}`,
-      periodType: 'monthly',
-      startDate: start.toISOString(),
-      endDate: end.toISOString(),
-      status: 'active'
-    });
+  const retry = async () => {
+    const feedbackAtRetry = saveFeedback;
     await fetchBudgets();
+    // Only a successful read resolves refresh advice; the confirmed write remains saved.
+    setSaveFeedback(feedback => feedback === feedbackAtRetry
+      ? feedback?.split(' Refresh failed;')[0] ?? null
+      : feedback);
   };
 
   // Active budget is now provided by useGlobalBudget
@@ -75,15 +72,20 @@ export function useBudgetOverview() {
   const handleUpdateItem = async (itemId: string, updates: UpdateBudgetItemDto) => {
     if (!activeBudget) return;
 
-    await updateBudgetItem(activeBudget._id, itemId, updates);
-    await fetchBudgets(); // Refresh to get updated data
+    setSaveFeedback(null);
+    const saved = await updateBudgetItem(activeBudget._id, itemId, updates);
+    retainSavedBudgetItem(activeBudget._id, saved);
+    setSaveFeedback('Category saved.');
+    await fetchBudgets().catch(() => {
+      setSaveFeedback('Category saved. Refresh failed; retry loading to update budget actuals. Do not save again.');
+    });
   };
 
   const comparison = useMemo(() => {
     if (!budgets || budgets.length < 2 || !activeBudget) return null;
     
     // Sort budgets by start date descending to find the one immediately before active
-    const sortedBudgets = [...budgets].sort((a, b) => 
+    const sortedBudgets = budgets.filter(b => b.status !== 'draft').sort((a, b) =>
       new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
     );
     
@@ -96,7 +98,9 @@ export function useBudgetOverview() {
     if (prevAllocated === 0) return null;
     
     const percentChange = ((totalAllocated - prevAllocated) / prevAllocated) * 100;
-    const monthName = new Date(prevBudget.startDate).toLocaleString('default', { month: 'long' });
+    const monthName = prevBudget.timezone
+      ? new Date(prevBudget.startDate).toLocaleString('default', { month: 'long', timeZone: prevBudget.timezone })
+      : prevBudget.name;
     
     return {
       percent: Math.abs(percentChange).toFixed(1),
@@ -106,35 +110,11 @@ export function useBudgetOverview() {
   }, [budgets, activeBudget, totalAllocated]);
 
   const handleAddBudgetItem = async (name: string, allocated: number, iconName?: string, matchingRules: BudgetItemMatchingRule[] = []) => {
-    let budgetId = activeBudget?._id;
+    const budgetId = activeBudget?._id;
+    if (!budgetId) throw new Error('Create or activate a budget before adding categories.');
 
-    if (!budgetId) {
-      const now = new Date();
-      const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-      const newBudget = await createBudget({
-          name: `Budget ${now.toLocaleString('default', { month: 'long', year: 'numeric' })}`,
-          periodType: 'monthly',
-          startDate: start.toISOString(),
-          endDate: end.toISOString(),
-          status: 'active'
-        });
-
-        if (newBudget && newBudget._id) {
-          budgetId = newBudget._id;
-        } else {
-          const freshBudgets = await fetchBudgets();
-          const activeOrFirst = freshBudgets?.find((b) => b.status === 'active') || freshBudgets?.[0];
-          if (activeOrFirst?._id) {
-            budgetId = activeOrFirst._id;
-          } else {
-            throw new Error("Failed to automatically initialize a budget.");
-          }
-        }
-    }
-
-    await addBudgetItem(budgetId, {
+    setSaveFeedback(null);
+    const saved = await addBudgetItem(budgetId, {
       name,
       type: "expense",
       icon: iconName || "default",
@@ -143,7 +123,11 @@ export function useBudgetOverview() {
       matchingRules,
     });
 
-    await fetchBudgets();
+    retainSavedBudgetItem(budgetId, saved);
+    setSaveFeedback('Category created.');
+    await fetchBudgets().catch(() => {
+      setSaveFeedback('Category created. Refresh failed; retry loading to update budget actuals. Do not create it again.');
+    });
   };
 
   const handleRemoveFromBudget = async (itemId: string) => {
@@ -159,11 +143,12 @@ export function useBudgetOverview() {
     totalSpent,
     comparison,
     isLoading: isFetchingBudgets,
+    hasLoaded: hasLoadedBudgets || Boolean(activeBudget),
+    saveFeedback,
     error: fetchBudgetsError,
-    retry: fetchBudgets,
+    retry,
     handleUpdateItem,
     handleAddBudgetItem,
-    handleCreateBudget,
     handleRemoveFromBudget,
   };
 }

@@ -40,6 +40,34 @@ Workflow files alone do NOT enable branch protection. Protection configuration
 is a separate admin step and is not claimed as active by this PR.
 
 ## QA
+Header refinement regressions check the actual heading, saved-zone target-day
+boundary, active status beyond the plan, legacy timezone/lifetime guidance and
+native history disclosure/empty state. Header History regressions check its target,
+expanded state after open/close/reopen, focus and scroll request, empty/history
+content and absence of mutations or activation alongside an active budget.
+They are controlled jsdom checks; native Enter/Space and actual scrolling/wrapping
+remain browser checks. After
+checkpointing, independently inspect long titles and wrapping at desktop/mobile,
+keyboard disclosure focus, saved-zone month/year/leap/DST targets, closed arbitrary
+cutoffs, history activation failures and retained drafts during background refresh.
+Capture the changed header in the downstream portable QA report; no current
+browser or real HTTP/Mongo result is established by these component tests.
+
+FE2 coverage behavior and downstream integration boundaries are documented in
+[budget coverage](budget-coverage.md). Controlled tests cover active-only selection,
+extended API spending, open/exclusive/legacy purchase boundaries, saved-zone date
+display, timezone creation, explicit activation, duplicate prevention, retained
+failure input, loading/error/retry, metadata round trips and historical labels.
+`budget/refresh.test.tsx` uses the real BudgetProvider, budget hooks and overview/
+transaction components with controlled synthetic requests. Deferred revalidation
+checks DOM/input retention, saved keyword retention after GET failure, explicit GET
+retry without duplicate PATCH, and category request failure/recovery after planned
+end. Hook coverage also checks stale GET ordering and loaded-category retention.
+Deferred provider regressions cover both update and create feedback through a
+failed retry followed by successful recovery, retaining confirmation without stale
+failure advice or another PATCH/POST.
+These are controlled component checks, not real HTTP/Mongo or browser evidence.
+
 FE4 expense assignment adds explicit opt-in merchant learning through the atomic
 BE9 PATCH contract. Component tests cover opt-out, clear, edited consent, overlap
 feedback, keyword validation, pending duplicate prevention and failure/opt-out retry.

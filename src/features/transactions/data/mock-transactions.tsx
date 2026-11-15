@@ -2,6 +2,9 @@ import React from "react"
 import { Laptop, TrendingUp, Utensils, Wallet, Zap, Home } from "lucide-react"
 
 export type TransactionCategory = {
+  coverageVersion?: number
+  actualCutoffDate?: string
+  status?: string
   matchingRules?: import('@/features/budget/hooks/useBudget').BudgetItemMatchingRule[]
   id?: string
   name: string

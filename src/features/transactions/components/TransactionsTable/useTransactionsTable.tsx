@@ -1,4 +1,5 @@
 import type { TransactionUpdates } from "../../types/table"
+import { coversPurchase } from '@/features/budget/coverage'
 import * as React from "react"
 import { format, parse } from "date-fns"
 import { type TransactionCategory, type Transaction } from "../../data/mock-transactions"
@@ -114,10 +115,8 @@ export function useAppendTransactionRow() {
 }
 
 export function eligibleCategories(categories: Record<string, TransactionCategory>, timestamp?: string, type?: string) {
-  const time = Date.parse(timestamp || "");
   return Object.fromEntries(Object.entries(categories).filter(([, category]) =>
-    Number.isFinite(time) && category.type === type &&
-    time >= Date.parse(category.startDate || "") && time <= Date.parse(category.endDate || "")
+    category.status === 'active' && category.type === type && coversPurchase(category, timestamp)
   ));
 }
 
