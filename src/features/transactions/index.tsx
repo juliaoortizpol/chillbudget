@@ -40,6 +40,8 @@ function getDateRangeFilter(dateRange: string): { startDate?: string, endDate?: 
 
 export function TransactionsPage() {
   const [searchParams] = useSearchParams();
+  const transactionId = searchParams.get('transactionId') || undefined;
+  const reviewBudgetId = searchParams.get('budgetId') || undefined;
   const { activeBudget, budgets, isFetchingBudgets, fetchBudgets, fetchBudgetsError } = useGlobalBudget();
   const { 
     transactionsData, fetchTransactions, isFetchingTransactions, 
@@ -50,10 +52,10 @@ export function TransactionsPage() {
     typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches ? 5 : 10
   );
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [dateRange, setDateRange] = React.useState("Last 30 Days");
+  const [dateRange, setDateRange] = React.useState(reviewBudgetId || transactionId ? "All Time" : "Last 30 Days");
   const [categoryId, setCategoryId] = React.useState<string | null>(null);
   const [type, setType] = React.useState<string | null>(null);
-  const [needsReview, setNeedsReview] = React.useState(false);
+  const [needsReview, setNeedsReview] = React.useState(Boolean(reviewBudgetId));
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 767px)");
@@ -68,10 +70,12 @@ export function TransactionsPage() {
 
   const [feedback, setFeedback] = React.useState<string | null>(null);
   const selectedFilter = React.useMemo<GetTransactionsFilterDto>(() => ({
+    transactionId,
+    budgetId: reviewBudgetId,
     page: currentPage, limit: pageSize, budgetItemId: categoryId || undefined,
     type: type === "expense" || type === "income" ? type : undefined,
     matchingStatus: needsReview ? 'needs_review' : undefined,
-  }), [currentPage, pageSize, categoryId, type, needsReview]);
+  }), [currentPage, pageSize, categoryId, type, needsReview, transactionId, reviewBudgetId]);
   const getSelectedFilter = React.useCallback(() => ({
     ...selectedFilter, ...getDateRangeFilter(dateRange),
   }), [selectedFilter, dateRange]);
@@ -97,6 +101,7 @@ export function TransactionsPage() {
   }, [getSelectedFilter, refreshTransactions]);
 
   const isLoading = isFetchingTransactions;
+  const selectedTransaction = transactionId ? transactionsData?.data.find(row => row._id === transactionId) : undefined;
   
   const dynamicCategories = React.useMemo(() => {
     return (budgets ?? (activeBudget ? [activeBudget] : [])).reduce((all, budget) => {
@@ -138,11 +143,14 @@ export function TransactionsPage() {
       if (!cat) {
         cat = {
           id: t.budgetItemId || '',
-          name: t.budgetItemId ? 'Saved category' : 'Uncategorized',
+          name: t.assignmentContext?.budgetItemName ?? (t.budgetItemId ? 'Saved category' : 'Uncategorized'),
           icon: null,
           iconBgClass: 'bg-blue-500/10',
           iconColor: 'text-foreground'
         };
+      }
+      if (transactionId && t.assignmentContext?.budgetItemName && t.assignmentContext.budgetName) {
+        cat = { ...cat, name: `${t.assignmentContext.budgetItemName} · ${t.assignmentContext.budgetName}` };
       }
 
       return {
@@ -158,7 +166,7 @@ export function TransactionsPage() {
         amount: t.type === 'expense' ? -Math.abs(t.amount) : Math.abs(t.amount)
       }
     });
-  }, [transactionsData, dynamicCategories]);
+  }, [transactionsData, dynamicCategories, transactionId]);
 
   const filteredUiTransactions = useMemo(() => {
     if (!searchQuery.trim()) return uiTransactions;
@@ -273,6 +281,12 @@ export function TransactionsPage() {
     <div className="flex flex-col gap-6 pb-20 md:pb-0">
       
       <PageHeader title="Transactions" />
+      {transactionId && <div className="space-y-2 break-words text-sm">
+        <p>Live transaction. Saved closing evidence is available in Budget History.</p>
+        {selectedTransaction && <p>Recorded currency: {selectedTransaction.currency == null || !selectedTransaction.currency.trim()
+          ? 'Unavailable' : JSON.stringify(selectedTransaction.currency)}</p>}
+        <a href="/transactions" className="underline">View all transactions</a>
+      </div>}
       <AddTransactionDialog defaultOpen={searchParams.get("create") === "1"} categories={dynamicCategories} onAppend={handleAppendItem} />
 
       {feedback && <p role="status">{feedback}</p>}

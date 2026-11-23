@@ -5,6 +5,7 @@ import { BudgetOverview } from './index';
 const state = vi.hoisted(() => ({ isLoading: true, error: null as string | null, retry: vi.fn().mockResolvedValue([]), activeBudget: undefined, tableData: [], totalAllocated: 0, totalSpent: 0, comparison: null }));
 vi.mock('./hooks/useBudgetOverview', () => ({ useBudgetOverview: () => state }));
 vi.mock('./components/BudgetCoverage', () => ({ BudgetCoverage: () => null, BudgetLifecycle: () => <p>Create or activate explicitly</p> }));
+vi.mock('./components/NextBudget', () => ({ NextBudget: () => <button type="button">Start empty</button> }));
 afterEach(cleanup);
 it('distinguishes loading, failed requests/retry and the no-active state', () => {
   const { rerender } = render(<BudgetOverview />);
@@ -18,5 +19,6 @@ it('distinguishes loading, failed requests/retry and the no-active state', () =>
   state.error = null;
   rerender(<BudgetOverview />);
   expect(screen.getByText('Create or activate explicitly')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Start empty' })).toBeTruthy();
   expect(screen.queryByRole('table')).toBeNull();
 });

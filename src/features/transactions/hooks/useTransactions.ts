@@ -8,8 +8,10 @@ export interface Transaction {
   matchingSource?: string;
   accountId?: string;
   budgetItemId?: string | null;
+  assignmentContext?: { budgetItemName?: string; budgetName?: string };
   name: string;
   normalizedMerchant?: string;
+  currency?: string | null;
   rawDescription?: string;
   amount: number;
   type: 'expense' | 'income';
@@ -45,6 +47,8 @@ export interface UpdateTransactionDto {
 }
 
 export interface GetTransactionsFilterDto {
+  budgetId?: string;
+  transactionId?: string;
   accountId?: string;
   budgetItemId?: string;
   startDate?: string;
@@ -78,9 +82,16 @@ function useGetTransactions() {
     setError(null);
     try {
       let query = '';
+      const { transactionId, ...listFilter } = filter ?? {};
+      if (transactionId) {
+        const row = await fetchApi<Transaction>(`/transactions/${encodeURIComponent(transactionId)}`);
+        const response = { data: [row], meta: { page: 1, limit: 1, total: 1, totalPages: 1 } };
+        if (id === requestId.current) setData(response);
+        return response;
+      }
       if (filter) {
         const params = new URLSearchParams();
-        Object.entries(filter).forEach(([key, value]) => {
+        Object.entries(listFilter).forEach(([key, value]) => {
           if (value !== undefined) {
             params.append(key, String(value));
           }

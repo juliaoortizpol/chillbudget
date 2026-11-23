@@ -61,8 +61,8 @@ export interface UpdateBudgetItemDto {
 }
 
 type ApiBudgetItem = Omit<BudgetItem, 'matchingRules'> & { matchingRules?: StoredMatchingRule[] };
-type ApiBudget = Omit<Budget, 'items'> & { items: ApiBudgetItem[] };
-const deserializeBudget = (budget: ApiBudget): Budget => ({ ...budget, items: budget.items?.map(deserializeBudgetItem) ?? [] });
+export type ApiBudget = Omit<Budget, 'items'> & { items: ApiBudgetItem[] };
+export const deserializeBudget = (budget: ApiBudget): Budget => ({ ...budget, items: budget.items?.map(deserializeBudgetItem) ?? [] });
 const serializeBudget = (dto: CreateBudgetDto | UpdateBudgetDto) => ({ ...dto, ...(dto.items === undefined ? {} : { items: dto.items.map(serializeBudgetItem) }) });
 
 function useGetBudgets() {

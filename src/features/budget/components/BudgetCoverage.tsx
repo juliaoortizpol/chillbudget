@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import type { Ref } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -70,10 +70,11 @@ function inputInstant(value: string) {
   return date.toISOString();
 }
 
-export function BudgetLifecycle({ historyId, historyRef, onHistoryToggle }: {
+export function BudgetLifecycle({ historyId, historyRef, onHistoryToggle, history }: {
   historyId?: string;
   historyRef?: Ref<HTMLDetailsElement>;
   onHistoryToggle?: (open: boolean) => void;
+  history?: ReactNode;
 } = {}) {
   const { budgets, activeBudget, createBudget, updateBudget, fetchBudgets } = useGlobalBudget();
   const [name, setName] = useState('New budget');
@@ -101,7 +102,7 @@ export function BudgetLifecycle({ historyId, historyRef, onHistoryToggle }: {
   };
 
   return <div className="space-y-6">
-    {!activeBudget && <>
+    {!activeBudget && !history && <>
       <p>No active budget. Create a budget or explicitly activate a draft. Closed summaries remain read-only.</p>
       <form className="grid gap-3 max-w-xl" onSubmit={event => {
         event.preventDefault();
@@ -125,11 +126,13 @@ export function BudgetLifecycle({ historyId, historyRef, onHistoryToggle }: {
     <details id={historyId} ref={historyRef} onToggle={event => onHistoryToggle?.(event.currentTarget.open)} className="scroll-mt-6">
     <summary className="w-fit cursor-pointer rounded-sm py-2 text-primary focus-visible:outline-2 focus-visible:outline-ring"><History aria-hidden="true" className="mr-2 inline size-4" />History and drafts</summary>
     <div className="space-y-3 pt-3">
+    {history ?? <>
     {!budgets.some(b => b.status !== 'active') && <p className="text-sm text-muted-foreground">No closed budgets or drafts yet.</p>}
     {budgets.filter(b => b.status !== 'active').map(budget => <section key={budget._id} className="rounded-lg border p-4 space-y-3">
       <BudgetCoverage budget={budget} />
       {!activeBudget && budget.status === 'draft' && <Button disabled={pending || saved} onClick={() => { void run(() => updateBudget(budget._id, { status: 'active' })); }}>Activate {budget.name}</Button>}
     </section>)}
+    </>}
     </div>
     </details>
   </div>;
