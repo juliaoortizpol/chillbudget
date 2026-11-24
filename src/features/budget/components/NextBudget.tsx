@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ApiError, useFetch } from '@/hooks/useFetch';
@@ -6,6 +6,7 @@ import { browserTimezone, coverageDisplayDate } from '../coverage';
 import { deserializeBudget, type ApiBudget, type Budget } from '../hooks/useBudget';
 import { useGlobalBudget } from '../hooks/useGlobalBudget';
 import { BudgetCoverage } from './BudgetCoverage';
+import { DraftItemRules } from './DraftItemRules';
 
 const dateOnly = /^\d{4}-\d{2}-\d{2}$/;
 function startInput(value: string) {
@@ -19,7 +20,8 @@ function startInput(value: string) {
 }
 
 export function NextBudget() {
-  const { activeBudget, budgets, fetchBudgets, createBudget, updateBudget, updateBudgetItem, addBudgetItem } = useGlobalBudget();
+  const { activeBudget, budgets, fetchBudgets, createBudget, updateBudget, updateBudgetItem, addBudgetItem, retainSavedBudgetItem } = useGlobalBudget();
+  const dateHint = useId();
   const { fetchApi } = useFetch();
   const [mode, setMode] = useState<'copy' | 'empty'>();
   const [name, setName] = useState('');
@@ -32,6 +34,7 @@ export function NextBudget() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [activated, setActivated] = useState<Budget>();
+  const [createdDraft, setCreatedDraft] = useState<Budget>();
   const [refreshFailed, setRefreshFailed] = useState(false);
   const [uncertain, setUncertain] = useState(false);
   const lock = useRef(false);
@@ -40,7 +43,9 @@ export function NextBudget() {
     .sort((a, b) => Date.parse(b.actualCutoffDate ?? b.endDate ?? '') - Date.parse(a.actualCutoffDate ?? a.endDate ?? ''))[0];
   const previous = [...budgets].filter(b => b.status === 'closed' && b.actualCutoffDate)
     .sort((a, b) => Date.parse(b.actualCutoffDate!) - Date.parse(a.actualCutoffDate!))[0];
-  const draft = budgets.find(b => b._id === draftId && b.status === 'draft');
+  const selected = budgets.find(b => b._id === draftId) ??
+    (createdDraft?._id === draftId ? createdDraft : undefined);
+  const draft = selected?.status === 'draft' && activated?._id !== draftId ? selected : undefined;
 
   async function run(action: () => Promise<void>) {
     if (lock.current) return;
@@ -59,6 +64,7 @@ export function NextBudget() {
     setRefreshFailed(true);
     try {
       await fetchBudgets();
+      setCreatedDraft(undefined);
       setRefreshFailed(false);
     } catch {
       throw new Error('Saved. Retry loading budgets to see the latest configuration.');
@@ -113,6 +119,7 @@ export function NextBudget() {
     }
     createAttempt.current = null;
     setMode(undefined);
+    setCreatedDraft(saved);
     setDraftId(saved._id);
     setNotice('Draft saved.');
     await refresh();
@@ -123,8 +130,7 @@ export function NextBudget() {
     const value = explicitStart.trim();
     const activationStart = value ? startInput(value) : undefined;
     const effective = activationStart ?? previous?.actualCutoffDate ?? draft.startDate;
-    // A date-only value is resolved by the API in the saved budget timezone.
-    if (previous?.actualCutoffDate && !dateOnly.test(effective) && Date.parse(effective) < Date.parse(previous.actualCutoffDate)) {
+    if (previous?.actualCutoffDate && Date.parse(effective) < Date.parse(previous.actualCutoffDate)) {
       throw new Error('The start must be at or after the previous confirmed cutoff.');
     }
     const saved = deserializeBudget(await fetchApi<ApiBudget>(`/budgets/${draft._id}/activate`, {
@@ -140,6 +146,7 @@ export function NextBudget() {
     <h2 className="text-lg font-semibold">Prepare the next budget</h2>
     {!activeBudget && <p>No active budget. Review and activate a draft when you’re ready.</p>}
     <p className="text-sm text-muted-foreground">Drafts leave current coverage in place. Copies carry planning configuration. Actual spending and balances stay with their original records.</p>
+    {(mode || draft) && <p id={dateHint} className="text-sm text-muted-foreground">A date without a time means midnight UTC. To choose a local time, enter an ISO timestamp with Z or a numeric offset.</p>}
     <div className="flex flex-wrap gap-2">
       {source && <Button variant="outline" disabled={pending || uncertain || refreshFailed} onClick={() => setMode('copy')}>Create from previous</Button>}
       <Button variant="outline" disabled={pending || uncertain || refreshFailed} onClick={() => setMode('empty')}>Start empty</Button>
@@ -151,8 +158,8 @@ export function NextBudget() {
         onChange={event => setPeriod(event.target.value as Budget['periodType'])}>
         <option value="monthly">Monthly</option><option value="weekly">Weekly</option><option value="custom">Custom</option>
       </select></label>
-      <label>Provisional start (YYYY-MM-DD or ISO with offset)<Input name="startDate" required value={start} disabled={pending || uncertain} onChange={event => setStart(event.target.value)} /></label>
-      <label>Planned end (optional, YYYY-MM-DD or ISO with offset)<Input name="plannedEndDate" value={end} disabled={pending || uncertain} onChange={event => setEnd(event.target.value)} /></label>
+      <label>Provisional start (YYYY-MM-DD or ISO with offset)<Input name="startDate" aria-describedby={dateHint} required value={start} disabled={pending || uncertain} onChange={event => setStart(event.target.value)} /></label>
+      <label>Planned end (optional, YYYY-MM-DD or ISO with offset)<Input name="plannedEndDate" aria-describedby={dateHint} value={end} disabled={pending || uncertain} onChange={event => setEnd(event.target.value)} /></label>
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={pending || uncertain || refreshFailed}>Save draft</Button>
         <Button variant="outline" type="button" disabled={pending || uncertain} onClick={() => setMode(undefined)}>Cancel draft preparation</Button>
@@ -160,6 +167,7 @@ export function NextBudget() {
     </form>}
     {pending && <p role="status">Working…</p>}
     {notice && <p role="status">{notice}</p>}
+    {activated && <p>Activated coverage starts {coverageDisplayDate(activated.startDate, activated.timezone, true)} ({activated.timezone ?? 'UTC'}).</p>}
     {error && <p role="alert" className="text-destructive">{error}</p>}
     {uncertain && <Button disabled={pending} onClick={() => void run(reconcileCreation)}>Check owned drafts</Button>}
     {refreshFailed && <Button disabled={pending} onClick={() => void run(refresh)}>Retry loading budgets</Button>}
@@ -188,29 +196,38 @@ export function NextBudget() {
           });
         }}>
           <label>Draft name<Input name="name" required defaultValue={draft.name} disabled={pending} /></label>
-          <label>Draft provisional start<Input name="startDate" required defaultValue={draft.startDate} disabled={pending} /></label>
-          <label>Draft planned end<Input name="plannedEndDate" defaultValue={draft.plannedEndDate ?? draft.endDate ?? ''} disabled={pending} /></label>
+          <label>Draft provisional start<Input name="startDate" aria-describedby={dateHint} required defaultValue={draft.startDate} disabled={pending} /></label>
+          <label>Draft planned end<Input name="plannedEndDate" aria-describedby={dateHint} defaultValue={draft.plannedEndDate ?? draft.endDate ?? ''} disabled={pending} /></label>
           <Button type="submit" variant="outline" disabled={pending || refreshFailed}>Save draft settings</Button>
         </form>
       </details>
       {!draft.items.length && <p>This draft has no budget items.</p>}
-      {draft.items.map(item => item._id && <form key={item._id} className="space-y-2 rounded-lg border p-3" onSubmit={event => {
-        event.preventDefault();
-        const data = new FormData(event.currentTarget);
-        void run(async () => {
-          await updateBudgetItem(draft._id, item._id!, { plannedAmount: Number(data.get('plannedAmount')) });
-          setNotice('Draft item saved.');
-          await refresh();
-        });
-      }}>
-        <h3 className="font-medium">{item.name} · {item.type}</h3>
-        {item.description && <p>{item.description}</p>}
-        {item.matchingRules?.map(rule => <p className="break-words text-sm" key={rule.id}>
-          {rule.field} {rule.operator} “{rule.keyword}” ({rule.source})
-        </p>)}
-        <label>Planned amount (DOP)<Input name="plannedAmount" type="number" step="0.01" min="0" required defaultValue={item.plannedAmount} disabled={pending} /></label>
-        <Button type="submit" variant="outline" disabled={pending || refreshFailed}>Save item target</Button>
-      </form>)}
+      {draft.items.map(item => item._id && <div key={item._id} className="space-y-3 rounded-lg border p-3">
+        <h3 className="break-words font-medium">{item.name} · {item.type}</h3>
+        {item.description && <p className="break-words">{item.description}</p>}
+        <form className="space-y-2" onSubmit={event => {
+          event.preventDefault();
+          const data = new FormData(event.currentTarget);
+          void run(async () => {
+            const saved = await updateBudgetItem(draft._id, item._id!, { plannedAmount: Number(data.get('plannedAmount')) });
+            retainSavedBudgetItem(draft._id, saved);
+            setNotice('Draft item saved.');
+            await refresh();
+          });
+        }}>
+          <label>Planned amount (DOP)<Input name="plannedAmount" type="number" step="0.01" min="0" required defaultValue={item.plannedAmount} disabled={pending} /></label>
+          <Button type="submit" variant="outline" disabled={pending || refreshFailed}>Save item target</Button>
+        </form>
+        {item.type === 'expense' && <DraftItemRules item={item} otherItems={draft.items.filter(other =>
+          other._id !== item._id && other.type === 'expense')} disabled={pending || refreshFailed}
+          onSave={(getRules, onSaved) => void run(async () => {
+            const saved = await updateBudgetItem(draft._id, item._id!, { matchingRules: getRules() });
+            retainSavedBudgetItem(draft._id, saved);
+            onSaved();
+            setNotice('Draft matching rules saved.');
+            await refresh();
+          })} />}
+      </div>)}
       <details className="rounded-lg border p-3">
         <summary className="cursor-pointer py-2">Add draft item</summary>
         <form className="grid max-w-xl gap-2" onSubmit={event => {
@@ -220,9 +237,10 @@ export function NextBudget() {
           void run(async () => {
             const name = String(data.get('name')).trim();
             if (!name) throw new Error('Enter an item name.');
-            await addBudgetItem(draft._id, {
+            const saved = await addBudgetItem(draft._id, {
               name, type: String(data.get('type')), plannedAmount: Number(data.get('target')),
             });
+            retainSavedBudgetItem(draft._id, saved);
             form.reset();
             setNotice('Draft item added.');
             await refresh();
@@ -242,7 +260,7 @@ export function NextBudget() {
       }}>
         <p>Provisional start: {coverageDisplayDate(draft.startDate, draft.timezone, true)}</p>
         <p>{previous?.actualCutoffDate ? `Default from the previous confirmed cutoff: ${coverageDisplayDate(previous.actualCutoffDate, draft.timezone, true)}` : 'Default start uses the provisional start when there is no prior closure.'}</p>
-        <label>Optional activation start (YYYY-MM-DD or ISO with offset)<Input name="activationStart" value={explicitStart} onChange={event => setExplicitStart(event.target.value)} disabled={pending} /></label>
+        <label>Optional activation start (YYYY-MM-DD or ISO with offset)<Input name="activationStart" aria-describedby={dateHint} value={explicitStart} onChange={event => setExplicitStart(event.target.value)} disabled={pending} /></label>
         <Button type="submit" disabled={pending || refreshFailed}>Activate reviewed draft</Button>
       </form>}
     </div>}

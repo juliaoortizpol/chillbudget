@@ -4,7 +4,7 @@ import { useFetch } from '@/hooks/useFetch';
 import { coverageDisplayDate } from '../coverage';
 import type { HistoryEntry, PurchaseEvidence, ReportException, ReportPage, SavedReport } from '../hooks/useBudgetReports';
 import { ReportFigures } from './ReportFigures';
-import { purchaseAmount } from '../utils/reportMoney';
+import { planningCurrencyLabel, purchaseAmount, purchaseCurrencyEvidenceLabel } from '../utils/reportMoney';
 
 function useReportRead<T>(path: string | null, revision = 0) {
   const { fetchApi } = useFetch();
@@ -64,7 +64,7 @@ function Purchase({ row, report }: { row: PurchaseEvidence; report: SavedReport 
   return <div className="break-words text-sm">
     <p>{row.name} · {purchaseAmount(row.amount, row.currency ?? 'Currency unavailable')} · {row.type}</p>
     <p>{coverageDisplayDate(row.date, report.timezone, true)} · {item?.categoryName ?? (row.budgetItemId ? 'Different assignment' : 'Unassigned')}</p>
-    {row.currencyOrigin && <p>Currency evidence: {row.currencyOrigin}</p>}
+    {row.currencyOrigin && <p>Currency evidence: {purchaseCurrencyEvidenceLabel(row.currencyOrigin)}</p>}
     {row.matchingSource && <p>Assignment source: {row.matchingSource}</p>}
     {row.rawDescription && <p>{row.rawDescription}</p>}
   </div>;
@@ -113,7 +113,7 @@ function ReportDetail({ id }: { id: string }) {
       <h2 className="text-lg font-semibold">Saved closing report for {report.budgetName}</h2>
       <p>Closed at {coverageDisplayDate(report.closedAt, report.timezone, true)}. Live transactions may have changed since closing.</p>
       <ReportFigures report={report} currency={report.currencyContext.actualsCurrency} />
-      <p>Planning currency: {report.currencyContext.planning.currency} ({report.currencyContext.planning.origin})</p>
+      <p>Planning currency: {planningCurrencyLabel(report.currencyContext.planning)}</p>
       <h3 className="font-semibold">Included purchases at closing</h3>
       {!report.transactions.length && <p>No purchases were included.</p>}
       <ul className="max-h-72 space-y-2 overflow-y-auto" aria-label="Included purchases">

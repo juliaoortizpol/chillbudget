@@ -58,3 +58,15 @@ it('keeps blocked figures incomplete and dismisses without a close write', async
   expect(dismiss).toHaveBeenCalledTimes(1);
   expect(api.close).not.toHaveBeenCalled();
 });
+
+it.each([
+  [{ currency: 'DOP', origin: 'dop-v1-planning' }, 'DOP (set when the budget was created)'],
+  [{ currency: 'DOP', origin: 'explicit-resolution' }, 'DOP (confirmed for a legacy budget)'],
+  [{ currency: 'USD', origin: 'unknown' }, 'USD (unsupported for planning)'],
+  [undefined, 'Unresolved'],
+])('shows planning currency evidence in product language', async (planningCurrencyContext, label) => {
+  api.preview.mockResolvedValue({ ...preview, planningCurrencyContext });
+  render(<BudgetClose budget={budget} onDismiss={vi.fn()} onClosed={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Load preview' }));
+  expect(await screen.findByText(`Planning currency: ${label}`)).toBeTruthy();
+});

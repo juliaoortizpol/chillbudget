@@ -5,6 +5,7 @@ import { ApiError } from '@/hooks/useFetch';
 import type { Budget } from '../hooks/useBudget';
 import { useBudgetReports, type ClosePreview, type Cutoff } from '../hooks/useBudgetReports';
 import { ReportFigures } from './ReportFigures';
+import { planningCurrencyLabel } from '../utils/reportMoney';
 
 const blockerMessages: Record<string, string> = {
   resolve_budget_lifecycle: 'The saved legacy coverage must be resolved before closing.',
@@ -156,7 +157,7 @@ export function BudgetClose({ budget, onClosed, onDismiss }: {
     {preview && !outcome && <>
       {!previewCurrent && <p role="status">These are the previous figures. Refresh the preview before confirming.</p>}
       <ReportFigures report={preview} currency={preview.actualsCurrency} incomplete={preview.blockers.length > 0 || !previewCurrent} />
-      <p>Planning currency: {preview.planningCurrencyContext?.currency ?? 'Unresolved'} {preview.planningCurrencyContext?.origin}</p>
+      <p>Planning currency: {planningCurrencyLabel(preview.planningCurrencyContext)}</p>
       {preview.blockers.length > 0 && <ul className="list-disc space-y-2 pl-5">{preview.blockers.map((blocker, index) =>
         <li key={`${blocker.code}-${blocker.transactionId ?? index}`}>
           {blockerMessages[blocker.code] ?? 'Review the original purchase evidence and currency.'}

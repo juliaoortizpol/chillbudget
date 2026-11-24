@@ -19,9 +19,17 @@ Legacy history can have no saved report.
 
 Use **Create from previous** or **Start empty** to prepare a draft independently
 of the active budget. The backend copies configuration and rules with fresh item
-IDs. Review saved targets before activation. Activation uses the prior confirmed
-cutoff by default when one exists. An explicit start can be a date or ISO
-timestamp with Z or an offset. The backend validates coverage and preserves
+IDs. Review saved targets and edit matching keywords under the draft item.
+**Advanced matching rules** lets you edit an existing keyword, field or
+operator while keeping its ID and source. **Save matching rules** updates only
+that draft item. If the save succeeds and loading fails, use **Retry loading
+budgets** to refresh the saved configuration.
+
+Activation uses the prior confirmed cutoff by default when one exists. A date
+without a time means midnight UTC. An ISO timestamp with Z or a numeric offset
+chooses an explicit instant. The budget shows the effective start in its saved
+timezone. Closing through a calendar day still uses the saved budget timezone.
+The backend validates coverage and preserves
 the original purchase IDs. After activation, use **Review expenses in the active
 budget** to assign eligible existing purchases explicitly.
 

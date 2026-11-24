@@ -13,9 +13,10 @@ export interface KeywordProps {
   pendingText?: string;
   onPendingTextChange?: (text: string) => void;
   disabled?: boolean;
+  visibleInputLabel?: boolean;
 }
 
-export function BudgetItemMatchingKeywords({ value, onChange, suggestions = [], suggestionsUnavailable, otherItems = [], pendingText, onPendingTextChange, disabled }: KeywordProps) {
+export function BudgetItemMatchingKeywords({ value, onChange, suggestions = [], suggestionsUnavailable, otherItems = [], pendingText, onPendingTextChange, disabled, visibleInputLabel }: KeywordProps) {
   const id = useId();
   const [localDraft, setLocalDraft] = useState('');
   const [error, setError] = useState('');
@@ -40,11 +41,12 @@ export function BudgetItemMatchingKeywords({ value, onChange, suggestions = [], 
     <h3 id={`${id}-title`} className="text-sm font-semibold">Automatic expense matching</h3>
     <p className="text-xs text-muted-foreground">Add words or merchant names that ChillBudget can use to recognize expenses for this item.</p>
     <div className="flex flex-wrap gap-1">
-      {value.map(rule => <span key={rule.id} className="inline-flex items-center gap-1 rounded bg-primary/10 px-2 py-0.5 text-xs text-primary">
-        {rule.keyword}<button disabled={disabled} type="button" aria-label={`Remove ${rule.keyword}`} onClick={() => onChange(value.filter(r => r.id !== rule.id))}>×</button>
+      {value.map(rule => <span key={rule.id} className="inline-flex min-w-0 max-w-full items-center gap-1 rounded bg-primary/10 px-2 py-0.5 text-xs text-primary">
+        <span className="min-w-0 break-words">{rule.keyword}</span><button className={visibleInputLabel ? 'min-h-12 min-w-12' : undefined} disabled={disabled} type="button" aria-label={`Remove ${rule.keyword}`} onClick={() => onChange(value.filter(r => r.id !== rule.id))}>×</button>
       </span>)}
     </div>
-    <Input disabled={disabled} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} aria-label="Matching keywords" placeholder="Add a keyword…" value={draft}
+    {visibleInputLabel && <label htmlFor={`${id}-keywords`}>Matching keywords</label>}
+    <Input id={`${id}-keywords`} name="matchingKeywords" autoComplete="off" disabled={disabled} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} aria-label={visibleInputLabel ? undefined : 'Matching keywords'} placeholder="Add a keyword…" value={draft}
       onCompositionStart={() => { composing.current = true; }}
       onCompositionEnd={() => { composing.current = false; }}
       onChange={e => { setDraft(e.target.value); setError(''); if (!composing.current && e.target.value.includes(',')) commit(e.target.value); }}
