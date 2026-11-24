@@ -4,6 +4,18 @@ const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 type FetchOptions = RequestInit;
 
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code?: string;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
 export function useFetch() {
   const fetchApi = useCallback(async <T = unknown>(endpoint: string, options: FetchOptions = {}): Promise<T> => {
     const token = localStorage.getItem('jwt_token');
@@ -41,7 +53,11 @@ export function useFetch() {
         ? (Array.isArray(data.message) ? data.message.join(', ') : data.message)
         : data || response.statusText;
         
-      throw new Error(typeof errorMessage === 'string' ? errorMessage : 'An error occurred');
+      throw new ApiError(
+        typeof errorMessage === 'string' ? errorMessage : 'An error occurred',
+        response.status,
+        typeof data?.code === 'string' ? data.code : undefined,
+      );
     }
 
     return data as T;

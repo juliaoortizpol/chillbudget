@@ -8,7 +8,6 @@ const { fetchApi, fetchBudgets } = vi.hoisted(() => ({ fetchApi: vi.fn(), fetchB
 const history = vi.hoisted(() => ({ budgets: [] as Budget[] }));
 vi.mock('@/hooks/useFetch', () => ({ useFetch: () => ({ fetchApi }) }));
 vi.mock('../budget/hooks/useGlobalBudget', () => ({ useGlobalBudget: () => ({ budgets: history.budgets, activeBudget: null, isFetchingBudgets: false, fetchBudgets }) }));
-vi.mock('./components/TransactionsSummary', () => ({ TransactionsSummary: () => null }));
 vi.mock('./components/TransactionsTable', () => ({
   AddTransactionDialog: () => null,
   TransactionsTable: ({ data, onUpdateItem, emptyTitle }: { data: { id: string; category: { name: string }; matchingStatus?: string }[]; onUpdateItem: (id: string, updates: object) => void | Promise<void>; emptyTitle: string }) => (
@@ -23,7 +22,32 @@ beforeEach(() => {
   Object.defineProperty(window, 'matchMedia', { configurable: true, value: () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) });
 });
 afterEach(cleanup);
-function mount() { render(<MemoryRouter><TransactionsPage /></MemoryRouter>); }
+function mount(path = '/transactions') { render(<MemoryRouter initialEntries={[path]}><TransactionsPage /></MemoryRouter>); }
+
+it('shows the recorded currency in a deep-linked transaction summary', async () => {
+  fetchApi.mockResolvedValue({ ...row, currency: 'DOP' });
+  mount('/transactions?transactionId=synthetic');
+  expect(await screen.findAllByText('10 DOP')).toHaveLength(2);
+  expect(fetchApi).toHaveBeenCalledWith('/transactions/synthetic');
+});
+
+it('keeps budget coverage fixed and withholds combined figures for mixed currencies', async () => {
+  fetchApi.mockResolvedValue(page([{ ...row, currency: 'DOP' }, { ...row, _id: 'usd', currency: 'USD' }]));
+  mount('/transactions?budgetId=active');
+  expect(await screen.findAllByText('Mixed or unavailable currencies')).toHaveLength(2);
+  expect(screen.getByText(/Dates follow the selected budget/)).toBeTruthy();
+  expect(screen.queryByRole('button', { name: /all time|last 30 days/i })).toBeNull();
+  expect(screen.getByRole('link', { name: 'View all transactions' }).getAttribute('href')).toBe('/transactions');
+  expect(fetchApi).toHaveBeenLastCalledWith(expect.stringContaining('matchingStatus=needs_review'), { method: 'GET' });
+  fireEvent.click(screen.getByRole('button', { name: 'Needs review' }));
+  await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2));
+  for (const [url] of fetchApi.mock.calls) {
+    const params = new URL(url, 'http://localhost').searchParams;
+    expect(params.get('budgetId')).toBe('active');
+    expect(params.has('startDate')).toBe(false);
+    expect(params.has('endDate')).toBe(false);
+  }
+});
 
 it('requests the backend review queue, retains rejected assignments and removes successful ones', async () => {
   fetchApi.mockResolvedValue(page([row]));

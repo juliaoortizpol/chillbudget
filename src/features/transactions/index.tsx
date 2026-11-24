@@ -40,6 +40,8 @@ function getDateRangeFilter(dateRange: string): { startDate?: string, endDate?: 
 
 export function TransactionsPage() {
   const [searchParams] = useSearchParams();
+  const transactionId = searchParams.get('transactionId') || undefined;
+  const reviewBudgetId = searchParams.get('budgetId') || undefined;
   const { activeBudget, budgets, isFetchingBudgets, fetchBudgets, fetchBudgetsError } = useGlobalBudget();
   const { 
     transactionsData, fetchTransactions, isFetchingTransactions, 
@@ -50,10 +52,10 @@ export function TransactionsPage() {
     typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches ? 5 : 10
   );
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [dateRange, setDateRange] = React.useState("Last 30 Days");
+  const [dateRange, setDateRange] = React.useState(reviewBudgetId || transactionId ? "All Time" : "Last 30 Days");
   const [categoryId, setCategoryId] = React.useState<string | null>(null);
   const [type, setType] = React.useState<string | null>(null);
-  const [needsReview, setNeedsReview] = React.useState(false);
+  const [needsReview, setNeedsReview] = React.useState(Boolean(reviewBudgetId));
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 767px)");
@@ -68,13 +70,15 @@ export function TransactionsPage() {
 
   const [feedback, setFeedback] = React.useState<string | null>(null);
   const selectedFilter = React.useMemo<GetTransactionsFilterDto>(() => ({
+    transactionId,
+    budgetId: reviewBudgetId,
     page: currentPage, limit: pageSize, budgetItemId: categoryId || undefined,
     type: type === "expense" || type === "income" ? type : undefined,
     matchingStatus: needsReview ? 'needs_review' : undefined,
-  }), [currentPage, pageSize, categoryId, type, needsReview]);
+  }), [currentPage, pageSize, categoryId, type, needsReview, transactionId, reviewBudgetId]);
   const getSelectedFilter = React.useCallback(() => ({
-    ...selectedFilter, ...getDateRangeFilter(dateRange),
-  }), [selectedFilter, dateRange]);
+    ...selectedFilter, ...(reviewBudgetId ? {} : getDateRangeFilter(dateRange)),
+  }), [selectedFilter, dateRange, reviewBudgetId]);
 
   const latestFilter = React.useRef(getSelectedFilter);
   React.useLayoutEffect(() => {
@@ -97,6 +101,7 @@ export function TransactionsPage() {
   }, [getSelectedFilter, refreshTransactions]);
 
   const isLoading = isFetchingTransactions;
+  const selectedTransaction = transactionId ? transactionsData?.data.find(row => row._id === transactionId) : undefined;
   
   const dynamicCategories = React.useMemo(() => {
     return (budgets ?? (activeBudget ? [activeBudget] : [])).reduce((all, budget) => {
@@ -138,11 +143,14 @@ export function TransactionsPage() {
       if (!cat) {
         cat = {
           id: t.budgetItemId || '',
-          name: t.budgetItemId ? 'Saved category' : 'Uncategorized',
+          name: t.assignmentContext?.budgetItemName ?? (t.budgetItemId ? 'Saved category' : 'Uncategorized'),
           icon: null,
           iconBgClass: 'bg-blue-500/10',
           iconColor: 'text-foreground'
         };
+      }
+      if (transactionId && t.assignmentContext?.budgetItemName && t.assignmentContext.budgetName) {
+        cat = { ...cat, name: `${t.assignmentContext.budgetItemName} · ${t.assignmentContext.budgetName}` };
       }
 
       return {
@@ -153,12 +161,13 @@ export function TransactionsPage() {
         date: format(new Date(t.date), "MMM d, yyyy"),
         description: t.name,
         category: cat,
+        currency: t.currency,
         // Email-imported expenses can already be stored as negative amounts.
         // Normalize the display sign instead of negating the raw value blindly.
         amount: t.type === 'expense' ? -Math.abs(t.amount) : Math.abs(t.amount)
       }
     });
-  }, [transactionsData, dynamicCategories]);
+  }, [transactionsData, dynamicCategories, transactionId]);
 
   const filteredUiTransactions = useMemo(() => {
     if (!searchQuery.trim()) return uiTransactions;
@@ -171,9 +180,12 @@ export function TransactionsPage() {
       (sum, transaction) => transaction.amount < 0 ? sum + Math.abs(transaction.amount) : sum,
       0
     );
-    const monthlyBudget = activeBudget?.items
+    const currencies = new Set(filteredUiTransactions.map(row => row.currency));
+    const soleCurrency = currencies.size === 1 ? currencies.values().next().value : undefined;
+    const currency = soleCurrency && /^[A-Z]{3}$/.test(soleCurrency) ? soleCurrency : undefined;
+    const monthlyBudget = activeBudget?.currencyContext?.currency === 'DOP' ? activeBudget.items
       ?.filter((item) => !categoryId || item._id === categoryId)
-      .reduce((sum, item) => sum + (item.plannedAmount || 0), 0) || 0;
+      .reduce((sum, item) => sum + (item.plannedAmount || 0), 0) : undefined;
     const maxTransaction = filteredUiTransactions.reduce(
       (max, transaction) => Math.max(max, Math.abs(transaction.amount)),
       0
@@ -182,11 +194,13 @@ export function TransactionsPage() {
     return {
       totalSpent,
       monthlyBudget,
+      currency,
       maxTransaction,
       totalTransactions: filteredUiTransactions.length,
-      budgetUsed: monthlyBudget > 0 ? (totalSpent / monthlyBudget) * 100 : 0,
+      budgetUsed: currency === 'DOP' && monthlyBudget && (!reviewBudgetId || activeBudget?._id === reviewBudgetId)
+        ? (totalSpent / monthlyBudget) * 100 : undefined,
     };
-  }, [activeBudget, categoryId, filteredUiTransactions]);
+  }, [activeBudget, categoryId, filteredUiTransactions, reviewBudgetId]);
 
   const filterCategories = useMemo(() => Object.entries(dynamicCategories).map(([id, category]) => ({ id, name: category.name })), [dynamicCategories]);
 
@@ -204,6 +218,11 @@ export function TransactionsPage() {
       };
     }
 
+    if (reviewBudgetId) return {
+      title: "No transactions in this budget coverage",
+      description: "Try changing or clearing your search and filters.",
+    };
+
     if (dateRange === "All Time") {
       return {
         title: "No transactions yet",
@@ -215,7 +234,7 @@ export function TransactionsPage() {
       title: `No transactions in ${dateRange.toLowerCase()}`,
       description: "Choose a different period or add a new transaction.",
     };
-  }, [categoryId, dateRange, searchQuery, type, needsReview]);
+  }, [categoryId, dateRange, searchQuery, type, needsReview, reviewBudgetId]);
 
   const handleUpdateItem = React.useCallback(async (id: string, updates: TransactionUpdates) => {
     const dto: UpdateTransactionDto = {};
@@ -273,6 +292,13 @@ export function TransactionsPage() {
     <div className="flex flex-col gap-6 pb-20 md:pb-0">
       
       <PageHeader title="Transactions" />
+      {transactionId && <div className="space-y-2 break-words text-sm">
+        <p>Live transaction. Saved closing evidence is available in Budget History.</p>
+        {selectedTransaction && <p>Recorded currency: {selectedTransaction.currency == null || !selectedTransaction.currency.trim()
+          ? 'Unavailable' : JSON.stringify(selectedTransaction.currency)}</p>}
+        <a href="/transactions" className="underline">View all transactions</a>
+      </div>}
+      {reviewBudgetId && <p className="text-sm">Dates follow the selected budget’s coverage. <a href="/transactions" className="underline">View all transactions</a></p>}
       <AddTransactionDialog defaultOpen={searchParams.get("create") === "1"} categories={dynamicCategories} onAppend={handleAppendItem} />
 
       {feedback && <p role="status">{feedback}</p>}
@@ -301,7 +327,7 @@ export function TransactionsPage() {
                   setSearchQuery(query);
                   setCurrentPage(1);
                 }}
-                dateRange={dateRange}
+                dateRange={reviewBudgetId ? undefined : dateRange}
                 onDateRangeChange={(value) => { setDateRange(value); setCurrentPage(1); }}
                 categoryId={categoryId}
                 onCategoryChange={(value) => { setCategoryId(value); setCurrentPage(1); }}

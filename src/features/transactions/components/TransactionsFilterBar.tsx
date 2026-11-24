@@ -16,7 +16,7 @@ interface Category {
 interface TransactionsFilterBarProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  dateRange: string;
+  dateRange?: string;
   onDateRangeChange: (range: string) => void;
   categoryId: string | null;
   onCategoryChange: (id: string | null) => void;
@@ -38,7 +38,7 @@ export function TransactionsFilterBar({
   
   const selectedCategoryName = categoryId ? categories.find(c => c.id === categoryId)?.name || "Category" : "Category";
   const typeDisplay = type ? (type === 'expense' ? "Expense" : "Income") : "All";
-  const hasActiveFilters = Boolean(searchQuery.trim() || dateRange !== "All Time" || categoryId || type || needsReview);
+  const hasActiveFilters = Boolean(searchQuery.trim() || (dateRange && dateRange !== "All Time") || categoryId || type || needsReview);
   
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3 shadow-sm sm:p-4 xl:flex-row xl:items-center xl:gap-4">
@@ -59,7 +59,7 @@ export function TransactionsFilterBar({
           Needs review
         </Button>
         
-        <DropdownMenu>
+        {dateRange && <DropdownMenu>
           <DropdownMenuTrigger render={
             <Button variant="outline" className="w-full justify-between gap-2 whitespace-nowrap bg-background sm:w-auto">
               <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -73,7 +73,7 @@ export function TransactionsFilterBar({
             <DropdownMenuItem onClick={() => onDateRangeChange('Last 30 Days')}>Last 30 Days</DropdownMenuItem>
             <DropdownMenuItem onClick={() => onDateRangeChange('This Month')}>This Month</DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu>}
 
         <DropdownMenu>
           <DropdownMenuTrigger render={

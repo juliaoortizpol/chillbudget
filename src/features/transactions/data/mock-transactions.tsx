@@ -27,6 +27,7 @@ export type Transaction = {
   matchingStatus?: string
   category: TransactionCategory
   amount: number
+  currency?: string | null
 }
 
 export const categories: Record<string, TransactionCategory> = {

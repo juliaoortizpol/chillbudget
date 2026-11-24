@@ -12,7 +12,7 @@ const { fetchApi, fetchBudgets, budget } = vi.hoisted(() => ({
 }));
 vi.mock('@/hooks/useFetch', () => ({ useFetch: () => ({ fetchApi }) }));
 vi.mock('../budget/hooks/useGlobalBudget', () => ({ useGlobalBudget: () => ({ activeBudget: budget, isFetchingBudgets: false, fetchBudgets }) }));
-const row = { _id: 'synthetic', date: '2026-11-01T12:00:00Z', name: 'CAFE ORBIT purchase', amount: 10, type: 'expense', matchingStatus: 'needs_review' };
+const row = { _id: 'synthetic', date: '2026-11-01T12:00:00Z', name: 'CAFE ORBIT purchase', amount: 10, currency: 'DOP', type: 'expense', matchingStatus: 'needs_review' };
 const page = { data: [row], meta: { page: 1, limit: 10, totalPages: 1, total: 1 } };
 beforeEach(() => {
   fetchApi.mockReset();
@@ -27,6 +27,7 @@ it.each(['desktop', 'mobile'])('retains the %s editor through hook pending/error
   await screen.findAllByText('CAFE ORBIT purchase');
   // Both responsive layouts are in the DOM; target the actual table or mobile card.
   const region = within(container.querySelector(layout === 'desktop' ? 'tbody' : 'article') as HTMLElement);
+  expect(region.getByRole('button', { name: '-10 DOP' })).toBeTruthy();
   fireEvent.click(region.getByRole('button', { name: 'Uncategorized' }));
   const category = region.getByRole('combobox', { name: 'Assign category' });
   fireEvent.change(category, { target: { value: 'keywords-b' } });
