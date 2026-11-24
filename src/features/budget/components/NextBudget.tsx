@@ -3,12 +3,32 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ApiError, useFetch } from '@/hooks/useFetch';
 import { browserTimezone, coverageDisplayDate } from '../coverage';
-import { deserializeBudget, type ApiBudget, type Budget } from '../hooks/useBudget';
+import { deserializeBudget, type ApiBudget, type Budget, type BudgetItem } from '../hooks/useBudget';
 import { useGlobalBudget } from '../hooks/useGlobalBudget';
 import { BudgetCoverage } from './BudgetCoverage';
 import { DraftItemRules } from './DraftItemRules';
 
 const dateOnly = /^\d{4}-\d{2}-\d{2}$/;
+
+function itemConfiguration(items: BudgetItem[]) {
+  return items.map(({ name, description, type, plannedAmount, icon, color, alertEnabled, matchingRules }) =>
+    JSON.stringify({
+      name, description, type, plannedAmount, icon, color, alertEnabled,
+      rules: (matchingRules ?? []).map(({ id, field, operator, keyword, source }) =>
+        [id, field, operator, keyword, source]),
+    })).sort().join('\n');
+}
+
+interface DraftAttempt {
+  ids: Set<string>;
+  name: string;
+  timezone: string;
+  periodType: Budget['periodType'];
+  startDate: string;
+  plannedEndTime?: number;
+  items: string;
+}
+
 function startInput(value: string) {
   if (!dateOnly.test(value) && !/^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/i.test(value)) {
     throw new Error('Enter YYYY-MM-DD or an ISO timestamp with Z or a numeric offset.');
@@ -38,7 +58,7 @@ export function NextBudget() {
   const [refreshFailed, setRefreshFailed] = useState(false);
   const [uncertain, setUncertain] = useState(false);
   const lock = useRef(false);
-  const createAttempt = useRef<{ ids: Set<string>; name: string; timezone: string; period: string } | null>(null);
+  const createAttempt = useRef<DraftAttempt | null>(null);
   const source = activeBudget ?? [...budgets].filter(b => b.status === 'closed')
     .sort((a, b) => Date.parse(b.actualCutoffDate ?? b.endDate ?? '') - Date.parse(a.actualCutoffDate ?? a.endDate ?? ''))[0];
   const previous = [...budgets].filter(b => b.status === 'closed' && b.actualCutoffDate)
@@ -75,8 +95,14 @@ export function NextBudget() {
     const attempt = createAttempt.current;
     if (!attempt) return;
     const owned = await fetchBudgets();
-    const candidates = owned.filter(b => !attempt.ids.has(b._id) && b.status === 'draft' &&
-      b.name === attempt.name && b.timezone === attempt.timezone && b.periodType === attempt.period);
+    const candidates = owned.filter(b => {
+      const end = b.plannedEndDate ?? b.endDate;
+      return !attempt.ids.has(b._id) && b.status === 'draft' &&
+        b.name === attempt.name && b.timezone === attempt.timezone && b.periodType === attempt.periodType &&
+        Date.parse(b.startDate) === Date.parse(attempt.startDate) &&
+        (end == null ? undefined : Date.parse(end)) === attempt.plannedEndTime &&
+        itemConfiguration(b.items) === attempt.items;
+    });
     if (candidates.length > 1) throw new Error('Multiple matching drafts appeared. Review the saved drafts before creating another.');
     createAttempt.current = null;
     setUncertain(false);
@@ -97,11 +123,20 @@ export function NextBudget() {
     const plannedEndDate = end ? startInput(end.trim()) : undefined;
     if (plannedEndDate && Date.parse(plannedEndDate) <= Date.parse(plan.startDate)) throw new Error('Planned end must follow the provisional start.');
     const owned = await fetchBudgets();
-    createAttempt.current = { ids: new Set(owned.map(b => b._id)), name: plan.name, timezone, period };
+    const copySource = mode === 'copy' ? owned.find(b => b._id === source?._id && b.status !== 'draft') : undefined;
+    if (mode === 'copy' && !copySource) throw new Error('The source budget is unavailable. Choose a source or start empty.');
+    if (copySource?.timezone && copySource.timezone !== timezone) {
+      throw new Error('The source timezone changed. Review the source and save the draft again.');
+    }
+    createAttempt.current = {
+      ids: new Set(owned.map(b => b._id)), ...plan,
+      plannedEndTime: plannedEndDate ? Date.parse(plannedEndDate) : undefined,
+      items: itemConfiguration(copySource?.items ?? []),
+    };
     let saved: Budget;
     try {
-      if (mode === 'copy' && source) {
-        saved = deserializeBudget(await fetchApi<ApiBudget>(`/budgets/${source._id}/drafts`, {
+      if (copySource) {
+        saved = deserializeBudget(await fetchApi<ApiBudget>(`/budgets/${copySource._id}/drafts`, {
           method: 'POST',
           body: JSON.stringify({ ...plan, plannedEndDate, currency: 'DOP' }),
         }));
@@ -167,7 +202,8 @@ export function NextBudget() {
     </form>}
     {pending && <p role="status">Working…</p>}
     {notice && <p role="status">{notice}</p>}
-    {activated && <p>Activated coverage starts {coverageDisplayDate(activated.startDate, activated.timezone, true)} ({activated.timezone ?? 'UTC'}).</p>}
+    {activated && (activeBudget?._id === activated._id || (refreshFailed && !activeBudget)) &&
+      <p>Activated coverage starts {coverageDisplayDate(activated.startDate, activated.timezone, true)} ({activated.timezone ?? 'UTC'}).</p>}
     {error && <p role="alert" className="text-destructive">{error}</p>}
     {uncertain && <Button disabled={pending} onClick={() => void run(reconcileCreation)}>Check owned drafts</Button>}
     {refreshFailed && <Button disabled={pending} onClick={() => void run(refresh)}>Retry loading budgets</Button>}
@@ -264,6 +300,6 @@ export function NextBudget() {
         <Button type="submit" disabled={pending || refreshFailed}>Activate reviewed draft</Button>
       </form>}
     </div>}
-    {(activated ?? activeBudget) && <a className="underline" href={`/transactions?budgetId=${encodeURIComponent((activated ?? activeBudget)!._id)}`}>Review expenses in the active budget</a>}
+    {activeBudget && <a className="underline" href={`/transactions?budgetId=${encodeURIComponent(activeBudget._id)}`}>Review expenses in the active budget</a>}
   </section>;
 }

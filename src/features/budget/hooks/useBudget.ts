@@ -25,6 +25,7 @@ export interface BudgetItem {
 }
 
 export interface Budget {
+  currencyContext?: { currency: string; origin: string };
   _id: string;
   name: string;
   periodType: 'monthly' | 'weekly' | 'custom';

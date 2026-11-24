@@ -47,11 +47,56 @@ it('reconciles a lost copy response against the owned list before allowing anoth
   expect(state.createBudget).not.toHaveBeenCalled();
 });
 
+it.each([
+  { startDate: '2025-02-02T00:00:00Z' },
+  { plannedEndDate: '2025-03-02T00:00:00Z' },
+  { items: [{ _id: 'other-item', type: 'expense', name: 'Other plan', plannedAmount: 25 }] },
+])('does not select a concurrent draft with different configuration (%j)', async difference => {
+  state.activeBudget = { ...base, status: 'active' };
+  state.budgets = [state.activeBudget];
+  const concurrent = { ...draft, _id: 'concurrent', endDate: '2025-03-01T00:00:00Z', ...difference };
+  state.fetchBudgets.mockResolvedValueOnce(state.budgets)
+    .mockResolvedValueOnce([...state.budgets, concurrent]);
+  state.fetchApi.mockRejectedValueOnce(new Error('Connection interrupted'));
+  render(<NextBudget />);
+  fireEvent.click(screen.getByRole('button', { name: 'Create from previous' }));
+  fireEvent.change(screen.getByLabelText('Budget name'), { target: { value: 'Next' } });
+  fireEvent.change(screen.getByLabelText(/provisional start/i), { target: { value: '2025-02-01' } });
+  fireEvent.change(screen.getByLabelText(/planned end \(optional/i), { target: { value: '2025-02-28T20:00:00-04:00' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+  expect(await screen.findByText(/No matching saved draft/)).toBeTruthy();
+  expect(screen.queryByText('Found the saved draft.')).toBeNull();
+  expect((screen.getByLabelText('Budget name') as HTMLInputElement).value).toBe('Next');
+  expect(state.fetchApi).toHaveBeenCalledTimes(1);
+});
+
+it('keeps creation guarded when multiple new drafts match the attempted configuration', async () => {
+  state.activeBudget = { ...base, status: 'active' };
+  state.budgets = [state.activeBudget];
+  state.fetchBudgets.mockResolvedValueOnce(state.budgets)
+    .mockResolvedValueOnce([...state.budgets, draft, { ...draft, _id: 'other' }]);
+  state.fetchApi.mockRejectedValueOnce(new Error('Connection interrupted'));
+  render(<NextBudget />);
+  fireEvent.click(screen.getByRole('button', { name: 'Create from previous' }));
+  fireEvent.change(screen.getByLabelText('Budget name'), { target: { value: 'Next' } });
+  fireEvent.change(screen.getByLabelText(/provisional start/i), { target: { value: '2025-02-01' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+  expect(await screen.findByText(/Multiple matching drafts appeared/)).toBeTruthy();
+  expect(screen.queryByText('Found the saved draft.')).toBeNull();
+  expect((screen.getByRole('button', { name: 'Save draft' }) as HTMLButtonElement).disabled).toBe(true);
+  expect(state.fetchApi).toHaveBeenCalledTimes(1);
+});
+
 it('shows the prior cutoff separately and activates with the server default', async () => {
   state.budgets = [base, draft];
-  state.fetchApi.mockResolvedValue({ ...draft, status: 'active', startDate: base.actualCutoffDate });
-  state.fetchBudgets.mockResolvedValue([]);
-  render(<NextBudget />);
+  const saved = { ...draft, status: 'active', startDate: base.actualCutoffDate } as Budget;
+  state.fetchApi.mockResolvedValue(saved);
+  state.fetchBudgets.mockRejectedValueOnce(new Error('Offline')).mockImplementationOnce(async () => {
+    state.activeBudget = saved;
+    state.budgets = [base, saved];
+    return state.budgets;
+  });
+  const view = render(<NextBudget />);
   fireEvent.click(screen.getByRole('button', { name: 'Review draft Next' }));
   expect(screen.getByText(/default from the previous confirmed cutoff/i)).toBeTruthy();
   fireEvent.change(screen.getByLabelText(/optional activation start/i), { target: { value: '2025-02-01T01:00:00' } });
@@ -61,7 +106,22 @@ it('shows the prior cutoff separately and activates with the server default', as
   fireEvent.change(screen.getByLabelText(/optional activation start/i), { target: { value: '' } });
   fireEvent.click(screen.getByRole('button', { name: 'Activate reviewed draft' }));
   await waitFor(() => expect(state.fetchApi).toHaveBeenCalledWith('/budgets/draft/activate', { method: 'POST', body: '{}' }));
+  expect(await screen.findByText('Budget activated.')).toBeTruthy();
+  expect(await screen.findByText(/Saved. Retry loading budgets/)).toBeTruthy();
+  expect(screen.queryByRole('link', { name: /review expenses/i })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Retry loading budgets' }));
   expect((await screen.findByRole('link', { name: 'Review expenses in the active budget' })).getAttribute('href')).toBe('/transactions?budgetId=draft');
+  expect(state.fetchApi).toHaveBeenCalledTimes(1);
+
+  state.activeBudget = undefined;
+  state.budgets = [base, { ...saved, status: 'closed' }];
+  view.rerender(<NextBudget />);
+  expect(screen.queryByRole('link', { name: /review expenses/i })).toBeNull();
+
+  state.activeBudget = { ...saved, _id: 'new-active' };
+  state.budgets = [...state.budgets, state.activeBudget];
+  view.rerender(<NextBudget />);
+  expect(screen.getByRole('link', { name: /review expenses/i }).getAttribute('href')).toBe('/transactions?budgetId=new-active');
 });
 
 it('keeps a confirmed empty draft visible when reloading fails and retries only loading', async () => {
@@ -85,7 +145,10 @@ it('keeps a confirmed empty draft visible when reloading fails and retries only 
 it('compares a date-only start at midnight UTC and sends a valid date unchanged', async () => {
   state.budgets = [base, draft];
   state.fetchApi.mockResolvedValue({ ...draft, status: 'active', startDate: '2025-02-03T00:00:00Z' });
-  state.fetchBudgets.mockResolvedValue([]);
+  state.fetchBudgets.mockImplementation(async () => {
+    state.activeBudget = { ...draft, status: 'active', startDate: '2025-02-03T00:00:00Z' };
+    return [base, state.activeBudget];
+  });
   render(<NextBudget />);
   fireEvent.click(screen.getByRole('button', { name: 'Review draft Next' }));
   expect(screen.getByText(/midnight UTC/)).toBeTruthy();

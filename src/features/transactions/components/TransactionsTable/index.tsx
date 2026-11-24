@@ -7,6 +7,7 @@ import { useEffect, useState } from "react"
 import { Calendar as CalendarIcon, ChevronDown, CircleHelp, ListChecks, Plus, RefreshCw, Trash2, TriangleAlert, X } from "lucide-react"
 import { useTableEditor } from "@/hooks/useTableEditor"
 import { cn, formatMoneyInput } from "@/lib/utils"
+import { purchaseAmount } from "@/features/budget/utils/reportMoney"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
@@ -69,7 +70,11 @@ export function EditableDateCell({ initialValue, onSave, className }: { initialV
   )
 }
 
-export function EditableCurrencyCell({ initialValue, onSave, className }: { initialValue: number, onSave: (val: number) => void, className?: string }) {
+export function EditableCurrencyCell({ initialValue, currency, onSave, className }: {
+  initialValue: number; currency?: string | null; onSave: (val: number) => void; className?: string;
+}) {
+  const currencyLabel = !currency?.trim() ? "currency unavailable" :
+    currency === currency.trim() ? currency : JSON.stringify(currency)
   const { isEditing, value, setValue, startEditing, saveEditing, handleKeyDown } = useTableEditor<string>(
     formatMoneyInput(initialValue.toString()),
     (val) => onSave(Number(val.replace(/,/g, '')) || 0)
@@ -79,6 +84,7 @@ export function EditableCurrencyCell({ initialValue, onSave, className }: { init
     return (
       <Input
         autoFocus
+        aria-label={`Amount (${currencyLabel})`}
         value={value}
         onChange={(e) => setValue(formatMoneyInput(e.target.value))}
         onKeyDown={handleKeyDown}
@@ -89,19 +95,14 @@ export function EditableCurrencyCell({ initialValue, onSave, className }: { init
   }
 
   const isNegative = initialValue < 0
-  const formatted = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    signDisplay: 'always'
-  }).format(initialValue)
-
   return (
-    <div 
-      className={cn(`cursor-pointer hover:bg-muted/30 px-1 rounded transition-colors ${isNegative ? "text-red-600" : "text-emerald-600"}`, className)}
+    <button
+      type="button"
+      className={cn(`max-w-full break-words cursor-pointer hover:bg-muted/30 px-1 rounded transition-colors focus-visible:outline-2 focus-visible:outline-ring ${isNegative ? "text-red-600" : "text-emerald-600"}`, className)}
       onClick={startEditing}
     >
-      {formatted}
-    </div>
+      {initialValue >= 0 && "+"}{purchaseAmount(initialValue, currencyLabel)}
+    </button>
   )
 }
 
@@ -447,9 +448,10 @@ export function TransactionsTable({
                     </div>
                   </div>
 
-                  <div className="flex shrink-0 flex-col items-end gap-1">
+                  <div className="flex max-w-[50%] shrink-0 flex-col items-end gap-1">
                     <EditableCurrencyCell
                       initialValue={transaction.amount}
+                      currency={transaction.currency}
                       onSave={(value) => onUpdateItem?.(transaction.id, { amount: value })}
                       className="text-sm font-bold tabular-nums"
                     />

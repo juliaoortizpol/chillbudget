@@ -10,6 +10,9 @@ sync and live transaction review can open in another tab while the preview stays
 open. Refresh afterward. An unsupported recorded currency remains visible and
 keeps the report incomplete. Closing freezes a report, retains transactions and
 balances, and excludes the closed interval from automatic matching.
+Live transaction rows show the recorded currency or indicate when it is
+unavailable. Shown-row spending and maximum amounts require a single known
+currency across the visible rows.
 
 **History** reads paginated owned coverage and the saved closing report. Open
 included purchase details to see closing-time values and assignment labels.
@@ -20,6 +23,9 @@ Legacy history can have no saved report.
 Use **Create from previous** or **Start empty** to prepare a draft independently
 of the active budget. The backend copies configuration and rules with fresh item
 IDs. Review saved targets and edit matching keywords under the draft item.
+If a create response is lost, the owned draft list is checked for a unique new
+match on the attempted dates, planning settings and item configuration. Review
+the saved drafts before submitting again if the match cannot be established.
 **Advanced matching rules** lets you edit an existing keyword, field or
 operator while keeping its ID and source. **Save matching rules** updates only
 that draft item. If the save succeeds and loading fails, use **Retry loading
@@ -32,6 +38,8 @@ timezone. Closing through a calendar day still uses the saved budget timezone.
 The backend validates coverage and preserves
 the original purchase IDs. After activation, use **Review expenses in the active
 budget** to assign eligible existing purchases explicitly.
+This link follows the current active budget. Its transaction view uses budget
+coverage for dates. To choose a date range, open **View all transactions**.
 
 Developer checks exercise controlled frontend responses. Browser checks for
 narrow layouts, keyboard focus, dismissal and live synthetic close, report and

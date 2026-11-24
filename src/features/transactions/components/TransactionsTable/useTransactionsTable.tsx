@@ -164,6 +164,7 @@ export function useTransactionsTable(onUpdateItem?: (id: string, updates: Transa
       cell: ({ row }) => (
         <EditableCurrencyCell 
           initialValue={row.original.amount}
+          currency={row.original.currency}
           onSave={(val) => onUpdateItem?.(row.original.id, { amount: val })}
           className="font-bold"
         />

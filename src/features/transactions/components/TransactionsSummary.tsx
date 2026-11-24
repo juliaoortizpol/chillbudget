@@ -1,27 +1,24 @@
+import { purchaseAmount } from '@/features/budget/utils/reportMoney';
+
 interface TransactionsSummaryProps {
   totalSpent: number;
-  monthlyBudget: number;
+  monthlyBudget?: number;
+  currency?: string;
   maxTransaction: number;
   totalTransactions: number;
-  budgetUsed: number;
-}
-
-function formatCurrency(value: number) {
-  return value.toLocaleString(undefined, {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  budgetUsed?: number;
 }
 
 export function TransactionsSummary({
   totalSpent,
   monthlyBudget,
+  currency,
   maxTransaction,
   totalTransactions,
   budgetUsed,
 }: TransactionsSummaryProps) {
+  const shownAmount = (value: number) => currency ? purchaseAmount(value, currency) :
+    totalTransactions ? 'Mixed or unavailable currencies' : '—';
   return (
     <div className="hidden grid-cols-2 overflow-hidden rounded-xl border border-border bg-card shadow-sm md:grid lg:grid-cols-4">
       <div className="px-4 py-4 sm:px-6">
@@ -30,9 +27,9 @@ export function TransactionsSummary({
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <span className="text-lg font-bold tabular-nums text-foreground sm:text-xl">
-            {formatCurrency(totalSpent)}
+            {shownAmount(totalSpent)}
           </span>
-          {monthlyBudget > 0 && (
+          {budgetUsed !== undefined && (
             <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700">
               {Math.round(budgetUsed)}% used
             </span>
@@ -45,7 +42,7 @@ export function TransactionsSummary({
           Monthly Budget
         </div>
         <div className="mt-1 text-lg font-bold tabular-nums text-foreground sm:text-xl">
-          {formatCurrency(monthlyBudget)}
+          {monthlyBudget === undefined ? '—' : purchaseAmount(monthlyBudget, 'DOP')}
         </div>
       </div>
 
@@ -54,7 +51,7 @@ export function TransactionsSummary({
           Max in Shown Rows
         </div>
         <div className="mt-1 text-lg font-bold tabular-nums text-foreground sm:text-xl">
-          {formatCurrency(maxTransaction)}
+          {shownAmount(maxTransaction)}
         </div>
       </div>
 
