@@ -3,10 +3,11 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { NextBudget } from './NextBudget';
 import type { Budget } from '../hooks/useBudget';
 import { BudgetProvider } from '../context/BudgetContext';
+import { ApiError } from '@/hooks/useFetch';
 
 const state = vi.hoisted(() => ({
   budgets: [] as Budget[], activeBudget: undefined as Budget | undefined,
-  fetchBudgets: vi.fn(), createBudget: vi.fn(), fetchApi: vi.fn(),
+  fetchBudgets: vi.fn(), fetchApi: vi.fn(),
   useProvider: false,
 }));
 vi.mock('../hooks/useGlobalBudget', async importOriginal => {
@@ -26,25 +27,55 @@ const base: Budget = {
 const draft: Budget = { ...base, _id: 'draft', name: 'Next', status: 'draft', startDate: '2025-02-01T00:00:00Z' };
 afterEach(() => { cleanup(); vi.resetAllMocks(); state.activeBudget = undefined; state.useProvider = false; });
 
-it('reconciles a lost copy response against the owned list before allowing another creation', async () => {
+it.each([
+  { action: 'Create from previous', endpoint: '/budgets/prior/drafts', routeFields: { timezone: base.timezone } },
+  { action: 'Start empty', endpoint: '/budgets', routeFields: { status: 'draft' } },
+])('replays a lost response on $endpoint using the original operation key', async ({ action, endpoint, routeFields }) => {
   state.activeBudget = { ...base, status: 'active' };
   state.budgets = [state.activeBudget];
-  state.fetchBudgets.mockResolvedValueOnce(state.budgets).mockResolvedValueOnce([...state.budgets, draft]);
-  state.fetchApi.mockRejectedValueOnce(new Error('Connection interrupted'));
-  render(<NextBudget />);
-  fireEvent.click(screen.getByRole('button', { name: 'Create from previous' }));
+  state.fetchBudgets.mockResolvedValue(state.budgets);
+  const replayed = { ...draft, _id: 'returned-by-key' };
+  let rejectPost!: (error: Error) => void;
+  state.fetchApi.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectPost = reject; }))
+    .mockRejectedValueOnce(new ApiError('Write could not be confirmed', 503))
+    .mockResolvedValueOnce(replayed)
+    .mockResolvedValueOnce({ ...replayed, _id: 'separate' });
+  const view = render(<NextBudget />);
+  fireEvent.click(screen.getByRole('button', { name: action }));
   fireEvent.change(screen.getByLabelText('Budget name'), { target: { value: 'Next' } });
   fireEvent.change(screen.getByLabelText(/provisional start/i), { target: { value: '2025-02-01' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
-  expect(await screen.findByText('Found the saved draft.')).toBeTruthy();
+  const save = screen.getByRole('button', { name: 'Save draft' });
+  fireEvent.submit(save.closest('form')!);
+  fireEvent.submit(save.closest('form')!);
+  await waitFor(() => expect(state.fetchApi).toHaveBeenCalledTimes(1));
+  const [url, request] = state.fetchApi.mock.calls[0];
+  expect(url).toBe(endpoint);
+  expect(request.method).toBe('POST');
+  const original = JSON.parse(request.body);
+  expect(original).toEqual({
+    name: 'Next', periodType: 'monthly', startDate: '2025-02-01', currency: 'DOP',
+    timezone: expect.any(String), operationKey: expect.stringMatching(/^[a-zA-Z0-9_-]{1,128}$/), ...routeFields,
+  });
+  rejectPost(new Error('Connection interrupted'));
+  const retry = await screen.findByRole('button', { name: 'Retry draft save' });
+  expect((screen.getByLabelText('Budget name') as HTMLInputElement).value).toBe('Next');
+  expect((screen.getByLabelText(/provisional start/i) as HTMLInputElement).value).toBe('2025-02-01');
+  state.activeBudget = { ...state.activeBudget, _id: 'changed-source', name: 'Changed source' };
+  state.budgets = [state.activeBudget, { ...draft, _id: 'similar-unrelated' }];
+  view.rerender(<NextBudget />);
+  expect(state.fetchBudgets).toHaveBeenCalledTimes(1);
   expect(state.fetchApi).toHaveBeenCalledTimes(1);
-  expect(state.fetchApi).toHaveBeenCalledWith('/budgets/prior/drafts', expect.objectContaining({
-    method: 'POST', body: JSON.stringify({
-      name: 'Next', periodType: 'monthly', startDate: '2025-02-01',
-      timezone: 'America/Santo_Domingo', currency: 'DOP',
-    }),
-  }));
-  expect(state.createBudget).not.toHaveBeenCalled();
+  fireEvent.click(retry);
+  expect(await screen.findByText(/Could not confirm the draft save/)).toBeTruthy();
+  fireEvent.click(retry);
+  expect(await screen.findByText('Draft saved.')).toBeTruthy();
+  expect(state.fetchApi.mock.calls.slice(0, 3)).toEqual(Array.from({ length: 3 }, () => [endpoint, request]));
+  await waitFor(() => expect(state.fetchBudgets).toHaveBeenCalledTimes(2));
+
+  fireEvent.click(screen.getByRole('button', { name: 'Start empty' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+  await waitFor(() => expect(state.fetchApi).toHaveBeenCalledTimes(4));
+  expect(JSON.parse(state.fetchApi.mock.calls[3][1].body).operationKey).not.toBe(original.operationKey);
 });
 
 it.each([
@@ -55,36 +86,47 @@ it.each([
   state.activeBudget = { ...base, status: 'active' };
   state.budgets = [state.activeBudget];
   const concurrent = { ...draft, _id: 'concurrent', endDate: '2025-03-01T00:00:00Z', ...difference };
-  state.fetchBudgets.mockResolvedValueOnce(state.budgets)
-    .mockResolvedValueOnce([...state.budgets, concurrent]);
-  state.fetchApi.mockRejectedValueOnce(new Error('Connection interrupted'));
+  state.fetchBudgets.mockResolvedValue(state.budgets);
+  state.fetchApi.mockRejectedValueOnce(new Error('Connection interrupted'))
+    .mockResolvedValueOnce({ ...draft, _id: 'keyed-draft', items: [{ _id: 'copied', name: 'Saved by key', type: 'expense', plannedAmount: 10 }] });
   render(<NextBudget />);
   fireEvent.click(screen.getByRole('button', { name: 'Create from previous' }));
   fireEvent.change(screen.getByLabelText('Budget name'), { target: { value: 'Next' } });
   fireEvent.change(screen.getByLabelText(/provisional start/i), { target: { value: '2025-02-01' } });
   fireEvent.change(screen.getByLabelText(/planned end \(optional/i), { target: { value: '2025-02-28T20:00:00-04:00' } });
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
-  expect(await screen.findByText(/No matching saved draft/)).toBeTruthy();
-  expect(screen.queryByText('Found the saved draft.')).toBeNull();
+  expect(await screen.findByText(/Could not confirm the draft save/)).toBeTruthy();
   expect((screen.getByLabelText('Budget name') as HTMLInputElement).value).toBe('Next');
   expect(state.fetchApi).toHaveBeenCalledTimes(1);
+  state.budgets = [...state.budgets, concurrent];
+  state.fetchBudgets.mockRejectedValueOnce(new Error('Read failed'));
+  fireEvent.click(screen.getByRole('button', { name: 'Retry draft save' }));
+  expect(await screen.findByRole('heading', { name: 'Saved by key · expense' })).toBeTruthy();
+  expect(await screen.findByRole('button', { name: 'Retry loading budgets' })).toBeTruthy();
+  expect(state.fetchApi.mock.calls[1]).toEqual(state.fetchApi.mock.calls[0]);
 });
 
-it('keeps creation guarded when multiple new drafts match the attempted configuration', async () => {
+it('keeps matching drafts separate and requires explicit separate preparation after a key conflict', async () => {
   state.activeBudget = { ...base, status: 'active' };
   state.budgets = [state.activeBudget];
-  state.fetchBudgets.mockResolvedValueOnce(state.budgets)
-    .mockResolvedValueOnce([...state.budgets, draft, { ...draft, _id: 'other' }]);
-  state.fetchApi.mockRejectedValueOnce(new Error('Connection interrupted'));
+  state.fetchBudgets.mockResolvedValue(state.budgets);
+  state.fetchApi.mockRejectedValueOnce(new ApiError('Conflict', 409, 'draft_operation_conflict'))
+    .mockResolvedValueOnce({ ...draft, _id: 'separate' });
   render(<NextBudget />);
   fireEvent.click(screen.getByRole('button', { name: 'Create from previous' }));
   fireEvent.change(screen.getByLabelText('Budget name'), { target: { value: 'Next' } });
   fireEvent.change(screen.getByLabelText(/provisional start/i), { target: { value: '2025-02-01' } });
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
-  expect(await screen.findByText(/Multiple matching drafts appeared/)).toBeTruthy();
-  expect(screen.queryByText('Found the saved draft.')).toBeNull();
-  expect((screen.getByRole('button', { name: 'Save draft' }) as HTMLButtonElement).disabled).toBe(true);
+  expect(await screen.findByText(/conflicts with an earlier draft request/)).toBeTruthy();
+  expect((screen.getByRole('button', { name: 'Create from previous' }) as HTMLButtonElement).disabled).toBe(true);
   expect(state.fetchApi).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole('button', { name: 'Prepare a separate draft' }));
+  expect((screen.getByLabelText('Budget name') as HTMLInputElement).value).toBe('Next');
+  expect(state.fetchApi).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+  await waitFor(() => expect(state.fetchApi).toHaveBeenCalledTimes(2));
+  expect(JSON.parse(state.fetchApi.mock.calls[1][1].body).operationKey)
+    .not.toBe(JSON.parse(state.fetchApi.mock.calls[0][1].body).operationKey);
 });
 
 it('shows the prior cutoff separately and activates with the server default', async () => {
@@ -126,7 +168,7 @@ it('shows the prior cutoff separately and activates with the server default', as
 
 it('keeps a confirmed empty draft visible when reloading fails and retries only loading', async () => {
   state.budgets = [base];
-  state.createBudget.mockResolvedValue(draft);
+  state.fetchApi.mockResolvedValue(draft);
   state.fetchBudgets.mockResolvedValueOnce([base])
     .mockRejectedValueOnce(new Error('Read failed'))
     .mockImplementationOnce(async () => { state.budgets = [base, draft]; return state.budgets; });
@@ -138,7 +180,7 @@ it('keeps a confirmed empty draft visible when reloading fails and retries only 
   expect(await screen.findByText('This draft has no budget items.')).toBeTruthy();
   fireEvent.click(await screen.findByRole('button', { name: 'Retry loading budgets' }));
   expect(await screen.findByRole('button', { name: 'Review draft Next' })).toBeTruthy();
-  expect(state.createBudget).toHaveBeenCalledTimes(1);
+  expect(state.fetchApi).toHaveBeenCalledTimes(1);
   expect(state.fetchBudgets).toHaveBeenCalledTimes(3);
 });
 

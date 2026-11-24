@@ -3,30 +3,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ApiError, useFetch } from '@/hooks/useFetch';
 import { browserTimezone, coverageDisplayDate } from '../coverage';
-import { deserializeBudget, type ApiBudget, type Budget, type BudgetItem } from '../hooks/useBudget';
+import { deserializeBudget, type ApiBudget, type Budget } from '../hooks/useBudget';
 import { useGlobalBudget } from '../hooks/useGlobalBudget';
 import { BudgetCoverage } from './BudgetCoverage';
 import { DraftItemRules } from './DraftItemRules';
 
 const dateOnly = /^\d{4}-\d{2}-\d{2}$/;
 
-function itemConfiguration(items: BudgetItem[]) {
-  return items.map(({ name, description, type, plannedAmount, icon, color, alertEnabled, matchingRules }) =>
-    JSON.stringify({
-      name, description, type, plannedAmount, icon, color, alertEnabled,
-      rules: (matchingRules ?? []).map(({ id, field, operator, keyword, source }) =>
-        [id, field, operator, keyword, source]),
-    })).sort().join('\n');
+interface DraftAttempt {
+  endpoint: string;
+  body: string;
+  sourceName?: string;
 }
 
-interface DraftAttempt {
-  ids: Set<string>;
-  name: string;
-  timezone: string;
-  periodType: Budget['periodType'];
-  startDate: string;
-  plannedEndTime?: number;
-  items: string;
+function newOperationKey() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)), byte =>
+    byte.toString(16).padStart(2, '0')).join('');
 }
 
 function startInput(value: string) {
@@ -40,8 +32,9 @@ function startInput(value: string) {
 }
 
 export function NextBudget() {
-  const { activeBudget, budgets, fetchBudgets, createBudget, updateBudget, updateBudgetItem, addBudgetItem, retainSavedBudgetItem } = useGlobalBudget();
+  const { activeBudget, budgets, fetchBudgets, updateBudget, updateBudgetItem, addBudgetItem, retainSavedBudgetItem } = useGlobalBudget();
   const dateHint = useId();
+  const recoveryHint = useId();
   const { fetchApi } = useFetch();
   const [mode, setMode] = useState<'copy' | 'empty'>();
   const [name, setName] = useState('');
@@ -56,9 +49,9 @@ export function NextBudget() {
   const [activated, setActivated] = useState<Budget>();
   const [createdDraft, setCreatedDraft] = useState<Budget>();
   const [refreshFailed, setRefreshFailed] = useState(false);
-  const [uncertain, setUncertain] = useState(false);
+  const [createAttempt, setCreateAttempt] = useState<DraftAttempt>();
   const lock = useRef(false);
-  const createAttempt = useRef<DraftAttempt | null>(null);
+  const uncertain = createAttempt !== undefined;
   const source = activeBudget ?? [...budgets].filter(b => b.status === 'closed')
     .sort((a, b) => Date.parse(b.actualCutoffDate ?? b.endDate ?? '') - Date.parse(a.actualCutoffDate ?? a.endDate ?? ''))[0];
   const previous = [...budgets].filter(b => b.status === 'closed' && b.actualCutoffDate)
@@ -91,32 +84,7 @@ export function NextBudget() {
     }
   }
 
-  async function reconcileCreation() {
-    const attempt = createAttempt.current;
-    if (!attempt) return;
-    const owned = await fetchBudgets();
-    const candidates = owned.filter(b => {
-      const end = b.plannedEndDate ?? b.endDate;
-      return !attempt.ids.has(b._id) && b.status === 'draft' &&
-        b.name === attempt.name && b.timezone === attempt.timezone && b.periodType === attempt.periodType &&
-        Date.parse(b.startDate) === Date.parse(attempt.startDate) &&
-        (end == null ? undefined : Date.parse(end)) === attempt.plannedEndTime &&
-        itemConfiguration(b.items) === attempt.items;
-    });
-    if (candidates.length > 1) throw new Error('Multiple matching drafts appeared. Review the saved drafts before creating another.');
-    createAttempt.current = null;
-    setUncertain(false);
-    if (candidates[0]) {
-      setDraftId(candidates[0]._id);
-      setMode(undefined);
-      setNotice('Found the saved draft.');
-    } else {
-      setError('No matching saved draft was found. Review the draft details before submitting again.');
-    }
-  }
-
-  async function create() {
-    if (createAttempt.current || !mode) return;
+  async function startCreation(): Promise<DraftAttempt> {
     const timezone = mode === 'copy' && source?.timezone ? source.timezone : browserTimezone();
     const plan = { name: name.trim(), periodType: period, startDate: startInput(start.trim()), timezone };
     if (!plan.name) throw new Error('Enter a budget name.');
@@ -128,31 +96,37 @@ export function NextBudget() {
     if (copySource?.timezone && copySource.timezone !== timezone) {
       throw new Error('The source timezone changed. Review the source and save the draft again.');
     }
-    createAttempt.current = {
-      ids: new Set(owned.map(b => b._id)), ...plan,
-      plannedEndTime: plannedEndDate ? Date.parse(plannedEndDate) : undefined,
-      items: itemConfiguration(copySource?.items ?? []),
+    return {
+      endpoint: copySource ? `/budgets/${copySource._id}/drafts` : '/budgets',
+      body: JSON.stringify({
+        ...plan, plannedEndDate, currency: 'DOP', operationKey: newOperationKey(),
+        ...(!copySource && { status: 'draft' }),
+      }),
+      sourceName: copySource?.name,
     };
+  }
+
+  async function create() {
+    if (!mode || refreshFailed) return;
+    setNotice('');
+    const attempt = createAttempt ?? await startCreation();
     let saved: Budget;
     try {
-      if (copySource) {
-        saved = deserializeBudget(await fetchApi<ApiBudget>(`/budgets/${copySource._id}/drafts`, {
-          method: 'POST',
-          body: JSON.stringify({ ...plan, plannedEndDate, currency: 'DOP' }),
-        }));
-      } else {
-        saved = await createBudget({ ...plan, plannedEndDate, status: 'draft' });
-      }
+      const response = await fetchApi<ApiBudget>(attempt.endpoint, { method: 'POST', body: attempt.body });
+      if (!response?._id) throw new Error('The save response did not identify the budget.');
+      saved = deserializeBudget(response);
     } catch (cause) {
-      if (cause instanceof ApiError && cause.status < 500) {
-        createAttempt.current = null;
-        throw cause;
+      if (!uncertain && cause instanceof ApiError && cause.status === 400) throw cause;
+      setCreateAttempt(attempt);
+      if (cause instanceof ApiError && cause.code === 'draft_operation_conflict') {
+        throw new Error('This save conflicts with an earlier draft request. Review saved drafts before preparing a separate draft.');
       }
-      setUncertain(true);
-      await reconcileCreation();
-      return;
+      if (cause instanceof ApiError && cause.status === 404) {
+        throw new Error('The original draft or copy source is unavailable. Review saved drafts before preparing a separate draft.');
+      }
+      throw new Error('Could not confirm the draft save. Retry the original save to recover its result.');
     }
-    createAttempt.current = null;
+    setCreateAttempt(undefined);
     setMode(undefined);
     setCreatedDraft(saved);
     setDraftId(saved._id);
@@ -187,7 +161,7 @@ export function NextBudget() {
       <Button variant="outline" disabled={pending || uncertain || refreshFailed} onClick={() => setMode('empty')}>Start empty</Button>
     </div>
     {mode && <form className="grid max-w-xl gap-3" onSubmit={event => { event.preventDefault(); void run(create); }}>
-      {mode === 'copy' && <p>Copy planning from {source?.name}.</p>}
+      {mode === 'copy' && <p>Copy planning from {createAttempt?.sourceName ?? source?.name}.</p>}
       <label>Budget name<Input name="name" required value={name} onChange={event => setName(event.target.value)} disabled={pending || uncertain} /></label>
       <label>Period type<select name="periodType" className="block min-h-12 w-full rounded-md border bg-background px-3" value={period} disabled={pending || uncertain}
         onChange={event => setPeriod(event.target.value as Budget['periodType'])}>
@@ -196,16 +170,21 @@ export function NextBudget() {
       <label>Provisional start (YYYY-MM-DD or ISO with offset)<Input name="startDate" aria-describedby={dateHint} required value={start} disabled={pending || uncertain} onChange={event => setStart(event.target.value)} /></label>
       <label>Planned end (optional, YYYY-MM-DD or ISO with offset)<Input name="plannedEndDate" aria-describedby={dateHint} value={end} disabled={pending || uncertain} onChange={event => setEnd(event.target.value)} /></label>
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={pending || uncertain || refreshFailed}>Save draft</Button>
-        <Button variant="outline" type="button" disabled={pending || uncertain} onClick={() => setMode(undefined)}>Cancel draft preparation</Button>
+        <Button type="submit" disabled={pending || refreshFailed}>{uncertain ? 'Retry draft save' : 'Save draft'}</Button>
+        <Button variant="outline" type="button" disabled={pending} aria-describedby={uncertain ? recoveryHint : undefined}
+          onClick={() => {
+            setCreateAttempt(undefined);
+            setError('');
+            if (!uncertain) setMode(undefined);
+          }}>{uncertain ? 'Prepare a separate draft' : 'Cancel draft preparation'}</Button>
       </div>
+      {uncertain && <p id={recoveryHint} className="text-sm text-muted-foreground">The original save may have created a draft. Preparing a separate draft lets you edit these details and create another one.</p>}
     </form>}
     {pending && <p role="status">Working…</p>}
     {notice && <p role="status">{notice}</p>}
     {activated && (activeBudget?._id === activated._id || (refreshFailed && !activeBudget)) &&
       <p>Activated coverage starts {coverageDisplayDate(activated.startDate, activated.timezone, true)} ({activated.timezone ?? 'UTC'}).</p>}
     {error && <p role="alert" className="text-destructive">{error}</p>}
-    {uncertain && <Button disabled={pending} onClick={() => void run(reconcileCreation)}>Check owned drafts</Button>}
     {refreshFailed && <Button disabled={pending} onClick={() => void run(refresh)}>Retry loading budgets</Button>}
     {budgets.filter(b => b.status === 'draft').map(b => <Button variant="outline" key={b._id} disabled={pending} onClick={() => {
       setDraftId(b._id); setExplicitStart('');
