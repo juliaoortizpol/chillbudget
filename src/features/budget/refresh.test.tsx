@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { BudgetProvider } from './context/BudgetContext';
 import { BudgetOverview } from './index';
@@ -13,6 +13,18 @@ const item = { _id: 'food', name: 'Synthetic food', type: 'expense', plannedAmou
 const budgets = [{ _id: 'budget', name: 'Extended synthetic', status: 'active', coverageVersion: 1, timezone: 'UTC', startDate: '2026-01-01T00:00:00Z', plannedEndDate: '2026-02-01T00:00:00Z', items: [item] }];
 const transactions = { data: [{ _id: 'purchase', name: 'Synthetic purchase', date: '2026-11-01T12:00:00Z', amount: 5, type: 'expense' }], meta: { page: 1, totalPages: 1, limit: 10, total: 1 } };
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
+
+async function openKeywordEditor() {
+  const trigger = await screen.findByRole('button', { name: 'Edit matching keywords' });
+  // Base UI moves focus into a portal asynchronously. Start with focus on the
+  // trigger as a browser would, and flush the interaction before querying it.
+  await act(async () => {
+    trigger.focus();
+    fireEvent.click(trigger);
+  });
+  expect(trigger.getAttribute('aria-expanded')).toBe('true');
+  return within(await screen.findByRole('dialog'));
+}
 
 it.each([
   ['update', 'PATCH', 'saved', 'save'],
@@ -36,8 +48,8 @@ it.each([
     fireEvent.change(input, { target: { value: 'New synthetic' } });
     fireEvent.keyDown(input, { key: 'Enter' });
   } else {
-    fireEvent.click(screen.getByRole('button', { name: 'Edit matching keywords' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Save keywords' }));
+    const editor = await openKeywordEditor();
+    fireEvent.click(editor.getByRole('button', { name: 'Save keywords' }));
   }
   const advice = `Category ${confirmation}. Refresh failed; retry loading to update budget actuals. Do not ${repeat} again.`;
   await screen.findByText(advice);
@@ -70,12 +82,12 @@ it('keeps loaded DOM and unsaved input during keyword refresh, retains successfu
   render(<BudgetProvider><BudgetOverview /></BudgetProvider>);
   const name = await screen.findByPlaceholderText('New Item Name');
   fireEvent.change(name, { target: { value: 'Unsaved category' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Edit matching keywords' }));
-  fireEvent.click(await screen.findByRole('button', { name: 'Save keywords' }));
+  const editor = await openKeywordEditor();
+  fireEvent.click(editor.getByRole('button', { name: 'Save keywords' }));
   await screen.findByText('Refreshing budgets…');
   expect(screen.getByPlaceholderText('New Item Name')).toBe(name);
   expect((name as HTMLInputElement).value).toBe('Unsaved category');
-  expect((screen.getByRole('button', { name: 'Saving…' }) as HTMLButtonElement).disabled).toBe(true);
+  expect((editor.getByRole('button', { name: 'Saving…' }) as HTMLButtonElement).disabled).toBe(true);
   await act(async () => rejectRefresh(new Error('Synthetic refresh failed')));
   await screen.findByText('Category saved. Refresh failed; retry loading to update budget actuals. Do not save again.');
   expect(screen.getByPlaceholderText('New Item Name')).toBe(name);
